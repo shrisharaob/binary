@@ -10,6 +10,7 @@
 #include <time.h>
 #include <string>
 #include <cstring>
+#include <pthread.h>
 //#include <complex>
 // #include <boost/filesystem>
 #include "globals.h"
@@ -51,9 +52,22 @@ void M1Component(vector<double> &x, unsigned int n, double* m1, double* phase) {
 }
 
 
+// double UniformRand() {
+//   std::random_device rd2;
+//   std::default_random_engine gen2(rd());
+//   std::uniform_real_distribution<double> UniformRand2(0.0, 1.0);
+//   return UniformRand()
+//   // return (double)rand() / (double)RAND_MAX ;
+// }
+
 double UniformRand() {
-  return (double)rand() / (double)RAND_MAX ;
+  std::random_device rd;
+  std::default_random_engine gen(rd());
+  std::uniform_real_distribution<double> UniformRand_Aux(0.0, 1.0);
+  return UniformRand_Aux(gen);
+  // return (double)rand() / (double)RAND_MAX ;
 }
+
 
 void Dummy() {
   printf("me too\n");
@@ -64,8 +78,9 @@ std::uniform_int_distribution<int> IntDistr(0, NI);
 unsigned int RandINeuron() { //unsigned int min, unsigned int max) {
   unsigned int result = NI;
   while(result == NI) {
-    //result = IntDistr(generator);
-    result = NE + (unsigned int) (rand() / (double) (RAND_MAX + 1UL) * (NI + 1));
+    result = IntDistr(generator);
+    
+    // result = NE + (unsigned int) (rand() / (double) (RAND_MAX + 1UL) * (NI + 1));
   }
   return result;
 }
@@ -283,7 +298,7 @@ void LoadSparseConMat() {
 
 void RunSim() {
   double uNet, spinOld, uExternalI;
-  unsigned long long int i, nLastSteps = 2000 * NI, intervalLen = 250 * NI;
+  unsigned long long int i, nLastSteps = 2000 * NI, intervalLen = NI / 1000;
   unsigned int updateNeuronIdx;
   //  int updatePop;
   double runningFre = 0;
@@ -297,28 +312,63 @@ void RunSim() {
   vector<double> ratesAtInterval(N_NEURONS);  
   vector<double> frLast(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
-  nSteps = NI * 1000; 
+  nSteps = NI * 1000;
   uExternalI = sqrt((double) K) * JI0 * m0;
-  printf("%f\n", uExternalI);    
-  printf("#Steps = %llu, T_STOP = %d\n", nSteps, T_STOP);
+  printf("external input = %f\n", uExternalI);    
+  printf("#Steps = %llu, T_STOP = %d, trial# = %d \n", nSteps, T_STOP, trialNumber);
   nLastSteps = nSteps - NI*2; 
   printf("\n");
-  cout << "interval len: \n" << intervalLen << endl;
+  cout << "interval len: " << intervalLen << endl;
+  std::string fileName; cout << "J_sqrtK = " << JII_K << endl;
+  cout << ' ' << endl;
   ProgressBar(0.0, runningFre, runningFri);
   FILE *fpInstRates = fopen("fr_inst.txt", "w");
-  FILE *fpInstM1 = fopen("MI1_inst.txt", "w");  
+  std::string m1FileName;     
+  m1FileName = "MI1_inst_tr" + std::to_string(trialNumber) + ".txt";
+  FILE *fpInstM1 = fopen(m1FileName.c_str(), "w");  
   FILE *fpRatesAtInter2 = NULL; // *fpRatesAtT = NULL,
-  std::string fileName; cout << "J_sqrtK = " << JII_K << endl;
   double popMI1, popMI1Phase;
+
+  std::string popAvgFn;     
+  popAvgFn = "popAvg_tr" + std::to_string(trialNumber) + ".txt";
+  FILE *fpSpkCnt = fopen(popAvgFn.c_str(), "w");
+    
   // Random initialization
+  // sleep(10);
+  
+  srand (time(NULL));
+  for(unsigned tstl = 0; tstl < 10; tstl++) {
+    cout << UniformRand() << endl;
+  }
+  //  exit(1);
+  // double initialProb = UniformRand();
+  // cout << "init prob = " << initialProb << endl;
   for(unsigned l = 0; l < N_NEURONS; l++) {
-    if(UniformRand() < 0.1) {
+    frLast[l] = 0;
+    spins[l] = 0;
+    if(UniformRand() < 0.5) {
       spins[l] = 1;
     }
+    unsigned int tmpIdxInit, cntrInit;
+    if(spins[l]) {
+      cntrInit = 0;
+      tmpIdxInit = idxVec[l];
+      while(cntrInit < nPostNeurons[l]) {
+	unsigned int kkInit = sparseConVec[tmpIdxInit + cntrInit];
+	cntrInit += 1;
+	netInputVec[kkInit] += JII_K;	
+      }
+    }
   }
+
+  double spkCntAvg = 0;
+  spkCntAvg = PopAvg(spins, NE, N_NEURONS);
+  fprintf(fpSpkCnt, "%f\n", spkCntAvg);
+  cout << "Initial spk cnt / N = "  << spkCntAvg << endl;
+  
   // Run 
   for(i = 0; i < nSteps; i++) { 
-    if(i > 0 && i % (nSteps / 100) == 0) {
+    if(i > NI*100 && i % (nSteps / 100) == 0) {
       runningFri = PopAvg(spins, NE, N_NEURONS);
       fprintf(fpInstRates, "%f;%f\n\n", runningFre, runningFri);
       fflush(fpInstRates);
@@ -331,12 +381,13 @@ void RunSim() {
     //   fprintf(fpInstM1, "%f;%f\n\n", popMI1, popMI1Phase);
     //   fflush(fpInstM1);
     // }
-    
+
     uNet = 0.0;
     updateNeuronIdx = RandINeuron();
-    uNet = netInputVec[updateNeuronIdx] + uExternalI - THRESHOLD_I;     
+    uNet = netInputVec[updateNeuronIdx] + uExternalI - THRESHOLD_I;
     spinOld = spins[updateNeuronIdx];    
     spins[updateNeuronIdx] = Heavside(uNet);
+    // cout << "unet = " << uNet << " spin state:  " << "old= " << spinOld <<  " new= " << spins[updateNeuronIdx] << endl;    
     if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
       unsigned int tmpIdx, cntr;
       cntr = 0;
@@ -348,6 +399,7 @@ void RunSim() {
       }
     }
     else if(spinOld == 1 && spins[updateNeuronIdx] == 0) {
+      // cout << "flip 1--> 0 " << endl;
       unsigned int tmpIdx, cntr = 0;
       cntr = 0;      
       tmpIdx = idxVec[updateNeuronIdx];
@@ -359,45 +411,57 @@ void RunSim() {
     }
     VectorSum(ratesAtInterval, spins);           
     if(i > 0 && (i % intervalLen == 0)){
-      std::string fileName2;     
-      fileName2 = "mean_rates_Inter" + std::to_string((unsigned int)(i / intervalLen)) + "E3_tr" + std::to_string(trialNumber) + ".txt";
-      fpRatesAtInter2 = fopen(fileName2.c_str(), "w");      
+      // std::string fileName2;     
+      // fileName2 = "mean_rates_Inter" + std::to_string((unsigned int)(i / intervalLen)) + "E3_tr" + std::to_string(trialNumber) + ".txt";
+      // fpRatesAtInter2 = fopen(fileName2.c_str(), "w");
       VectorDivide(ratesAtInterval, (double)intervalLen);
+      M1Component(ratesAtInterval, NI, &popMI1, &popMI1Phase);
+      fprintf(fpInstM1, "%f;%f\n\n", popMI1, popMI1Phase);
+      fflush(fpInstM1);
       for(unsigned int ijk = 0; ijk < N_NEURONS; ijk++) {
-	fprintf(fpRatesAtInter2, "%f\n", ratesAtInterval[ijk]);
+	//	fprintf(fpRatesAtInter2, "%f\n", ratesAtInterval[ijk]);
 	ratesAtInterval[ijk] = 0;
       }
-      fclose(fpRatesAtInter2);
+      //      fclose(fpRatesAtInter2);
     }
     if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
       spkTimes.push_back(i);
       spkNeuronIdx.push_back(updateNeuronIdx);
     }
     VectorSum(firingRates, spins);
-    if(i >= nLastSteps) {
+    if(i >= (nSteps - nLastSteps)) {
       VectorSum(frLast, spins);
     }
+
+    spkCntAvg = PopAvg(spins, NE, N_NEURONS);
+    fprintf(fpSpkCnt, "%f\n", spkCntAvg);
+    
   }
+  cout << "\n " << endl;
+  //  cout << "\n hello \n" << endl;
   VectorDivide(firingRates, nSteps);
   VectorDivide(frLast, nLastSteps);  
   fclose(fpInstRates);
-  fclose(fpInstM1);  
+  fclose(fpInstM1);
+  fclose(fpSpkCnt);
   std::string txtFileName = "meanrates_theta0_tr"+ std::to_string(trialNumber) + ".txt";  
   FILE *fpRates = fopen(txtFileName.c_str(), "w");
   for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
     fprintf(fpRates, "%f\n", firingRates[ii]);
   }
   fclose(fpRates);
-  // txtFileName = "meanrates_theta0_last.txt";  
-  // fpRates = fopen(txtFileName.c_str(), "w");
-  // for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
-  //   fprintf(fpRates, "%f\n", frLast[ii]);
-  // }
-  // fclose(fpRates);
+  txtFileName = "meanrates_theta0_last.txt";  
+  fpRates = fopen(txtFileName.c_str(), "w");
+  for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+    fprintf(fpRates, "%f\n", frLast[ii]);
+  }
+  fclose(fpRates);
   txtFileName = "spktimes_tr"+ std::to_string(trialNumber) + ".txt";  
   FILE *fpSpks = fopen(txtFileName.c_str(), "w");
-  for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
-    fprintf(fpSpks, "%f;%f\n", spkNeuronIdx[ii], spkTimes[ii]);
+  if(spkTimes.size() > 0) {
+    for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+      fprintf(fpSpks, "%f;%f\n", spkNeuronIdx[ii], spkTimes[ii]);
+    }
   }
   fclose(fpSpks); 
   ratesAtInterval.clear();  
@@ -442,6 +506,10 @@ int main(int argc, char *argv[]) {
   // Create_Dir(folderName);
   nPostNeurons = new unsigned int[N_NEURONS];
   idxVec = new unsigned int[N_NEURONS];
+  FILE *fpMatFlag = NULL;
+  fpMatFlag = fopen("IF_MatReady.txt", "w");
+  fprintf(fpMatFlag, "0\n");
+  fclose(fpMatFlag);
 
   if(IF_GEN_MAT) {
     GenConMat();
@@ -450,6 +518,11 @@ int main(int argc, char *argv[]) {
     printf("loading Sparse matrix\n");
     LoadSparseConMat();
   }
+
+  fpMatFlag = fopen("IF_MatReady.txt", "w");
+  fprintf(fpMatFlag, "1\n");
+  fclose(fpMatFlag);
+  
   clock_t timeStart = clock();
   RunSim();
   clock_t timeStop = clock();

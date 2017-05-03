@@ -27,8 +27,25 @@ void M1Component(vector<double> &x, unsigned int n, double* m1, double* phase) {
   }
 }
 
+double UniformRand() {
+  std::random_device rd;
+  std::default_random_engine gen(rd());
+  std::uniform_real_distribution<double> UniformRand_Aux(0.0, 1.0);
+  return UniformRand_Aux(gen);
+  // return (double)rand() / (double)RAND_MAX ;
+}
+
+
 
 int main(int argc, char *argv[]) {
+  // std::random_device rd;
+  // std::default_random_engine gen(rd());
+  // std::uniform_real_distribution<double> UniformRand(0.0, 1.0);
+  for(unsigned int i = 0; i < 10; i++) {
+    cout << UniformRand() << endl;
+  }
+  exit(1);
+    
   int n = 10000;
   if(argc > 3) {
     n = atoi(argv[3]);
