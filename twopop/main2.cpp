@@ -506,7 +506,7 @@ void RunSim() {
    }
   }
   VectorDivide(firingRates, nSteps);
-  VectorDivide(firingRateFF, nSteps);  
+  VectorDivide(firingRatesFF, nSteps);  
   VectorDivide(frLast, (nSteps - nLastSteps));  
   fclose(fpInstRates);
     

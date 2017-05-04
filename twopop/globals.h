@@ -1,10 +1,10 @@
 //#include <string>
 //#include <cstring>
 
-#define NE 5000
-#define NI 5000
-#define NFF 5000
-#define K 5n00
+#define NE 10000
+#define NI 10000
+#define NFF 10000
+#define K 1000
 #define SQRT_K (sqrt((double)K))
 #define THRESHOLD_E 1.0
 #define THRESHOLD_I 1.0

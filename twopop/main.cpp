@@ -361,13 +361,13 @@ void RunSim() {
   vector<double> firingRatesFF(NFF);  
   vector<double> frLast(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
-  dt = (TAU_FF * TAU_E * TAU_I) / (NE * TAU_FF * TAU_I + NI * TAU_FF * TAU_E + NFF * TAU_E * TAU_I);
+  dt = (TAU_E * TAU_I) / (NE * TAU_I + NI * TAU_E);
   nSteps = (unsigned long)(tStop / dt);
-  probUpdateFF = dt * (double)NFF / TAU_FF;  
+  //  probUpdateFF = dt * (double)NFF / TAU_FF;  
   probUpdateE = dt * (double)NE / TAU_E;
   probUpdateI = dt * (double)NI / TAU_I;
-  // uExternalE = sqrt((double) K) * JE0 * m0;
-  // uExternalI = sqrt((double) K) * JI0 * m0;
+  double uExternalE = sqrt((double) K) * JE0 * m0_ext;
+  double uExternalI = sqrt((double) K) * JI0 * m0_ext;
   // printf("%f\n", uExternalE);
   // printf("%f\n", uExternalI);    
   printf("dt = %f, #steps = %lu, T_STOP = %d\n", dt, nSteps, T_STOP);
@@ -392,50 +392,47 @@ void RunSim() {
     }
 
     uNet = 0.0;
-    updatePop = MultinomialDistr(generatorFF);
-
-    if(updatePop == 0) {
+    // UPDATE THE L4 RING AT EVERY TIME STEP
       updateNeuronIdx = RandFFNeuron();
       spinOldFF = spinsFF[updateNeuronIdx];    
       spinsFF[updateNeuronIdx] = UniformRand() <= FFTuningCurve(updateNeuronIdx); // FFTuning returons prob of state_i = 1
       if(spinOldFF == 0 && spinsFF[updateNeuronIdx] == 1) {
-	unsigned int tmpIdx, cntr;
-	cntr = 0;
-	tmpIdx = idxVecFF[updateNeuronIdx];
-	while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
-	  unsigned int kk = sparseConVecFF[tmpIdx + cntr];
-	  cntr += 1;
-	  if(kk < NE) {
-	    netInputVec[kk] += JE0_K;
-	  }
-	  else {
-	    netInputVec[kk] += JI0_K;
-	  }
-	}
+      	unsigned int tmpIdx, cntr;
+      	cntr = 0;
+      	tmpIdx = idxVecFF[updateNeuronIdx];
+      	while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
+      	  unsigned int kk = sparseConVecFF[tmpIdx + cntr];
+      	  cntr += 1;
+      	  if(kk < NE) {
+      	    netInputVec[kk] += JE0_K;
+      	  }
+      	  else {
+      	    netInputVec[kk] += JI0_K;
+      	  }
+      	}
       }
       else if(spinOldFF == 1 && spinsFF[updateNeuronIdx] == 0) {
-	unsigned int tmpIdx, cntr = 0;
-	cntr = 0;      
-	tmpIdx = idxVecFF[updateNeuronIdx];
-	while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
-	  unsigned int kk = sparseConVecFF[tmpIdx + cntr];
-	  cntr += 1;
-	  if(kk < NE) {
-	    netInputVec[kk] -= JE0_K;
-	  }
-	  else {
-	    netInputVec[kk] -= JI0_K;
-	  }
-	  
-	}
+      	unsigned int tmpIdx, cntr = 0;
+      	cntr = 0;      
+      	tmpIdx = idxVecFF[updateNeuronIdx];
+      	while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
+      	  unsigned int kk = sparseConVecFF[tmpIdx + cntr];
+      	  cntr += 1;
+      	  if(kk < NE) {
+      	    netInputVec[kk] -= JE0_K;
+      	  }
+      	  else {
+      	    netInputVec[kk] -= JI0_K;
+      	  }
+      	}
       }
-    }
-    else {
-      if(updatePop == 1) {
+    
+
+      if(UniformRand() <= probUpdateE) {
 	updateNeuronIdx = RandENeuron();
 	uNet = netInputVec[updateNeuronIdx] - THRESHOLD_E;
       }
-      else if(updatePop == 2)  {
+      else {
 	updateNeuronIdx = RandINeuron();
 	uNet = netInputVec[updateNeuronIdx] - THRESHOLD_I;     
       }
@@ -494,7 +491,7 @@ void RunSim() {
 	  }
 	}
       }
-    }
+    
     if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
       spkTimes.push_back(i * dt);
       spkNeuronIdx.push_back(updateNeuronIdx);
@@ -506,7 +503,7 @@ void RunSim() {
    }
   }
   VectorDivide(firingRates, nSteps);
-  VectorDivide(firingRateFF, nSteps);  
+  VectorDivide(firingRatesFF, nSteps);  
   VectorDivide(frLast, (nSteps - nLastSteps));  
   fclose(fpInstRates);
     
@@ -524,9 +521,11 @@ void RunSim() {
   fclose(fpRates); 
   
   spins.clear();
+  spinsFF.clear();  
   spkTimes.clear();
   spkNeuronIdx.clear();
   firingRates.clear();
+  firingRatesFF.clear();  
   netInputVec.clear();
   printf("\nsee you later, alligator\n");
 }
@@ -536,6 +535,7 @@ int main(int argc, char *argv[]) {
     m0_ext = atof(argv[1]);
   }
   m1_ext = 0.1 * m0_ext;
+  
   if(argc > 2) {
     recModulation = atof(argv[2]); // parameter p
   }
@@ -592,6 +592,7 @@ int main(int argc, char *argv[]) {
   delete [] nPostNeurons;
   delete [] idxVec;
   delete [] sparseConVec;
+
   delete [] nPostNeuronsFF;
   delete [] idxVecFF;
   delete [] sparseConVecFF;
