@@ -64,6 +64,15 @@ double ConProb(double phiI, double phiJ, unsigned int N) {
   return out;
 }
 
+double ConProbFF(double phiI, double phiJ, unsigned int N) {
+  double out = ((double)K / (double)N) * (1 + 2.0 * (ffModulation / SQRT_K) * cos(2.0 * (phiI - phiJ)));
+  if((out < 0) | (out > 1)) {
+    cout << "connection probability not in range [0, 1]!" << endl;
+    exit(1);
+  }
+  return out;
+}
+
 
 void GenSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, unsigned int* sparseVec, unsigned int* idxVec, unsigned int* nPostNeurons ) {
   /* generate sparse representation
@@ -113,12 +122,48 @@ void GenSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, u
     fprintf(fp2, "%f\n", ConProb(0.0, (double)i * M_PI / (double)NE, NE));
   }
   fclose(fp2);
-
   // shiftedVecBuff.clear();
   // shiftedVec.clear();
 }
 
-
+void GenFFConMat() {
+  std::random_device rd;
+  std::default_random_engine gen(rd());
+  std::uniform_real_distribution<double> UniformRand(0.0, 1.0);
+  unsigned long long int nConnections = 0;
+  cout << "generating FF conmat" << endl;
+  unsigned int *conMat = new unsigned int [(unsigned long int)NFF * N_NEURONS];
+  for (unsigned long int i = 0; i < NFF; i++)  {
+    for (unsigned long int j = 0; j < N_NEURONS; j++)  {
+      // i --> j
+      if(j < NE) { //E-to-E
+	if(UniformRand(gen) <= ConProbFF(i * M_PI / (double)NFF, j * M_PI / (double)NE, NFF)) {
+	  conMat[i + N_NEURONS * j] = 1;
+	  nConnections += 1;
+	}
+      }
+      else {
+	if(UniformRand(gen) <= (double)K / (double)NI) {
+	  conMat[i + N_NEURONS * j] = 1;
+	  nConnections += 1;
+	}
+      }
+    }
+  }
+  cout << "done" << endl;
+  cout << "computing sparse rep" << endl;    
+  sparseConVec = new unsigned int[nConnections];
+  GenSparseMat(conMat, NFF, N_NEURONS, sparseConVec, idxVec, nPostNeurons);
+  cout << "done" << endl;
+  FILE *ffp;
+  ffp = fopen("kcount_ff.csv", "w");
+  for(unsigned int lll = 0; lll < N_NEURONS; lll++) {
+    fprintf(ffp, "%u\n", nPostNeurons[lll]);
+  }
+  fclose(ffp);
+  delete [] conMat;
+}
+    
 void GenConMat() {
   std::random_device rd;
   std::default_random_engine gen(rd());
@@ -148,9 +193,7 @@ void GenConMat() {
 	  nConnections += 1;
 	}
       }
-      
     }
- 
   }
 
   cout << "done" << endl;
@@ -165,8 +208,6 @@ void GenConMat() {
   }
   fclose(ffp);
   delete [] conMat;
-
-
 
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
   fpSparseConVec = fopen("sparseConVec.dat", "wb");
@@ -186,9 +227,6 @@ void GenConMat() {
   fwrite(nPostNeurons, sizeof(*nPostNeurons), N_NEURONS, fpNpostNeurons);
   fclose(fpNpostNeurons);
   printf("done\n");
-
-
-  
 }
 
 void VectorSum(vector<double> &a, vector<double> &b) { 
