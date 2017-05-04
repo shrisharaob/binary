@@ -1,9 +1,13 @@
 
+CC=g++
+CFLAGS=-Ofast -O4 -Wall
+DEPS=globals.h
+
 default: a.out
 
-a.out: main.c globals.h
-	g++ -std=c++0x $< -Ofast -O4 -Wall
-debug: main.c globals.h
+a.out: main.cpp $(DEPS) 
+	$(CC) -std=c++0x $< $(CFLAGS)
+debug: main.cpp globals.h
 	g++ -g -std=c++0x $< -O0 -Wall
 clean:
 	rm *.o *.out
