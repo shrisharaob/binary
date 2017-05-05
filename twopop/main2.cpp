@@ -196,6 +196,24 @@ void GenFFConMat() {
   }
   fclose(ffp);
   delete [] conMatFF;
+
+  FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
+  unsigned long int nElementsWritten;
+  printf("done\n#connections = %llu\n", nConnections);
+  printf("writing to file ... "); fflush(stdout);
+  fpSparseConVec = fopen("sparseConVecFF.dat", "wb");
+  nElementsWritten = fwrite(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVec);
+  fclose(fpSparseConVec);
+  if(nElementsWritten != nConnections) {
+    printf("\n Error: All elements not written \n");
+  }
+  fpIdxVec = fopen("idxVecFF.dat", "wb");
+  fwrite(idxVecFF, sizeof(*idxVecFF), NFF,  fpIdxVec);
+  fclose(fpIdxVec);
+  fpNpostNeurons = fopen("nPostNeuronsFF.dat", "wb");
+  fwrite(nPostNeuronsFF, sizeof(*nPostNeuronsFF), NFF, fpNpostNeurons);
+  fclose(fpNpostNeurons);
+  printf("done\n");
 }
     
 void GenConMat() {
@@ -244,7 +262,6 @@ void GenConMat() {
   delete [] conMat;
 
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
-  fpSparseConVec = fopen("sparseConVec.dat", "wb");
   unsigned long int nElementsWritten;
   printf("done\n#connections = %llu\n", nConnections);
   printf("writing to file ... "); fflush(stdout);
@@ -337,6 +354,7 @@ void LoadSparseConMat() {
   dummy = fread(sparseConVec, sizeof(*sparseConVec), nConnections, fpSparseConVec);
   if(dummy != nConnections) {
     printf("sparseConvec read error ? \n");
+
   }
   printf("sparse vector read\n");  
   dummy = fread(idxVec, sizeof(*idxVec), N_NEURONS, fpIdxVec);
@@ -344,6 +362,37 @@ void LoadSparseConMat() {
   fclose(fpSparseConVec);
   fclose(fpIdxVec);
 }
+
+
+void LoadFFSparseConMat() {
+  FILE *fpSparseConVecFF, *fpIdxVecFF, *fpNpostNeuronsFF;
+  fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
+  fpIdxVecFF = fopen("idxVecFF.dat", "rb");
+  fpNpostNeuronsFF = fopen("nPostNeuronsFF.dat", "rb");
+  unsigned long int nConnections = 0, dummy = 0;
+  printf("%p %p %p\n", fpIdxVecFF, fpNpostNeuronsFF, fpSparseConVecFF);
+  dummy = fread(nPostNeuronsFF, sizeof(*nPostNeuronsFF), NFF, fpNpostNeuronsFF);
+  fclose(fpNpostNeuronsFF);
+  printf("#Post read\n");
+  for(unsigned int i = 0; i < NFF; ++i) {
+    nConnections += nPostNeuronsFF[i];
+  }
+  printf("#connections = %lu\n", nConnections);  
+  sparseConVec = new unsigned int[nConnections] ;
+  dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVecFF);
+
+  //    dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), 1, fpSparseConVecFF);
+
+  if(dummy != nConnections) {
+    printf("sparseConvec read error ? %lu %lu \n", dummy, nConnections);
+  }
+  printf("sparse vector read\n");  
+  dummy = fread(idxVecFF, sizeof(*idxVecFF), NFF, fpIdxVecFF);
+  printf("#idx vector read\n");    
+  fclose(fpSparseConVecFF);
+  fclose(fpIdxVecFF);
+}
+
 
 void RunSim() {
   double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld, spinOldFF;
@@ -567,17 +616,24 @@ int main(int argc, char *argv[]) {
 
   nPostNeuronsFF = new unsigned int[NFF];
   idxVecFF = new unsigned int[NFF];
-  
-  // printf("loading Sparse matrix\n");  
-  // LoadSparseConMat();
 
-  GenFFConMat();
-  
-  clock_t timeStartCM = clock(); 
-  GenConMat();
-  clock_t timeStopCM = clock();
-  double elapsedTimeCM = (double)(timeStopCM - timeStartCM) / CLOCKS_PER_SEC;  
-  cout << "\n connection gen, elapsed time= " << elapsedTimeCM << "s, or " << elapsedTimeCM / 60.0 << "min" << endl;
+
+
+  if(phi_ext == 0) {
+    GenFFConMat();    
+    clock_t timeStartCM = clock(); 
+    GenConMat();
+    clock_t timeStopCM = clock();
+    double elapsedTimeCM = (double)(timeStopCM - timeStartCM) / CLOCKS_PER_SEC;  
+    cout << "\n connection gen, elapsed time= " << elapsedTimeCM << "s, or " << elapsedTimeCM / 60.0 << "min" << endl;
+  }
+  else {
+    printf("loading FF Sparse matrix\n");      
+    LoadFFSparseConMat();
+    printf("loading Sparse matrix\n");  
+    LoadSparseConMat();
+  }
+
   
   clock_t timeStart = clock(); 
   RunSim();

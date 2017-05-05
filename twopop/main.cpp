@@ -17,35 +17,35 @@ using namespace::std ;
 std::string folderName;
 
 void ProgressBar(float progress, float me, float mi) {
-    int barWidth = 31;
-    std::cout << "Progress: [";
-    int pos = barWidth * progress;
-    for (int i = 0; i < barWidth; ++i) {
-      if (i < pos)  std::cout << "\u25a0"; //std::cout << "=";
-      else std::cout << " ";
-    }
-    std::cout << "] " << int(progress * 100.0) << "% done | mE = " << me << " mI = " << mi << "\r";
-    std::cout.flush();
-    if(progress == 1.) std::cout << std::endl;
+  int barWidth = 31;
+  std::cout << "Progress: [";
+  int pos = barWidth * progress;
+  for (int i = 0; i < barWidth; ++i) {
+    if (i < pos)  std::cout << "\u25a0"; //std::cout << "=";
+    else std::cout << " ";
+  }
+  std::cout << "] " << int(progress * 100.0) << "% done | mE = " << me << " mI = " << mi << "\r";
+  std::cout.flush();
+  if(progress == 1.) std::cout << std::endl;
 }
 
 void ProgressBar(float progress, float me, float mi, float m0) {
-    int barWidth = 31;
-    std::cout << "Progress: [";
-    int pos = barWidth * progress;
-    for (int i = 0; i < barWidth; ++i) {
-      if (i < pos)  std::cout << "\u25a0"; //std::cout << "=";
-      else std::cout << " ";
-    }
-    std::cout << "] " << int(progress * 100.0) << "% done | m0 = " << m0 << " mE = " << me << " mI = " << mi << "\r";
-    std::cout.flush();
-    if(progress == 1.) std::cout << std::endl;
+  int barWidth = 31;
+  std::cout << "Progress: [";
+  int pos = barWidth * progress;
+  for (int i = 0; i < barWidth; ++i) {
+    if (i < pos)  std::cout << "\u25a0"; //std::cout << "=";
+    else std::cout << " ";
+  }
+  std::cout << "] " << int(progress * 100.0) << "% done | m0 = " << m0 << " mE = " << me << " mI = " << mi << "\r";
+  std::cout.flush();
+  if(progress == 1.) std::cout << std::endl;
 }
 
 
 double UniformRand() {
-    // printf("\n hello from space 0\n");
-    return (double)rand() / (double)RAND_MAX ;
+  // printf("\n hello from space 0\n");
+  return (double)rand() / (double)RAND_MAX ;
 }
 
 void Dummy() {
@@ -276,9 +276,9 @@ void VectorSumFF(vector<double> &a, vector<double> &b) {
 }
 
 void VectorDivide(vector<double> &a, double z) { 
-   for(unsigned int i = 0; i < N_NEURONS; ++i) {
-     a[i] /= z;
-   }
+  for(unsigned int i = 0; i < N_NEURONS; ++i) {
+    a[i] /= z;
+  }
 }
 
 double PopAvg(vector<double> &a, unsigned int start, unsigned int end) {
@@ -361,6 +361,7 @@ void RunSim() {
   vector<double> firingRatesFF(NFF);  
   vector<double> frLast(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
+  //  printf('%p %p \n', spinsFF, firingRatesFF);
   dt = (TAU_E * TAU_I) / (NE * TAU_I + NI * TAU_E);
   nSteps = (unsigned long)(tStop / dt);
   //  probUpdateFF = dt * (double)NFF / TAU_FF;  
@@ -393,114 +394,113 @@ void RunSim() {
 
     uNet = 0.0;
     // UPDATE THE L4 RING AT EVERY TIME STEP
-      updateNeuronIdx = RandFFNeuron();
-      spinOldFF = spinsFF[updateNeuronIdx];    
-      spinsFF[updateNeuronIdx] = UniformRand() <= FFTuningCurve(updateNeuronIdx); // FFTuning returons prob of state_i = 1
-      if(spinOldFF == 0 && spinsFF[updateNeuronIdx] == 1) {
-      	unsigned int tmpIdx, cntr;
-      	cntr = 0;
-      	tmpIdx = idxVecFF[updateNeuronIdx];
-      	while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
-      	  unsigned int kk = sparseConVecFF[tmpIdx + cntr];
-      	  cntr += 1;
-      	  if(kk < NE) {
-      	    netInputVec[kk] += JE0_K;
-      	  }
-      	  else {
-      	    netInputVec[kk] += JI0_K;
-      	  }
-      	}
+    updateNeuronIdx = RandFFNeuron();
+    spinOldFF = spinsFF[updateNeuronIdx];    
+    spinsFF[updateNeuronIdx] = UniformRand() <= FFTuningCurve(updateNeuronIdx); // FFTuning returons prob of state_i = 1
+    if(spinOldFF == 0 && spinsFF[updateNeuronIdx] == 1) {
+      unsigned int tmpIdx, cntr;
+      cntr = 0;
+      tmpIdx = idxVecFF[updateNeuronIdx];
+      while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
+	unsigned int kk = sparseConVecFF[tmpIdx + cntr];
+	cntr += 1;
+	if(kk < NE) {
+	  netInputVec[kk] += JE0_K;
+	}
+	else {
+	  netInputVec[kk] += JI0_K;
+	}
       }
-      else if(spinOldFF == 1 && spinsFF[updateNeuronIdx] == 0) {
-      	unsigned int tmpIdx, cntr = 0;
-      	cntr = 0;      
-      	tmpIdx = idxVecFF[updateNeuronIdx];
-      	while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
-      	  unsigned int kk = sparseConVecFF[tmpIdx + cntr];
-      	  cntr += 1;
-      	  if(kk < NE) {
-      	    netInputVec[kk] -= JE0_K;
-      	  }
-      	  else {
-      	    netInputVec[kk] -= JI0_K;
-      	  }
-      	}
+    }
+    else if(spinOldFF == 1 && spinsFF[updateNeuronIdx] == 0) {
+      unsigned int tmpIdx, cntr = 0;
+      cntr = 0;      
+      tmpIdx = idxVecFF[updateNeuronIdx];
+      while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
+	unsigned int kk = sparseConVecFF[tmpIdx + cntr];
+	cntr += 1;
+	if(kk < NE) {
+	  netInputVec[kk] -= JE0_K;
+	}
+	else {
+	  netInputVec[kk] -= JI0_K;
+	}
       }
+    }
     
-
-      if(UniformRand() <= probUpdateE) {
-	updateNeuronIdx = RandENeuron();
-	uNet = netInputVec[updateNeuronIdx] - THRESHOLD_E;
-      }
-      else {
-	updateNeuronIdx = RandINeuron();
-	uNet = netInputVec[updateNeuronIdx] - THRESHOLD_I;     
-      }
-      spinOld = spins[updateNeuronIdx];    
-      spins[updateNeuronIdx] = Heavside(uNet);
-      if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
-	unsigned int tmpIdx, cntr;
-	cntr = 0;
-	tmpIdx = idxVec[updateNeuronIdx];
-	while(cntr < nPostNeurons[updateNeuronIdx]) {
-	  unsigned int kk = sparseConVec[tmpIdx + cntr];
-	  cntr += 1;
-	  if(updateNeuronIdx < NE)  {
-	    if(kk < NE) {
-	      netInputVec[kk] += JEE_K;
-	    }
-	    else {
-	      netInputVec[kk] += JIE_K;
-	    }
+    if(UniformRand() <= probUpdateE) {
+      updateNeuronIdx = RandENeuron();
+      uNet = netInputVec[updateNeuronIdx] - THRESHOLD_E;
+    }
+    else {
+      updateNeuronIdx = RandINeuron();
+      uNet = netInputVec[updateNeuronIdx] - THRESHOLD_I;     
+    }
+    spinOld = spins[updateNeuronIdx];    
+    spins[updateNeuronIdx] = Heavside(uNet);
+    if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
+      unsigned int tmpIdx, cntr;
+      cntr = 0;
+      tmpIdx = idxVec[updateNeuronIdx];
+      while(cntr < nPostNeurons[updateNeuronIdx]) {
+	unsigned int kk = sparseConVec[tmpIdx + cntr];
+	cntr += 1;
+	if(updateNeuronIdx < NE)  {
+	  if(kk < NE) {
+	    netInputVec[kk] += JEE_K;
 	  }
 	  else {
-	    if(kk < NE) {
-	      netInputVec[kk] += JEI_K;
-	    }
-	    else {
-	      netInputVec[kk] += JII_K;
-	    }
+	    netInputVec[kk] += JIE_K;
+	  }
+	}
+	else {
+	  if(kk < NE) {
+	    netInputVec[kk] += JEI_K;
+	  }
+	  else {
+	    netInputVec[kk] += JII_K;
 	  }
 	}
       }
-      else if(spinOld == 1 && spins[updateNeuronIdx] == 0) {
-	// unsigned int tmpIdx;
-	// tmpIdx = idxVec[updateNeuronIdx];
-	// for(unsigned int kk = sparseConVec[tmpIdx]; kk < sparseConVec[tmpIdx + nPostNeurons[updateNeuronIdx]]; kk++) {
-	unsigned int tmpIdx, cntr = 0;
-	cntr = 0;      
-	tmpIdx = idxVec[updateNeuronIdx];
-	while(cntr < nPostNeurons[updateNeuronIdx]) {
-	  unsigned int kk = sparseConVec[tmpIdx + cntr];
-	  cntr += 1;
-	  if(updateNeuronIdx < NE)  {
-	    if(kk < NE) {
-	      netInputVec[kk] -= JEE_K;
-	    }
-	    else {
-	      netInputVec[kk] -= JIE_K;
-	    }
+    }
+    else if(spinOld == 1 && spins[updateNeuronIdx] == 0) {
+      // unsigned int tmpIdx;
+      // tmpIdx = idxVec[updateNeuronIdx];
+      // for(unsigned int kk = sparseConVec[tmpIdx]; kk < sparseConVec[tmpIdx + nPostNeurons[updateNeuronIdx]]; kk++) {
+      unsigned int tmpIdx, cntr = 0;
+      cntr = 0;      
+      tmpIdx = idxVec[updateNeuronIdx];
+      while(cntr < nPostNeurons[updateNeuronIdx]) {
+	unsigned int kk = sparseConVec[tmpIdx + cntr];
+	cntr += 1;
+	if(updateNeuronIdx < NE)  {
+	  if(kk < NE) {
+	    netInputVec[kk] -= JEE_K;
 	  }
 	  else {
-	    if(kk < NE) {
-	      netInputVec[kk] -= JEI_K;
-	    }
-	    else {
-	      netInputVec[kk] -= JII_K;
-	    }
+	    netInputVec[kk] -= JIE_K;
+	  }
+	}
+	else {
+	  if(kk < NE) {
+	    netInputVec[kk] -= JEI_K;
+	  }
+	  else {
+	    netInputVec[kk] -= JII_K;
 	  }
 	}
       }
+    }
     
     if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
       spkTimes.push_back(i * dt);
       spkNeuronIdx.push_back(updateNeuronIdx);
     }
-   VectorSum(firingRates, spins);
-   VectorSumFF(firingRatesFF, spinsFF);   
-   if(i >= nLastSteps) {
-     VectorSum(frLast, spins);
-   }
+    VectorSum(firingRates, spins);
+    VectorSumFF(firingRatesFF, spinsFF);   
+    if(i >= nLastSteps) {
+      VectorSum(frLast, spins);
+    }
   }
   VectorDivide(firingRates, nSteps);
   VectorDivide(firingRatesFF, nSteps);  
@@ -521,13 +521,17 @@ void RunSim() {
   fclose(fpRates); 
   
   spins.clear();
-  spinsFF.clear();  
+  spinsFF.clear();
+  printf("1\n");  
   spkTimes.clear();
   spkNeuronIdx.clear();
   firingRates.clear();
-  firingRatesFF.clear();  
+  printf("2\n");    
+  firingRatesFF.clear(); 
+  printf("3\n"); 
   netInputVec.clear();
-  printf("\nsee you later, alligator\n");
+  printf("3\n");
+  //  printf("\nsee you later, alligator\n");
 }
   
 int main(int argc, char *argv[]) {
