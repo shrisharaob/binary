@@ -198,7 +198,7 @@ void GenFFConMat() {
   delete [] conMatFF;
 
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
-  unsigned long int nElementsWritten;
+  unsigned long int nElementsWritten, dummy;
   printf("done\n#connections = %llu\n", nConnections);
   printf("writing to file ... "); fflush(stdout);
   fpSparseConVec = fopen("sparseConVecFF.dat", "wb");
@@ -214,6 +214,16 @@ void GenFFConMat() {
   fwrite(nPostNeuronsFF, sizeof(*nPostNeuronsFF), NFF, fpNpostNeurons);
   fclose(fpNpostNeurons);
   printf("done\n");
+
+  //-----------------------------------------
+  printf("testing sparsevecff read\n");
+  FILE *fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
+  dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVecFF);
+    printf("sparseConvec read: %lu %llu \n", dummy, nConnections);
+  if(dummy != nConnections) {
+    printf("sparseConvec read error ? %lu %llu \n", dummy, nConnections);
+  fclose(fpSparseConVecFF);
+  }
 }
     
 void GenConMat() {
@@ -366,10 +376,11 @@ void LoadSparseConMat() {
 
 void LoadFFSparseConMat() {
   FILE *fpSparseConVecFF, *fpIdxVecFF, *fpNpostNeuronsFF;
-  fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
+  //  fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
+  perror("ohlala");
   fpIdxVecFF = fopen("idxVecFF.dat", "rb");
   fpNpostNeuronsFF = fopen("nPostNeuronsFF.dat", "rb");
-  unsigned long int nConnections = 0, dummy = 0;
+  unsigned long int long nConnections = 0, dummy = 0;
   printf("%p %p %p\n", fpIdxVecFF, fpNpostNeuronsFF, fpSparseConVecFF);
   dummy = fread(nPostNeuronsFF, sizeof(*nPostNeuronsFF), NFF, fpNpostNeuronsFF);
   fclose(fpNpostNeuronsFF);
@@ -377,14 +388,16 @@ void LoadFFSparseConMat() {
   for(unsigned int i = 0; i < NFF; ++i) {
     nConnections += nPostNeuronsFF[i];
   }
-  printf("#connections = %lu\n", nConnections);  
-  sparseConVec = new unsigned int[nConnections] ;
+  printf("#connections = %llu\n", nConnections);  
+  sparseConVecFF = new unsigned int[nConnections];
+  fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
+  perror("lalala");
   dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVecFF);
-
+  perror("ooplala");
   //    dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), 1, fpSparseConVecFF);
-
+  printf("sparseConvec read: %llu %llu \n", dummy, nConnections);
   if(dummy != nConnections) {
-    printf("sparseConvec read error ? %lu %lu \n", dummy, nConnections);
+    printf("sparseConvec read error ? %llu %llu \n", dummy, nConnections);
   }
   printf("sparse vector read\n");  
   dummy = fread(idxVecFF, sizeof(*idxVecFF), NFF, fpIdxVecFF);
