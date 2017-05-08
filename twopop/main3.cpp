@@ -17,35 +17,35 @@ using namespace::std ;
 std::string folderName;
 
 void ProgressBar(float progress, float me, float mi) {
-    int barWidth = 31;
-    std::cout << "Progress: [";
-    int pos = barWidth * progress;
-    for (int i = 0; i < barWidth; ++i) {
-      if (i < pos)  std::cout << "\u25a0"; //std::cout << "=";
-      else std::cout << " ";
-    }
-    std::cout << "] " << int(progress * 100.0) << "% done | mE = " << me << " mI = " << mi << "\r";
-    std::cout.flush();
-    if(progress == 1.) std::cout << std::endl;
+  int barWidth = 31;
+  std::cout << "Progress: [";
+  int pos = barWidth * progress;
+  for (int i = 0; i < barWidth; ++i) {
+    if (i < pos)  std::cout << "\u25a0"; //std::cout << "=";
+    else std::cout << " ";
+  }
+  std::cout << "] " << int(progress * 100.0) << "% done | mE = " << me << " mI = " << mi << "\r";
+  std::cout.flush();
+  if(progress == 1.) std::cout << std::endl;
 }
 
 void ProgressBar(float progress, float me, float mi, float m0) {
-    int barWidth = 31;
-    std::cout << "Progress: [";
-    int pos = barWidth * progress;
-    for (int i = 0; i < barWidth; ++i) {
-      if (i < pos)  std::cout << "\u25a0"; //std::cout << "=";
-      else std::cout << " ";
-    }
-    std::cout << "] " << int(progress * 100.0) << "% done | m0 = " << m0 << " mE = " << me << " mI = " << mi << "\r";
-    std::cout.flush();
-    if(progress == 1.) std::cout << std::endl;
+  int barWidth = 31;
+  std::cout << "Progress: [";
+  int pos = barWidth * progress;
+  for (int i = 0; i < barWidth; ++i) {
+    if (i < pos)  std::cout << "\u25a0"; //std::cout << "=";
+    else std::cout << " ";
+  }
+  std::cout << "] " << int(progress * 100.0) << "% done | m0 = " << m0 << " mE = " << me << " mI = " << mi << "\r";
+  std::cout.flush();
+  if(progress == 1.) std::cout << std::endl;
 }
 
 
 double UniformRand() {
-    // printf("\n hello from space 0\n");
-    return (double)rand() / (double)RAND_MAX ;
+  // printf("\n hello from space 0\n");
+  return (double)rand() / (double)RAND_MAX ;
 }
 
 void Dummy() {
@@ -196,34 +196,6 @@ void GenFFConMat() {
   }
   fclose(ffp);
   delete [] conMatFF;
-
-  FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
-  unsigned long int nElementsWritten, dummy;
-  printf("done\n#connections = %llu\n", nConnections);
-  printf("writing to file ... "); fflush(stdout);
-  fpSparseConVec = fopen("sparseConVecFF.dat", "wb");
-  nElementsWritten = fwrite(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVec);
-  fclose(fpSparseConVec);
-  if(nElementsWritten != nConnections) {
-    printf("\n Error: All elements not written \n");
-  }
-  fpIdxVec = fopen("idxVecFF.dat", "wb");
-  fwrite(idxVecFF, sizeof(*idxVecFF), NFF,  fpIdxVec);
-  fclose(fpIdxVec);
-  fpNpostNeurons = fopen("nPostNeuronsFF.dat", "wb");
-  fwrite(nPostNeuronsFF, sizeof(*nPostNeuronsFF), NFF, fpNpostNeurons);
-  fclose(fpNpostNeurons);
-  printf("done\n");
-
-  //-----------------------------------------
-  printf("testing sparsevecff read\n");
-  FILE *fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
-  dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVecFF);
-    printf("sparseConvec read: %lu %llu \n", dummy, nConnections);
-  if(dummy != nConnections) {
-    printf("sparseConvec read error ? %lu %llu \n", dummy, nConnections);
-  fclose(fpSparseConVecFF);
-  }
 }
     
 void GenConMat() {
@@ -272,6 +244,7 @@ void GenConMat() {
   delete [] conMat;
 
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
+  fpSparseConVec = fopen("sparseConVec.dat", "wb");
   unsigned long int nElementsWritten;
   printf("done\n#connections = %llu\n", nConnections);
   printf("writing to file ... "); fflush(stdout);
@@ -303,17 +276,10 @@ void VectorSumFF(vector<double> &a, vector<double> &b) {
 }
 
 void VectorDivide(vector<double> &a, double z) { 
-   for(unsigned int i = 0; i < N_NEURONS; ++i) {
-     a[i] /= z;
-   }
+  for(unsigned int i = 0; i < N_NEURONS; ++i) {
+    a[i] /= z;
+  }
 }
-
-void VectorDivideFF(vector<double> &a, double z) { 
-   for(unsigned int i = 0; i < NFF; ++i) {
-     a[i] /= z;
-   }
-}
-
 
 double PopAvg(vector<double> &a, unsigned int start, unsigned int end) {
   double result = 0.0;
@@ -371,7 +337,6 @@ void LoadSparseConMat() {
   dummy = fread(sparseConVec, sizeof(*sparseConVec), nConnections, fpSparseConVec);
   if(dummy != nConnections) {
     printf("sparseConvec read error ? \n");
-
   }
   printf("sparse vector read\n");  
   dummy = fread(idxVec, sizeof(*idxVec), N_NEURONS, fpIdxVec);
@@ -379,40 +344,6 @@ void LoadSparseConMat() {
   fclose(fpSparseConVec);
   fclose(fpIdxVec);
 }
-
-
-void LoadFFSparseConMat() {
-  FILE *fpSparseConVecFF, *fpIdxVecFF, *fpNpostNeuronsFF;
-  //  fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
-  perror("ohlala");
-  fpIdxVecFF = fopen("idxVecFF.dat", "rb");
-  fpNpostNeuronsFF = fopen("nPostNeuronsFF.dat", "rb");
-  unsigned long int long nConnections = 0, dummy = 0;
-  printf("%p %p %p\n", fpIdxVecFF, fpNpostNeuronsFF, fpSparseConVecFF);
-  dummy = fread(nPostNeuronsFF, sizeof(*nPostNeuronsFF), NFF, fpNpostNeuronsFF);
-  fclose(fpNpostNeuronsFF);
-  printf("#Post read\n");
-  for(unsigned int i = 0; i < NFF; ++i) {
-    nConnections += nPostNeuronsFF[i];
-  }
-  printf("#connections = %llu\n", nConnections);  
-  sparseConVecFF = new unsigned int[nConnections];
-  fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
-  perror("lalala");
-  dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVecFF);
-  perror("ooplala");
-  //    dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), 1, fpSparseConVecFF);
-  printf("sparseConvec read: %llu %llu \n", dummy, nConnections);
-  if(dummy != nConnections) {
-    printf("sparseConvec read error ? %llu %llu \n", dummy, nConnections);
-  }
-  printf("sparse vector read\n");  
-  dummy = fread(idxVecFF, sizeof(*idxVecFF), NFF, fpIdxVecFF);
-  printf("#idx vector read\n");    
-  fclose(fpSparseConVecFF);
-  fclose(fpIdxVecFF);
-}
-
 
 void RunSim() {
   double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld, spinOldFF;
@@ -430,13 +361,14 @@ void RunSim() {
   vector<double> firingRatesFF(NFF);  
   vector<double> frLast(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
-  dt = (TAU_FF * TAU_E * TAU_I) / (NE * TAU_FF * TAU_I + NI * TAU_FF * TAU_E + NFF * TAU_E * TAU_I);
+  //  printf('%p %p \n', spinsFF, firingRatesFF);
+  dt = (TAU_E * TAU_I) / (NE * TAU_I + NI * TAU_E);
   nSteps = (unsigned long)(tStop / dt);
-  probUpdateFF = dt * (double)NFF / TAU_FF;  
+  //  probUpdateFF = dt * (double)NFF / TAU_FF;  
   probUpdateE = dt * (double)NE / TAU_E;
   probUpdateI = dt * (double)NI / TAU_I;
-  // uExternalE = sqrt((double) K) * JE0 * m0;
-  // uExternalI = sqrt((double) K) * JI0 * m0;
+  double uExternalE = sqrt((double) K) * JE0 * m0_ext;
+  double uExternalI = sqrt((double) K) * JI0 * m0_ext;
   // printf("%f\n", uExternalE);
   // printf("%f\n", uExternalI);    
   printf("dt = %f, #steps = %lu, T_STOP = %d\n", dt, nSteps, T_STOP);
@@ -461,120 +393,117 @@ void RunSim() {
     }
 
     uNet = 0.0;
-    updatePop = MultinomialDistr(generatorFF);
-
-    if(updatePop == 0) {
-      updateNeuronIdx = RandFFNeuron();
-      spinOldFF = spinsFF[updateNeuronIdx];    
-      spinsFF[updateNeuronIdx] = UniformRand() <= FFTuningCurve(updateNeuronIdx); // FFTuning returons prob of state_i = 1
-      if(spinOldFF == 0 && spinsFF[updateNeuronIdx] == 1) {
-	unsigned int tmpIdx, cntr;
-	cntr = 0;
-	tmpIdx = idxVecFF[updateNeuronIdx];
-	while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
-	  unsigned int kk = sparseConVecFF[tmpIdx + cntr];
-	  cntr += 1;
-	  if(kk < NE) {
-	    netInputVec[kk] += JE0_K;
-	  }
-	  else {
-	    netInputVec[kk] += JI0_K;
-	  }
+    // UPDATE THE L4 RING AT EVERY TIME STEP
+    updateNeuronIdx = RandFFNeuron();
+    spinOldFF = spinsFF[updateNeuronIdx];    
+    spinsFF[updateNeuronIdx] = UniformRand() <= FFTuningCurve(updateNeuronIdx); // FFTuning returons prob of state_i = 1
+    if(spinOldFF == 0 && spinsFF[updateNeuronIdx] == 1) {
+      unsigned int tmpIdx, cntr;
+      cntr = 0;
+      tmpIdx = idxVecFF[updateNeuronIdx];
+      while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
+	unsigned int kk = sparseConVecFF[tmpIdx + cntr];
+	cntr += 1;
+	if(kk < NE) {
+	  netInputVec[kk] += JE0_K;
+	}
+	else {
+	  netInputVec[kk] += JI0_K;
 	}
       }
-      else if(spinOldFF == 1 && spinsFF[updateNeuronIdx] == 0) {
-	unsigned int tmpIdx, cntr = 0;
-	cntr = 0;      
-	tmpIdx = idxVecFF[updateNeuronIdx];
-	while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
-	  unsigned int kk = sparseConVecFF[tmpIdx + cntr];
-	  cntr += 1;
-	  if(kk < NE) {
-	    netInputVec[kk] -= JE0_K;
-	  }
-	  else {
-	    netInputVec[kk] -= JI0_K;
-	  }
+    }
+    else if(spinOldFF == 1 && spinsFF[updateNeuronIdx] == 0) {
+      unsigned int tmpIdx, cntr = 0;
+      cntr = 0;      
+      tmpIdx = idxVecFF[updateNeuronIdx];
+      while(cntr < nPostNeuronsFF[updateNeuronIdx]) {
+	unsigned int kk = sparseConVecFF[tmpIdx + cntr];
+	cntr += 1;
+	if(kk < NE) {
+	  netInputVec[kk] -= JE0_K;
+	}
+	else {
+	  netInputVec[kk] -= JI0_K;
 	}
       }
+    }
+    
+    if(UniformRand() <= probUpdateE) {
+      updateNeuronIdx = RandENeuron();
+      uNet = netInputVec[updateNeuronIdx] - THRESHOLD_E;
     }
     else {
-      if(updatePop == 1) {
-	updateNeuronIdx = RandENeuron();
-	uNet = netInputVec[updateNeuronIdx] - THRESHOLD_E;
-      }
-      else if(updatePop == 2)  {
-	updateNeuronIdx = RandINeuron();
-	uNet = netInputVec[updateNeuronIdx] - THRESHOLD_I;     
-      }
-      spinOld = spins[updateNeuronIdx];    
-      spins[updateNeuronIdx] = Heavside(uNet);
-      if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
-	unsigned int tmpIdx, cntr;
-	cntr = 0;
-	tmpIdx = idxVec[updateNeuronIdx];
-	while(cntr < nPostNeurons[updateNeuronIdx]) {
-	  unsigned int kk = sparseConVec[tmpIdx + cntr];
-	  cntr += 1;
-	  if(updateNeuronIdx < NE)  {
-	    if(kk < NE) {
-	      netInputVec[kk] += JEE_K;
-	    }
-	    else {
-	      netInputVec[kk] += JIE_K;
-	    }
+      updateNeuronIdx = RandINeuron();
+      uNet = netInputVec[updateNeuronIdx] - THRESHOLD_I;     
+    }
+    spinOld = spins[updateNeuronIdx];    
+    spins[updateNeuronIdx] = Heavside(uNet);
+    if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
+      unsigned int tmpIdx, cntr;
+      cntr = 0;
+      tmpIdx = idxVec[updateNeuronIdx];
+      while(cntr < nPostNeurons[updateNeuronIdx]) {
+	unsigned int kk = sparseConVec[tmpIdx + cntr];
+	cntr += 1;
+	if(updateNeuronIdx < NE)  {
+	  if(kk < NE) {
+	    netInputVec[kk] += JEE_K;
 	  }
 	  else {
-	    if(kk < NE) {
-	      netInputVec[kk] += JEI_K;
-	    }
-	    else {
-	      netInputVec[kk] += JII_K;
-	    }
+	    netInputVec[kk] += JIE_K;
 	  }
 	}
-      }
-      else if(spinOld == 1 && spins[updateNeuronIdx] == 0) {
-	// unsigned int tmpIdx;
-	// tmpIdx = idxVec[updateNeuronIdx];
-	// for(unsigned int kk = sparseConVec[tmpIdx]; kk < sparseConVec[tmpIdx + nPostNeurons[updateNeuronIdx]]; kk++) {
-	unsigned int tmpIdx, cntr = 0;
-	cntr = 0;      
-	tmpIdx = idxVec[updateNeuronIdx];
-	while(cntr < nPostNeurons[updateNeuronIdx]) {
-	  unsigned int kk = sparseConVec[tmpIdx + cntr];
-	  cntr += 1;
-	  if(updateNeuronIdx < NE)  {
-	    if(kk < NE) {
-	      netInputVec[kk] -= JEE_K;
-	    }
-	    else {
-	      netInputVec[kk] -= JIE_K;
-	    }
+	else {
+	  if(kk < NE) {
+	    netInputVec[kk] += JEI_K;
 	  }
 	  else {
-	    if(kk < NE) {
-	      netInputVec[kk] -= JEI_K;
-	    }
-	    else {
-	      netInputVec[kk] -= JII_K;
-	    }
+	    netInputVec[kk] += JII_K;
 	  }
 	}
       }
     }
+    else if(spinOld == 1 && spins[updateNeuronIdx] == 0) {
+      // unsigned int tmpIdx;
+      // tmpIdx = idxVec[updateNeuronIdx];
+      // for(unsigned int kk = sparseConVec[tmpIdx]; kk < sparseConVec[tmpIdx + nPostNeurons[updateNeuronIdx]]; kk++) {
+      unsigned int tmpIdx, cntr = 0;
+      cntr = 0;      
+      tmpIdx = idxVec[updateNeuronIdx];
+      while(cntr < nPostNeurons[updateNeuronIdx]) {
+	unsigned int kk = sparseConVec[tmpIdx + cntr];
+	cntr += 1;
+	if(updateNeuronIdx < NE)  {
+	  if(kk < NE) {
+	    netInputVec[kk] -= JEE_K;
+	  }
+	  else {
+	    netInputVec[kk] -= JIE_K;
+	  }
+	}
+	else {
+	  if(kk < NE) {
+	    netInputVec[kk] -= JEI_K;
+	  }
+	  else {
+	    netInputVec[kk] -= JII_K;
+	  }
+	}
+      }
+    }
+    
     if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
       spkTimes.push_back(i * dt);
       spkNeuronIdx.push_back(updateNeuronIdx);
     }
-   VectorSum(firingRates, spins);
-   VectorSumFF(firingRatesFF, spinsFF);   
-   if(i >= nLastSteps) {
-     VectorSum(frLast, spins);
-   }
+    VectorSum(firingRates, spins);
+    VectorSumFF(firingRatesFF, spinsFF);   
+    if(i >= nLastSteps) {
+      VectorSum(frLast, spins);
+    }
   }
   VectorDivide(firingRates, nSteps);
-  VectorDivideFF(firingRatesFF, nSteps);  
+  VectorDivide(firingRatesFF, nSteps);  
   VectorDivide(frLast, (nSteps - nLastSteps));  
   fclose(fpInstRates);
     
@@ -590,20 +519,26 @@ void RunSim() {
     fprintf(fpRates, "%f\n", frLast[ii]);
   }
   fclose(fpRates); 
+  
   spins.clear();
+  spinsFF.clear();
+  printf("1\n");  
   spkTimes.clear();
   spkNeuronIdx.clear();
   firingRates.clear();
+  printf("2\n");    
+  firingRatesFF.clear(); 
+  printf("3\n"); 
   netInputVec.clear();
-  printf("\nsee you later, alligator\n");
+  printf("3\n");
+  //  printf("\nsee you later, alligator\n");
 }
   
 int main(int argc, char *argv[]) {
   if(argc > 1) {
     m0_ext = atof(argv[1]);
   }
-  
-  m1_ext = 0.0 * m0_ext;
+  m1_ext = 0.1 * m0_ext;
   
   if(argc > 2) {
     recModulation = atof(argv[2]); // parameter p
@@ -620,7 +555,7 @@ int main(int argc, char *argv[]) {
 
   tStop = 1000; //T_STOP;
 
-  cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulation << " m0 = " << m0_ext << " PHI_0 = " << atof(argv[4]) << endl ;
+  cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulation << " m0 = " << m0 << endl ;
   cout << "TAU_E = " << TAU_E << " Tau_I = " << TAU_I << endl;
   //  sprintf(folderName, "N%uK%um0%dpgamma%dT%d", N_NEURONS, (int)(m0 * 1e3), K, recModulation, ffModulation, (int)(tStop * 1e-3));
 
@@ -636,12 +571,10 @@ int main(int argc, char *argv[]) {
 
   nPostNeuronsFF = new unsigned int[NFF];
   idxVecFF = new unsigned int[NFF];
-
-
-
+  
   if(phi_ext == 0) {
-    clock_t timeStartCM = clock(); 
     GenFFConMat();    
+    clock_t timeStartCM = clock(); 
     GenConMat();
     clock_t timeStopCM = clock();
     double elapsedTimeCM = (double)(timeStopCM - timeStartCM) / CLOCKS_PER_SEC;  
@@ -653,6 +586,8 @@ int main(int argc, char *argv[]) {
     printf("loading Sparse matrix\n");  
     LoadSparseConMat();
   }
+
+
 
   
   clock_t timeStart = clock(); 
@@ -668,6 +603,7 @@ int main(int argc, char *argv[]) {
   delete [] nPostNeurons;
   delete [] idxVec;
   delete [] sparseConVec;
+
   delete [] nPostNeuronsFF;
   delete [] idxVecFF;
   delete [] sparseConVecFF;
