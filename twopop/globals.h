@@ -1,10 +1,10 @@
 //#include <string>
 //#include <cstring>
 
-#define NE 100
-#define NI 100
-#define NFF 100
-#define K 10
+#define NE 10000
+#define NI 10000
+#define NFF 10000
+#define K 1000
 #define SQRT_K (sqrt((double)K))
 #define THRESHOLD_E 1.0
 #define THRESHOLD_I 1.0
@@ -25,9 +25,9 @@
 #define JII_K (JII / sqrt((double)K))
 #define N_NEURONS (NE + NI)
 
-#define cFF 1.0 //0.20 // FOR LATER USE !
+#define cFF 0.20 //0.20 // FOR LATER USE !
 
-#define T_STOP 100
+#define T_STOP 1200
 #define T_TRANSIENT (T_STOP / 2)
 #define IF_GEN_MAT_DEFAULT 0
 

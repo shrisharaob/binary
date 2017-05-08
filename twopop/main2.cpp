@@ -597,7 +597,7 @@ int main(int argc, char *argv[]) {
   if(argc > 1) {
     m0_ext = atof(argv[1]);
   }
-  m1_ext = 0.1 * m0_ext;
+  m1_ext = 0.10 * m0_ext;
   if(argc > 2) {
     recModulation = atof(argv[2]); // parameter p
   }

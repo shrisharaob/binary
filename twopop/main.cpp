@@ -572,16 +572,23 @@ int main(int argc, char *argv[]) {
   nPostNeuronsFF = new unsigned int[NFF];
   idxVecFF = new unsigned int[NFF];
   
-  // printf("loading Sparse matrix\n");  
-  // LoadSparseConMat();
+  if(phi_ext == 0) {
+    GenFFConMat();    
+    clock_t timeStartCM = clock(); 
+    GenConMat();
+    clock_t timeStopCM = clock();
+    double elapsedTimeCM = (double)(timeStopCM - timeStartCM) / CLOCKS_PER_SEC;  
+    cout << "\n connection gen, elapsed time= " << elapsedTimeCM << "s, or " << elapsedTimeCM / 60.0 << "min" << endl;
+  }
+  else {
+    printf("loading FF Sparse matrix\n");      
+    LoadFFSparseConMat();
+    printf("loading Sparse matrix\n");  
+    LoadSparseConMat();
+  }
 
-  GenFFConMat();
-  
-  clock_t timeStartCM = clock(); 
-  GenConMat();
-  clock_t timeStopCM = clock();
-  double elapsedTimeCM = (double)(timeStopCM - timeStartCM) / CLOCKS_PER_SEC;  
-  cout << "\n connection gen, elapsed time= " << elapsedTimeCM << "s, or " << elapsedTimeCM / 60.0 << "min" << endl;
+
+
   
   clock_t timeStart = clock(); 
   RunSim();
