@@ -11,6 +11,8 @@
 *.npy
 *.pyc
 *.sh
+*.pdf
+
 
 vm
 spkTimes
