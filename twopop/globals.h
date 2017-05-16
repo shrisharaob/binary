@@ -27,8 +27,8 @@
 
 #define cFF 0.2 // FOR LATER USE !
 
-#define T_STOP 1200
-#define T_TRANSIENT (T_STOP / 2)
+#define T_STOP 1000
+#define T_TRANSIENT (T_STOP * 0.20)
 #define IF_GEN_MAT_DEFAULT 0
 
 double m0, tStop, recModulation, ffModulation;

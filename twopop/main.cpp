@@ -198,7 +198,7 @@ void GenFFConMat() {
   delete [] conMatFF;
 
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
-  unsigned long int nElementsWritten, dummy;
+  unsigned long int nElementsWritten;
   printf("done\n#connections = %llu\n", nConnections);
   printf("writing to file ... "); fflush(stdout);
   fpSparseConVec = fopen("sparseConVecFF.dat", "wb");
@@ -216,14 +216,15 @@ void GenFFConMat() {
   printf("done\n");
 
   //-----------------------------------------
-  printf("testing sparsevecff read\n");
-  FILE *fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
-  dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVecFF);
-    printf("sparseConvec read: %lu %llu \n", dummy, nConnections);
-  if(dummy != nConnections) {
-    printf("sparseConvec read error ? %lu %llu \n", dummy, nConnections);
-  fclose(fpSparseConVecFF);
-  }
+  // printf("testing sparsevecff read\n");
+  // unsigned long int dummy;
+  // FILE *fpSparseConVecFF = fopen("sparseConVecFF.dat", "rb");
+  // dummy = fread(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVecFF);
+  //   printf("sparseConvec read: %lu %llu \n", dummy, nConnections);
+  // if(dummy != nConnections) {
+  //   printf("sparseConvec read error ? %lu %llu \n", dummy, nConnections);
+  // fclose(fpSparseConVecFF);
+  // }
 }
     
 void GenConMat() {
@@ -270,7 +271,7 @@ void GenConMat() {
   }
   fclose(ffp);
   delete [] conMat;
-
+  // write to file
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
   unsigned long int nElementsWritten;
   printf("done\n#connections = %llu\n", nConnections);
@@ -311,6 +312,14 @@ void VectorDivide(vector<double> &a, double z) {
 void VectorDivideFF(vector<double> &a, double z) { 
    for(unsigned int i = 0; i < NFF; ++i) {
      a[i] /= z;
+   }
+}
+
+
+void VectorCopy(vector<double> &a, vector<double> &b) {
+  // copy elements of a to b
+   for(unsigned int i = 0; i < N_NEURONS; ++i) {
+     b[i] = a[i];
    }
 }
 
@@ -388,7 +397,7 @@ void LoadFFSparseConMat() {
   fpIdxVecFF = fopen("idxVecFF.dat", "rb");
   fpNpostNeuronsFF = fopen("nPostNeuronsFF.dat", "rb");
   unsigned long int long nConnections = 0, dummy = 0;
-  printf("%p %p %p\n", fpIdxVecFF, fpNpostNeuronsFF, fpSparseConVecFF);
+  // printf("%p %p %p\n", fpIdxVecFF, fpNpostNeuronsFF, fpSparseConVecFF);
   dummy = fread(nPostNeuronsFF, sizeof(*nPostNeuronsFF), NFF, fpNpostNeuronsFF);
   fclose(fpNpostNeuronsFF);
   printf("#Post read\n");
@@ -415,10 +424,10 @@ void LoadFFSparseConMat() {
 
 
 void RunSim() {
-  double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld, spinOldFF;
+  double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld = 0, spinOldFF = 0;
   // uExternalE, uExternalI;
-  unsigned long int nSteps, i, nLastSteps;
-  unsigned int updateNeuronIdx;
+  unsigned long int nSteps, i, nLastSteps, nInitialSteps;
+  unsigned int updateNeuronIdx = 0, chunkIdx = 0;
   int updatePop = 0; // 0: FF, 1: E, 2: I
   double runningFre = 0, runningFri = 0, runningFrFF = 0;
   // FILE *fpMeanRates;
@@ -430,11 +439,16 @@ void RunSim() {
   vector<double> firingRatesFF(NFF);  
   vector<double> frLast(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
+  vector<double> firingRatesChk(N_NEURONS);
+  vector<double> firingRatesChkTMP(N_NEURONS);  
+  
   dt = (TAU_FF * TAU_E * TAU_I) / (NE * TAU_FF * TAU_I + NI * TAU_FF * TAU_E + NFF * TAU_E * TAU_I);
-  nSteps = (unsigned long)(tStop / dt);
+  nSteps = (unsigned long)((tStop / dt) + (T_TRANSIENT / dt));
+  nInitialSteps = (T_TRANSIENT / dt);
   probUpdateFF = dt * (double)NFF / TAU_FF;  
   probUpdateE = dt * (double)NE / TAU_E;
   probUpdateI = dt * (double)NI / TAU_I;
+  
   // uExternalE = sqrt((double) K) * JE0 * m0;
   // uExternalI = sqrt((double) K) * JI0 * m0;
   // printf("%f\n", uExternalE);
@@ -567,12 +581,32 @@ void RunSim() {
       spkTimes.push_back(i * dt);
       spkNeuronIdx.push_back(updateNeuronIdx);
     }
+    
    VectorSum(firingRates, spins);
    VectorSumFF(firingRatesFF, spinsFF);   
    if(i >= nLastSteps) {
      VectorSum(frLast, spins);
    }
+
+   // Store Chunks 
+   // if(i >= nInitialSteps) {
+   //   VectorSum(firingRatesChk, spins);        
+   //   if(!((i - nInitialSteps) %  (unsigned int)(1000 / dt))) {
+   //     printf(" chk i = %lu \n", i);
+   //     chunkIdx += 1;
+   //     VectorCopy(firingRatesChk, firingRatesChkTMP);
+   //     VectorDivide(firingRatesChkTMP, (i - nInitialSteps));       
+   //     std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_chnk" + std::to_string(chunkIdx) + ".txt";
+   // 	 FILE *fpRates = fopen(txtFileName.c_str(), "w");
+   // 	 for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+   // 	   fprintf(fpRates, "%f\n", firingRatesChkTMP[ii]);
+   // 	 }
+   // 	 fclose(fpRates);
+   //   }
+   // }
+
   }
+    
   VectorDivide(firingRates, nSteps);
   VectorDivideFF(firingRatesFF, nSteps);  
   VectorDivide(frLast, (nSteps - nLastSteps));  
@@ -584,17 +618,20 @@ void RunSim() {
     fprintf(fpRates, "%f\n", firingRates[ii]);
   }
   fclose(fpRates);
-  txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_last.txt";  
+
+  txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";  
   fpRates = fopen(txtFileName.c_str(), "w");
   for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
     fprintf(fpRates, "%f\n", frLast[ii]);
   }
-  fclose(fpRates); 
+  fclose(fpRates);
+
   spins.clear();
   spkTimes.clear();
   spkNeuronIdx.clear();
   firingRates.clear();
   netInputVec.clear();
+  firingRatesChk.clear();
   printf("\nsee you later, alligator\n");
 }
   
@@ -602,28 +639,28 @@ int main(int argc, char *argv[]) {
   if(argc > 1) {
     m0_ext = atof(argv[1]);
   }
-  
-  m1_ext = 0.0 * m0_ext;
-  
-  if(argc > 2) {
-    recModulation = atof(argv[2]); // parameter p
+
+  if(argc > 1) {
+    m1_ext = atof(argv[2]);
   }
   if(argc > 3) {
-    ffModulation = atof(argv[3]); // parameter gamma
+    recModulation = atof(argv[3]); // parameter p
   }
   if(argc > 4) {
-    phi_ext = M_PI * atof(argv[4]) / 180.0; // parameter external orientation
+    ffModulation = atof(argv[4]); // parameter gamma
   }
   if(argc > 5) {
-    trialNumber = atof(argv[5]); // parameter gamma
+    phi_ext = M_PI * atof(argv[5]) / 180.0; // parameter external orientation
+  }
+  if(argc > 6) {
+    trialNumber = atof(argv[6]); // parameter gamma
   }
 
-  tStop = 1000; //T_STOP;
+  tStop = T_STOP;
 
-  cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulation << " m0 = " << m0_ext << " PHI_0 = " << atof(argv[4]) << endl ;
+  cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulation << " m0 = " << m0_ext << " PHI_0 = " << atof(argv[4]) << endl;
   cout << "TAU_E = " << TAU_E << " Tau_I = " << TAU_I << endl;
   //  sprintf(folderName, "N%uK%um0%dpgamma%dT%d", N_NEURONS, (int)(m0 * 1e3), K, recModulation, ffModulation, (int)(tStop * 1e-3));
-
   // folderName = "./data/N" + std::to_string(N_NEURONS) + "K" + std::to_string(K) + "m0" + std::to_string((int)(m0 * 1e3)) + "p" + std::to_string((unsigned int)(10 * recModulation)) + "gamma" + std::to_string((unsigned int)(ffModulation)) + std::to_string((int)(tStop * 1e-3));
 
   folderName = "./data/N" + std::to_string(N_NEURONS) + "K" + std::to_string(K) + "m0" + std::to_string((int)(m0 * 1e3)) + "p" + std::to_string((unsigned int)(10 * recModulation)) + "gamma0" + std::to_string((int)(tStop * 1e-3));  
