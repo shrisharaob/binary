@@ -15,7 +15,7 @@ def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000
     if nPop == 2:
 	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     # print baseFldr
-    filename = 'meanrates_theta%.6f_tr0.txt'%(phi)
+    filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
     return np.loadtxt(baseFldr + filename)
  
 def LoadSpkTimes(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2):
@@ -24,13 +24,184 @@ def LoadSpkTimes(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K 
 	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
 	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-    print baseFldr
-    return np.loadtxt(baseFldr + 'spktimes.txt', delimiter = ';')
+    print 'loading from fldr: ', baseFldr
+    return np.loadtxt(baseFldr + 'spktimes_theta%.6f_tr%s.txt'%(phi, trNo), delimiter = ';')
 
+def SpikesInInterval(st, spkStart, spkEnd = -1):
+    if(spkEnd == -1):
+        spkEnd = np.max(st[:, 1])
+        idx = st[:, 1] >= spkStart
+    else:
+        idx = np.logical_and(st[:, 1] >= spkStart, st[:, 1] <= spkEnd)
+    return st[idx, :]
+
+def PlotRasterBasic(st):
+    plt.ion()
+    plt.plot(st[:, 1], st[:, 0], '.k')
+    plt.draw()
+
+def PlotRaster(st, spkStart, spkStop, NE, NI, IF_COLOR = False):
+    plt.ion()
+    st = SpikesInInterval(st, spkStart, spkStop)
+    if IF_COLOR:
+        idxNE = st[:, 0] < NE
+        idxNI = st[:, 0] > NE
+        stNE = st[idxNE, :]
+        stNI = st[idxNI, :]
+        plt.plot(stNE[:, 1], stNE[:, 0], '|k')
+        plt.plot(stNI[:, 1], stNI[:, 0], '|', color = [0.7, 0.1, 0.1])
+        plt.draw()
+        print 'hello'
+    else:
+        plt.plot(st[:, 1], st[:, 0], '.k')
+        plt.draw()
+    plt.xlabel('Time')
+    plt.ylabel('Neuron #')
+
+def RasterPlot(st, spkStart = 0, spkStop = -1, ):
+    st = SpikesInInterval(st, spkStart, spkStop)
+    print st.shape
+    neuronIdx = np.unique(st[:, 0])
+    nNeurons = np.size(neuronIdx)
+    nSpks, _ = st.shape
+    totalvLength = 200.0
+    vLenght = 100.0
+    vLineOffset = (totalvLength - vLenght) * 0.5
+    plt.figure()
+    plt.ion()
+    x = np.array([])
+    y = np.array([])
+    for idx, iNeuron in enumerate(neuronIdx):
+        iSpkTimes = st[st[:, 1] == iNeuron, 0]
+        x = np.r_[x, iSpkTimes]
+        y = np.r_[y, totalvLength * iNeuron * np.ones((np.size(iSpkTimes),)) + vLineOffset - vLenght]
+    plt.vlines(x, y, y + vLenght)
+    plt.ylim(y[0] - 1 - vLenght, y[-1] + 1 + vLenght)
+    plt.yticks(neuronIdx * totalvLength)
+    plt.gca().set_yticklabels(neuronIdx)
+    plt.draw()
+    plt.show()
+
+def AutoCorr(x, corrLength = "same"):
+    # x : spike Times in ms
+    N = len(x)
+    nPointFFT = int(np.power(2, np.ceil(np.log2(len(x)))))
+    fftX = np.fft.fft(x, nPointFFT)
+    return np.abs(np.abs(np.fft.ifft(np.multiply(fftX, np.conj(fftX)))))
+
+def AvgAutoCorrInInterval(starray, neuronsList, spkTimeStart, spkTimeEnd, minSpks = 100, maxTimeLag = 100, NE = 10000, NI = 10000, NFF = 10000, fileTag = 'E', theta = 0, TAU_FF = 4, TAU_E = 4, TAU_I = 2):
+    N = len(neuronsList)
+    simDT = (TAU_FF * TAU_E * TAU_I) / (NE * TAU_FF * TAU_I + NI * TAU_FF * TAU_E + NFF * TAU_E * TAU_I)
+    pcDone = 0
+    simDuration = spkTimeEnd - spkTimeStart
+    nTimeLagBins = int(2 * maxTimeLag) # works if downsample bin size = 1ms otherwise divide by value
+    avgCorr = np.zeros((int(np.power(2, np.ceil(np.log2(simDuration + simDT)))), ))
+    binFlag = 0;
+    nValidNeurons = 0;
+    downSampleBinSize = 1
+    spkBins = np.arange(spkTimeStart, spkTimeEnd + simDT, downSampleBinSize)
+    nSpkBins = len(spkBins)
+    avgRate = 0
+    popMeanRate = [];
+    for i, kNeuron in enumerate(neuronsList):
+        spkTimes = starray[starray[:, 0] == kNeuron, 1]
+        spksTimes = spkTimes[spkTimes > spkTimeStart]
+        meanRate = float(spkTimes.size) / float(simDuration)
+        nValidNeurons += 1
+        avgRate += meanRate
+        # print spkTimes.size, spkTimes.size >= minSpks
+        if(spkTimes.size >= minSpks):
+            # print meanRate
+            st = np.histogram(np.squeeze(spkTimes), spkBins)
+            tmpCorr = AutoCorr(st[0])
+            avgCorr += tmpCorr / ((downSampleBinSize) **2 * nSpkBins * meanRate)
+    avgCorr = avgCorr / nValidNeurons
+    bins = np.array(downSampleBinSize)
+    avgCorr[np.argmax(avgCorr)] = 0.0
+    avgCorr = avgCorr[: maxTimeLag]
+    print 'avgRate = ', avgRate / N
+    if(len(avgCorr) > 0):
+        return avgCorr
+    else :
+        return 0
+
+def PlotAC(st, nNeurons, spkTimeStart, spkTimeEnd, minSpks = 100, maxTimeLag = 100, NE = 10000, NI = 10000, NFF = 10000, fileTag = 'E', theta = 0, TAU_FF = 4, TAU_E = 4, TAU_I = 2):
+    nENeurons = np.arange(NE)
+    nINeurons = np.arange(NE, NE + NI)
+    if nNeurons < NE:
+        nENeurons = np.random.randint(0, NE, nNeurons)
+    if nNeurons < NI:
+        nINeurons = np.random.randint(NE, NE + NI, nNeurons)
+    acE = AvgAutoCorrInInterval(st, nENeurons, spkTimeStart, spkTimeEnd, NE = NE, NI = NI, NFF = NFF, TAU_E = TAU_E, TAU_I = TAU_I, TAU_FF = TAU_FF, theta = theta, maxTimeLag = maxTimeLag)
+    acI = AvgAutoCorrInInterval(st, nINeurons, spkTimeStart, spkTimeEnd, NE = NE, NI = NI, NFF = NFF, TAU_E = TAU_E, TAU_I = TAU_I, TAU_FF = TAU_FF, theta = theta, maxTimeLag = maxTimeLag, minSpks = minSpks)
+    plt.figure()
+    plt.plot(acE, 'k', label = 'E')
+    plt.plot(acI, color = [0.7, 0.1, 0.1], label = 'I')
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
+    plt.xlabel('Time')
+    # plt.ylabel('')
+    plt.title('AC')
+    return acE, acI
     
+def CV(spkTimes):
+    out = np.array([np.nan, np.nan])
+    if(spkTimes.size > 3):
+        isi = np.diff(spkTimes)
+        cv = isi.std() / isi.mean()
+        cv2 = CV2(isi)
+        out = np.array([cv, cv2])
+    return out
+
+def CV2(isi):
+    denom = isi[1:] + isi[:-1]
+    cv2 = 2.0 * np.abs(np.diff(isi)) / denom
+    return np.nanmean(cv2)
+
+def CVofList(starray, listOfneurons, spkTimeStart = 200):
+    out = np.empty((len(listOfneurons), 2))
+    out[:] = np.nan
+    for i, iNeuron in enumerate(listOfneurons):
+        spkTimes = starray[starray[:, 0] == iNeuron, 1]
+        spksTimes = spkTimes[spkTimes > spkTimeStart]
+        out[i, :] = CV(spkTimes)
+    return out #out[:, 0] is CV, out[:, 1] is CV2
+
+def PlotCVDistr(starray, NE, NI, nNeurons, spkTimeStart = 500, nBins = 10):
+    plt.figure()
+    print 'computeing CV, E ... ',
+    sys.stdout.flush()
+    cvE = CVofList(starray, np.random.randint(0, NE, nNeurons), spkTimeStart)
+    print 'done'
+    print 'computeing CV, I ... ',    
+    cvI = CVofList(starray, np.random.randint(NE, NE + NI, nNeurons), spkTimeStart)
+    print 'done'
+    avgCVE = np.nanmean(cvE[:, 0])
+    avgCVI = np.nanmean(cvI[:, 0])
+    avgCV2E = np.nanmean(cvE[:, 1])
+    avgCV2I = np.nanmean(cvI[:, 1])
+    print 'avg CVE = ', avgCVE, 'avg CVI = ', avgCVI
+    print 'avg CV2E = ', avgCV2E, 'avg CV2I = ', avgCV2I    
+    plt.hist(cvE[~np.isnan(cvE[:, 0]), 0], nBins, histtype = 'step', normed = 1, label = 'E', color = 'k')
+    plt.hist(cvI[~np.isnan(cvI[:, 0]), 0], nBins, histtype = 'step', normed = 1, label = 'I', color = [0.7, 0.1, 0.1])
+    _, ymax = plt.ylim()
+    plt.vlines(avgCVE, 0, ymax, color = 'k', lw = 2)
+    plt.vlines(avgCVI, 0, ymax, color = [0.7, 0.1, .1], lw = 2)    
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
+    plt.xlabel('CV')
+    plt.ylabel('Density')
+    plt.figure()
+    plt.hist(cvE[~np.isnan(cvE[:, 1]), 1], nBins, histtype = 'step', normed = 1, label = 'E', color = 'k')
+    plt.hist(cvI[~np.isnan(cvI[:, 1]), 1], nBins, histtype = 'step', normed = 1, label = 'I', color = [0.7, 0.1, 0.1])
+    _, ymax = plt.ylim()    
+    plt.vlines(avgCV2E, 0, ymax, color = 'k', lw = 2)
+    plt.vlines(avgCV2I, 0, ymax, color = [0.7, 0.1, .1], lw = 2)    
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
+    plt.xlabel(r'$CV_{2}$')
+    plt.ylabel('Density')
+        
 def OSI(firingRate, atTheta):
     out = np.nan
-    zk = np.dot(firingRate, np.exp(2j * atTheta * np.pi / 180))
+    zk = 2.0 * np.dot(firingRate, np.exp(2j * atTheta * np.pi / 180))
     if(firingRate.mean() > 0.0):
         out = np.absolute(zk) / np.sum(firingRate)
     return out
@@ -51,13 +222,17 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nP
     for i, iPhi in enumerate(phis):
         print 'loading from fldr: ', 
 	fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop)
-        if(np.isnan(fr)):
-            print 'file not found!'
+        if(len(fr) == 1):
+            if(np.isnan(fr)):
+                print 'file not found!'
 	# print fr.shape
 	tc[:, i] = fr
     osi = OSIOfPop(tc[:NE, :], phis)
-    plt.figure()
-    plt.hist(osi[~np.isnan(osi)], 27)
+    plt.xlabel('OSI')
+    plt.ylabel('Density')
+    # plt.figure()
+    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\, \gamma = %s$'%(p, gamma))
+    plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
     plt.show()
     
 def ComputeTuning(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
@@ -72,6 +247,8 @@ def ComputeTuning(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000,
     plt.ion()
     for i in np.random.randint(0, NE, 101):
 	plt.plot(phis, tc[i, :], 'ks-')
+        osi = OSI(tc[i, :], phis)
+        plt.title('neuron# %s, osi = %s'%(i, osi))
 	plt.waitforbuttonpress()
 	plt.clf()
 
@@ -81,19 +258,19 @@ def M1Component(x):
     # print 'm1 out: ', out
     return out
 
-def SmoothedMeanM1(p, gamma, nPhis, mExt, mExtOne, NE = 10000, NI = 10000, K = 1000, nTr = 1, nPop = 2, T = 1000, neuronType = 'E', IF_M1_SQRD = False, IF_SMOOTHED = False):
+def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 1000, nTr = 1, nPop = 2, T = 1000, neuronType = 'E', IF_M1_SQRD = False, IF_SMOOTHED = False):
     m1 = []
     winSize = int(float(NE) / 10.0)
     N = NE
     if neuronType == 'I':
         winSize = int(float(NI) / 10.0)
         N = NI
-    nValidTrials = np.zeros((nPhis, ))
+    nValidTrials = np.zeros((len(phis), ))
     print "--" * 25
     print "N = %s, K = %s, p = %s, m0 = %s, m0One = %s" %(N, K, p, mExt, mExtOne)
     print "trial#: ", 
     sys.stdout.flush()
-    phis = np.arange(0, 180.0, 22.5)
+    # phis = np.arange(0, 180.0, 22.5)
     # ipdb.set_trace()
     for n in range(nTr):
         print n
@@ -140,7 +317,8 @@ def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList, KList, trNo = 0, n
     # plt.figure()
     IF_LEGEND = False
     nTr = nTrials
-    # ipdb.set_trace()    
+    # ipdb.set_trace()
+    phis = np.linspace(0, 180.0, nPhis, endpoint = False)
     for k, kK in enumerate(KList):
         for n, nNE in enumerate(NList):
             m1 = []
@@ -149,7 +327,7 @@ def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList, KList, trNo = 0, n
             semM1Sqrd = []
             for iip, p in enumerate(pList):
 		if( not IF_NONSMOOTHED):
-		    tmpM1, dummy, tmpsem = SmoothedMeanM1(p, gamma, nPhis, mExt, mExtOne, nNE, nNE, kK, nTr, nPop, T)
+		    tmpM1, dummy, tmpsem = SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, nNE, nNE, kK, nTr, nPop, T)
 		    # tmpM1Sqrd, dummySqrd, tmpsemSqrd = SmoothedMeanM1(nNE, kK, p, mExt, nTr, T, IF_M1_SQRD = True)
 		else:
 		    tmpM1, dummy, tmpsem = NonSmoothedMeanM1(nNE, kK, p, mExt, nTr, T)
@@ -170,7 +348,7 @@ def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList, KList, trNo = 0, n
             print semM1[validPIdx]
             if(np.sum(np.array(validPIdx)) > 0):
                 IF_LEGEND = True
-                (_, caps, _) = plt.errorbar(pList[validPIdx], m1[validPIdx], fmt = 'o-', markersize = 3, yerr = semM1[validPIdx], lw = 0.8, elinewidth=0.8, label = 'N = %s, K = %s'%(nNE, kK))
+                (_, caps, _) = plt.errorbar(pList[validPIdx], m1[validPIdx], fmt = 'o-', markersize = 3, yerr = semM1[validPIdx], lw = 0.8, elinewidth=0.8, label = r'$N = %s, K = %s, \gamma = %s$'%(nNE, kK, gamma))
                 for cap in caps:
                     # cap.set_color('red')
                     cap.set_markeredgewidth(0.8)
@@ -194,7 +372,7 @@ def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList, KList, trNo = 0, n
             
 
     plt.xlabel(r'$p$', fontsize = 16)    
-    plt.ylabel(r'$\left[ m^{(1)} \right]_J$', fontsize = 16) # + ' avg over 10 realizations')
+    plt.ylabel(r'$\left[ m^{(1)} \right]_{\phi}$', fontsize = 16) # + ' avg over 10 realizations')
     if IF_LEGEND:
         plt.legend(loc = 0, frameon = False, numpoints = 1)
     plt.xlim(0, pList[-1] + .5)
@@ -216,7 +394,7 @@ def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList, KList, trNo = 0, n
     plt.savefig(figFolder + figname + '.png')
     plt.show()
     if IF_LEGEND:
-        plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 4})
+        plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
     plt.xlim(0, pList[-1] + .5)
     #plt.ylim(0, mExt + 0.1)
     ylims = plt.ylim()
