@@ -14,9 +14,9 @@
 #define JII -1.0
 #define JE0 2.0
 #define JI0 1.0
-#define TAU_FF 1.0
-#define TAU_E 1.0
-#define TAU_I 1.0
+#define TAU_FF 4.0
+#define TAU_E 4.0
+#define TAU_I 2.0
 #define JE0_K (JE0 / sqrt((double)K))
 #define JI0_K (JI0 / sqrt((double)K))
 #define JEE_K (JEE / sqrt((double)K))
@@ -25,11 +25,12 @@
 #define JII_K (JII / sqrt((double)K))
 #define N_NEURONS (NE + NI)
 
-#define cFF 0.2 // FOR LATER USE !
+#define cFF 1.0 // FOR LATER USE !
 
 #define T_STOP 1000
-#define T_TRANSIENT (T_STOP * 0.20)
+#define T_TRANSIENT (T_STOP * 0.40)
 #define IF_GEN_MAT_DEFAULT 0
+#define IF_SAVE_SPKS 1
 
 double m0, tStop, recModulation, ffModulation;
 double *conMat, *conMatFF;

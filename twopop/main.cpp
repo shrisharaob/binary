@@ -434,7 +434,7 @@ void RunSim() {
   vector<double> spins(N_NEURONS);
   vector<double> spinsFF(NFF);  
   vector<double> spkTimes;
-  vector<double> spkNeuronIdx;
+  vector<unsigned long int> spkNeuronIdx;
   vector<double> firingRates(N_NEURONS);
   vector<double> firingRatesFF(NFF);  
   vector<double> frLast(N_NEURONS);  
@@ -626,6 +626,15 @@ void RunSim() {
   }
   fclose(fpRates);
 
+  if(IF_SAVE_SPKS) {
+      txtFileName = "spktimes_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
+      FILE *fpSpks = fopen(txtFileName.c_str(), "w");
+      for(unsigned long long int ii = 0; ii < spkNeuronIdx.size(); ii++) {
+	fprintf(fpSpks, "%lu;%f\n", spkNeuronIdx[ii], spkTimes[ii]);
+      }
+      fclose(fpSpks);
+  }
+
   spins.clear();
   spkTimes.clear();
   spkNeuronIdx.clear();
@@ -660,6 +669,7 @@ int main(int argc, char *argv[]) {
 
   cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulation << " m0 = " << m0_ext << " PHI_0 = " << atof(argv[4]) << endl;
   cout << "TAU_E = " << TAU_E << " Tau_I = " << TAU_I << endl;
+  cout << "Trial# = " << trialNumber << endl;
   //  sprintf(folderName, "N%uK%um0%dpgamma%dT%d", N_NEURONS, (int)(m0 * 1e3), K, recModulation, ffModulation, (int)(tStop * 1e-3));
   // folderName = "./data/N" + std::to_string(N_NEURONS) + "K" + std::to_string(K) + "m0" + std::to_string((int)(m0 * 1e3)) + "p" + std::to_string((unsigned int)(10 * recModulation)) + "gamma" + std::to_string((unsigned int)(ffModulation)) + std::to_string((int)(tStop * 1e-3));
 
