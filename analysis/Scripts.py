@@ -42,7 +42,7 @@ def LoadFrChnk(p, gamma, phi, mExt, mExtOne, chkId, trNo = 0, T = 1000, N = 1000
     if nPop == 2:
     	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if IF_VERBOSE:
-    	print baseFldr 
+    	print baseFldr
 
     # if nPop == 1:
     # 	baseFldr = baseFldr + 'onepop/data/old/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
@@ -969,3 +969,42 @@ def PrintTuningBook(tc, neuronType, nNeurons, fname, NE = 10000, NI = 10000, nPh
     
     doc.generate_pdf(clean_tex=False)
 
+def LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
+    baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
+
+    if nPop == 1:
+    	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    if nPop == 2:
+    	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    if IF_VERBOSE:
+    	print baseFldr
+    filename = 'MI1_inst_theta%.6f_tr%s.txt'%(phi, trNo)
+    return np.loadtxt(baseFldr + filename, delimiter = ';')
+
+
+def PlotM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False):
+    try:
+	print p, gamma,
+	m1 = LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = False)
+	mE1 = m1[:, 0]
+	mE1Phase = m1[:, 1]
+	print m1.shape
+	xax = np.linspace(0, 1, len(mE1Phase))
+	plt.plot(xax, mE1Phase * 180.0 / np.pi, label = r'$p = %s, \gamma = %s$'%(p, gamma))
+	_, xmax = plt.xlim()
+	if  IF_STIM_LEGEND:
+	    plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2)
+	else:
+	    plt.hlines(phi, 0, xmax, lw = 2)
+	plt.title(r"$m_0 = %s,\, m_0^{(1)} = %s, \,$"%(mExt, mExtOne), fontsize = 18)
+	plt.xlabel('Time (a.u)', fontsize = 16)
+	plt.ylabel(r"$\mathrm{arg}\left[ m_E(\phi) \right] \, \mathrm{(deg)}$", fontsize = 16)
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 14})
+	plt.gca().set_position([0.2, 0.2, .65, .65])    
+	print ''
+	plt.show()
+    except IOError, e:
+	print ' not found'
+    
+    
+    

@@ -43,7 +43,22 @@ void ProgressBar(float progress, float me, float mi, float m0) {
 }
 
 
-void M1Component(vector<double> &x, unsigned int n, double* m1, double* phase) {
+void M1ComponentI(vector<double> &x, unsigned int n, double* m1, double* phase) {
+  double dPhi = M_PI / (double)n;
+  double xCord = 0, yCord = 0;
+  for(unsigned int i = NE; i < NE + n; i++) {
+    xCord += x[i] * cos(2.0 * i * dPhi);
+    yCord += x[i] * sin(2.0 * i * dPhi);
+  }
+  *m1 = (2.0 / (double)n) * sqrt(xCord * xCord + yCord * yCord);
+  *phase = 0.5 * atan2(yCord, xCord);
+  if(*phase < 0) {
+    *phase = *phase + M_PI;
+  }
+}
+
+
+void M1ComponentE(vector<double> &x, unsigned int n, double* m1, double* phase) {
   double dPhi = M_PI / (double)n;
   double xCord = 0, yCord = 0;
   for(unsigned int i = 0; i < n; i++) {
@@ -441,7 +456,7 @@ void LoadFFSparseConMat() {
 void RunSim() {
   double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld = 0, spinOldFF = 0;
   // uExternalE, uExternalI;
-  unsigned long int nSteps, i, nLastSteps, nInitialSteps, , intervalLen = (NE + NI) / 1000;
+  unsigned long int nSteps, i, nLastSteps, nInitialSteps, intervalLen = (NE + NI) / 20000;
   unsigned int updateNeuronIdx = 0, chunkIdx = 0;
   int updatePop = 0; // 0: FF, 1: E, 2: I
   double runningFre = 0, runningFri = 0, runningFrFF = 0;
@@ -456,9 +471,9 @@ void RunSim() {
   vector<double> netInputVec(N_NEURONS);
   vector<double> firingRatesChk(N_NEURONS);
   vector<double> firingRatesChkTMP(N_NEURONS);
-
   vector<double> firingRatesAtT(N_NEURONS);  
   vector<double> ratesAtInterval(N_NEURONS);
+  double popME1, popME1Phase;  // popMI1, popMI1Phase, 
 
   std::string m1FileName;     
   m1FileName = "MI1_inst_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
@@ -605,6 +620,19 @@ void RunSim() {
 	}
       }
     }
+
+    VectorSum(ratesAtInterval, spins);           
+    if(i > 0 && (i % intervalLen == 0)){
+      VectorDivide(ratesAtInterval, (double)intervalLen);
+      M1ComponentE(ratesAtInterval, NE, &popME1, &popME1Phase);
+      fprintf(fpInstM1, "%f;%f\n\n", popME1, popME1Phase);
+      fflush(fpInstM1);
+      for(unsigned int ijk = 0; ijk < N_NEURONS; ijk++) {
+	ratesAtInterval[ijk] = 0;
+      }
+    }
+
+    
     if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
       spkTimes.push_back(i * dt);
       spkNeuronIdx.push_back(updateNeuronIdx);
@@ -641,6 +669,7 @@ void RunSim() {
   VectorDivideFF(firingRatesFF, nSteps);  
   VectorDivide(frLast, (nSteps - nLastSteps));  
   fclose(fpInstRates);
+  fclose(fpInstM1);
     
   std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";  
   FILE *fpRates = fopen(txtFileName.c_str(), "w");
