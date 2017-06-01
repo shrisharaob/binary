@@ -321,7 +321,7 @@ def SolveForPCritical(m0List):
     print "--" * 25
     print "m0 = ", m0List[0], "p_critical = ", pCAnalytic[0]
     print "--" * 24    
-    np.save('./data/analysisData/p_vs_mI1_m0%s'%(int(lM0 * 1e3)), [pList, mE1List, np.ones((len(pList), )) * meanFieldRates[0], np.ones((len(pList), )) * meanFieldRates[1]])            
+    np.save('./data/p_vs_mI1_m0%s'%(int(lM0 * 1e3)), [pList, mE1List, np.ones((len(pList), )) * meanFieldRates[0], np.ones((len(pList), )) * meanFieldRates[1]])            
 
 # def CirConvolve(signal, windowSize):
 #     ker = np.concatenate((np.ones((windowSize, )), np.zeros((signal.size - windowSize, ))))
@@ -365,19 +365,20 @@ def monte_carlo_two(function, a, b, numberOfseconds):
       return average * Decimal(b - a)
 
 if __name__ == "__main__":
-    JEE = 1.0 
-    JIE = 1.0 
+    JEE = 1.0
+    JIE = 1.0
     JEI = -1.5 
-    JII = -1.0 
-    JE0 = 2.0 
-    JI0 = 1.0 
+    JII = -1.0
+    cFF = 0.2
+    JE0 = 2.0 / cFF
+    JI0 = 1.0 / cFF
     Jab = np.array([[JEE, JEI],
                     [JIE, JII]])
     Ea = np.array([JE0, JI0])
-    cFF = 0.2
+
     CheckBalConditions(JEE, JEI, JIE, JII, JE0, JI0)
     gamma = 0.0
-    m0 = 0.15
+    m0 = 0.075
     p = 1
     K = int(sys.argv[2])
     simTime = int(sys.argv[3])
@@ -428,13 +429,13 @@ if __name__ == "__main__":
     print mE0, mI0, mE1
 
     raise SystemExit
-    np.save('./data/analysisData/pCritical_m0%s_K%s'%(int(m0 * 1e3), K), pCriticalAtK)
+    np.save('./data/pCritical_m0%s_K%s'%(int(m0 * 1e3), K), pCriticalAtK)
 
     
     pListSim = np.array([0, .5, 1, 2, 2.5, 2.6, 2.7, 2.8]) #, 2.9, 3.0])
     pListSim = np.arange(0, 4.5, 0.1)
-    pStart = 6 #pCriticalAtK + 2
-    pList = np.linspace(pStart, pCriticalAtK - 1, 10000)
+    pStart = pCriticalAtK + 2
+    pList = np.linspace(pStart, pCriticalAtK - 1, 5000)
     # pList = np.linspace(pStart, pCriticalAtK - 1, 10000)    
     # pList = np.linspace(10, 4, 8000)    
     # pList = np.linspace(7, 3, 40000)        
@@ -495,7 +496,7 @@ if __name__ == "__main__":
             pValidList.append(p) 
     print "done"   
     plt.plot(pValidList, np.array(mE1SolList, dtype = 'float'), 'c.', label = 'corrected', lw = 1.5)
-    np.save('./data/analysisData/mE1_m0%s_K%s'%(int(m0 * 1e3), K), [pValidList, np.array(mE1SolList, dtype = 'float')])
+    np.save('./data/mE1_m0%s_K%s'%(int(m0 * 1e3), K), [pValidList, np.array(mE1SolList, dtype = 'float')])
 
 #    np.save('./data/analysisData/p_vs_mE1_m0%s'%(int(m0*1e3)), [pValidList, np.array(mE1SolList, dtype = 'float'), np.ones((len(pValidList, )) * , np.ones((len(pofME), )) * )    
     #np.save('./data/analysisData/mE1_m0%s_K%s'%(int(m0 * 1e3), K), [pValidList, np.array(mE1SolList, dtype = 'float')])    

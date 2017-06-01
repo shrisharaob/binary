@@ -25,12 +25,13 @@
 #define JII_K (JII / sqrt((double)K))
 #define N_NEURONS (NE + NI)
 
-#define cFF 0.2 // FOR LATER USE !
+#define cFF 0.2
+#define SQRT_KFF (sqrt((double)K * cFF))
 
 #define T_STOP 1000
 #define T_TRANSIENT (T_STOP * 0.40)
 #define IF_GEN_MAT_DEFAULT 0
-#define IF_SAVE_SPKS 1
+#define IF_SAVE_SPKS 0
 
 double m0, tStop, recModulation, ffModulation;
 double *conMat, *conMatFF;

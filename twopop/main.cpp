@@ -43,6 +43,21 @@ void ProgressBar(float progress, float me, float mi, float m0) {
 }
 
 
+void M1Component(vector<double> &x, unsigned int n, double* m1, double* phase) {
+  double dPhi = M_PI / (double)n;
+  double xCord = 0, yCord = 0;
+  for(unsigned int i = 0; i < n; i++) {
+    xCord += x[i] * cos(2.0 * i * dPhi);
+    yCord += x[i] * sin(2.0 * i * dPhi);
+  }
+  *m1 = (2.0 / (double)n) * sqrt(xCord * xCord + yCord * yCord);
+  *phase = 0.5 * atan2(yCord, xCord);
+  if(*phase < 0) {
+    *phase = *phase + M_PI;
+  }
+}
+
+
 double UniformRand() {
     // printf("\n hello from space 0\n");
     return (double)rand() / (double)RAND_MAX ;
@@ -87,7 +102,7 @@ double ConProb(double phiI, double phiJ, unsigned int N) {
 }
 
 double ConProbFF(double phiI, double phiJ, unsigned int N) {
-  double out = ((double)K * cFF / (double)N) * (1 + 2.0 * (ffModulation / SQRT_K) * cos(2.0 * (phiI - phiJ)));
+  double out = ((double)K * cFF / (double)N) * (1 + 2.0 * (ffModulation / SQRT_KFF) * cos(2.0 * (phiI - phiJ)));
   if((out < 0) | (out > 1)) {
     cout << "connection probability not in range [0, 1]!" << endl;
     exit(1);
@@ -101,7 +116,7 @@ double FFTuningCurve(unsigned int i) {
     cout << "external rate [0, 1]!" << endl;
     exit(1);
   }
-  out = m0_ext;
+  //  out = m0_ext;
   return out;
 }
 
@@ -426,7 +441,7 @@ void LoadFFSparseConMat() {
 void RunSim() {
   double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld = 0, spinOldFF = 0;
   // uExternalE, uExternalI;
-  unsigned long int nSteps, i, nLastSteps, nInitialSteps;
+  unsigned long int nSteps, i, nLastSteps, nInitialSteps, , intervalLen = (NE + NI) / 1000;
   unsigned int updateNeuronIdx = 0, chunkIdx = 0;
   int updatePop = 0; // 0: FF, 1: E, 2: I
   double runningFre = 0, runningFri = 0, runningFrFF = 0;
@@ -440,7 +455,15 @@ void RunSim() {
   vector<double> frLast(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
   vector<double> firingRatesChk(N_NEURONS);
-  vector<double> firingRatesChkTMP(N_NEURONS);  
+  vector<double> firingRatesChkTMP(N_NEURONS);
+
+  vector<double> firingRatesAtT(N_NEURONS);  
+  vector<double> ratesAtInterval(N_NEURONS);
+
+  std::string m1FileName;     
+  m1FileName = "MI1_inst_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
+  FILE *fpInstM1 = fopen(m1FileName.c_str(), "w");  
+
   
   dt = (TAU_FF * TAU_E * TAU_I) / (NE * TAU_FF * TAU_I + NI * TAU_FF * TAU_E + NFF * TAU_E * TAU_I);
   nSteps = (unsigned long)((tStop / dt) + (T_TRANSIENT / dt));
@@ -479,8 +502,13 @@ void RunSim() {
 
     if(updatePop == 0) {
       updateNeuronIdx = RandFFNeuron();
-      spinOldFF = spinsFF[updateNeuronIdx];    
-      spinsFF[updateNeuronIdx] = UniformRand() <= FFTuningCurve(updateNeuronIdx); // FFTuning returons prob of state_i = 1
+      spinOldFF = spinsFF[updateNeuronIdx];
+      spinsFF[updateNeuronIdx] = 0;
+      if(UniformRand() <= FFTuningCurve(updateNeuronIdx)) {
+        // FFTuning returons prob of state_i = 1	
+	spinsFF[updateNeuronIdx] = 1;
+      }
+      
       if(spinOldFF == 0 && spinsFF[updateNeuronIdx] == 1) {
 	unsigned int tmpIdx, cntr;
 	cntr = 0;
@@ -588,22 +616,24 @@ void RunSim() {
      VectorSum(frLast, spins);
    }
 
-   // Store Chunks 
-   // if(i >= nInitialSteps) {
-   //   VectorSum(firingRatesChk, spins);        
-   //   if(!((i - nInitialSteps) %  (unsigned int)(1000 / dt))) {
-   //     printf(" chk i = %lu \n", i);
-   //     chunkIdx += 1;
-   //     VectorCopy(firingRatesChk, firingRatesChkTMP);
-   //     VectorDivide(firingRatesChkTMP, (i - nInitialSteps));       
-   //     std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_chnk" + std::to_string(chunkIdx) + ".txt";
-   // 	 FILE *fpRates = fopen(txtFileName.c_str(), "w");
-   // 	 for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
-   // 	   fprintf(fpRates, "%f\n", firingRatesChkTMP[ii]);
-   // 	 }
-   // 	 fclose(fpRates);
-   //   }
-   // }
+   //   Store Chunks 
+   if(i >= nInitialSteps) {
+     VectorSum(firingRatesChk, spins);
+     if(i > nInitialSteps) {
+       if(!((i - nInitialSteps) %  (unsigned int)((nSteps - nInitialSteps - 1) / 2))) {
+	 printf("\n chk i = %lu \n", i - nInitialSteps);
+	 VectorCopy(firingRatesChk, firingRatesChkTMP);
+	 VectorDivide(firingRatesChkTMP, (i - nInitialSteps));       
+	 std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_chnk" + std::to_string(chunkIdx) + ".txt";
+	 chunkIdx += 1;       
+   	 FILE *fpRates = fopen(txtFileName.c_str(), "w");
+   	 for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+   	   fprintf(fpRates, "%f\n", firingRatesChkTMP[ii]);
+   	 }
+   	 fclose(fpRates);
+       }
+     }
+   }
 
   }
     
@@ -641,6 +671,10 @@ void RunSim() {
   firingRates.clear();
   netInputVec.clear();
   firingRatesChk.clear();
+
+  firingRatesAtT.clear();  
+  ratesAtInterval.clear();
+  
   printf("\nsee you later, alligator\n");
 }
   
