@@ -43,6 +43,36 @@ void ProgressBar(float progress, float me, float mi, float m0) {
 }
 
 
+void M1ComponentI(vector<double> &x, unsigned int n, double* m1, double* phase) {
+  double dPhi = M_PI / (double)n;
+  double xCord = 0, yCord = 0;
+  for(unsigned int i = NE; i < NE + n; i++) {
+    xCord += x[i] * cos(2.0 * i * dPhi);
+    yCord += x[i] * sin(2.0 * i * dPhi);
+  }
+  *m1 = (2.0 / (double)n) * sqrt(xCord * xCord + yCord * yCord);
+  *phase = 0.5 * atan2(yCord, xCord);
+  if(*phase < 0) {
+    *phase = *phase + M_PI;
+  }
+}
+
+
+void M1ComponentE(vector<double> &x, unsigned int n, double* m1, double* phase) {
+  double dPhi = M_PI / (double)n;
+  double xCord = 0, yCord = 0;
+  for(unsigned int i = 0; i < n; i++) {
+    xCord += x[i] * cos(2.0 * i * dPhi);
+    yCord += x[i] * sin(2.0 * i * dPhi);
+  }
+  *m1 = (2.0 / (double)n) * sqrt(xCord * xCord + yCord * yCord);
+  *phase = 0.5 * atan2(yCord, xCord);
+  if(*phase < 0) {
+    *phase = *phase + M_PI;
+  }
+}
+
+
 double UniformRand() {
     // printf("\n hello from space 0\n");
     return (double)rand() / (double)RAND_MAX ;
@@ -87,7 +117,7 @@ double ConProb(double phiI, double phiJ, unsigned int N) {
 }
 
 double ConProbFF(double phiI, double phiJ, unsigned int N) {
-  double out = ((double)K * cFF / (double)N) * (1 + 2.0 * (ffModulation / SQRT_K) * cos(2.0 * (phiI - phiJ)));
+  double out = ((double)K * cFF / (double)N) * (1 + 2.0 * (ffModulation / SQRT_KFF) * cos(2.0 * (phiI - phiJ)));
   if((out < 0) | (out > 1)) {
     cout << "connection probability not in range [0, 1]!" << endl;
     exit(1);
@@ -95,13 +125,13 @@ double ConProbFF(double phiI, double phiJ, unsigned int N) {
   return out;
 }
 
-double FFTuningCurve(unsigned int i) {
-  double out = m0_ext + m1_ext * cos(2 * (phi_ext - (double)i * M_PI / (double)NFF));
+double FFTuningCurve(unsigned int i, double phiOft) {
+  double out = m0_ext + m1_ext * cos(2 * (phiOft - (double)i * M_PI / (double)NFF));
   if((out < 0) | (out > 1)) {
     cout << "external rate [0, 1]!" << endl;
     exit(1);
   }
-  out = m0_ext;
+  //  out = m0_ext;
   return out;
 }
 
@@ -426,7 +456,7 @@ void LoadFFSparseConMat() {
 void RunSim() {
   double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld = 0, spinOldFF = 0;
   // uExternalE, uExternalI;
-  unsigned long int nSteps, i, nLastSteps, nInitialSteps;
+  unsigned long int nSteps, i, nLastSteps, nInitialSteps, intervalLen = (NE + NI) / 100;
   unsigned int updateNeuronIdx = 0, chunkIdx = 0;
   int updatePop = 0; // 0: FF, 1: E, 2: I
   double runningFre = 0, runningFri = 0, runningFrFF = 0;
@@ -440,7 +470,15 @@ void RunSim() {
   vector<double> frLast(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
   vector<double> firingRatesChk(N_NEURONS);
-  vector<double> firingRatesChkTMP(N_NEURONS);  
+  vector<double> firingRatesChkTMP(N_NEURONS);
+  vector<double> firingRatesAtT(N_NEURONS);  
+  vector<double> ratesAtInterval(N_NEURONS);
+  double popME1, popME1Phase;  // popMI1, popMI1Phase, 
+
+  std::string m1FileName;     
+  m1FileName = "MI1_inst_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
+  FILE *fpInstM1 = fopen(m1FileName.c_str(), "w");  
+
   
   dt = (TAU_FF * TAU_E * TAU_I) / (NE * TAU_FF * TAU_I + NI * TAU_FF * TAU_E + NFF * TAU_E * TAU_I);
   nSteps = (unsigned long)((tStop / dt) + (T_TRANSIENT / dt));
@@ -452,7 +490,13 @@ void RunSim() {
   // uExternalE = sqrt((double) K) * JE0 * m0;
   // uExternalI = sqrt((double) K) * JI0 * m0;
   // printf("%f\n", uExternalE);
-  // printf("%f\n", uExternalI);    
+  // printf("%f\n", uExternalI);
+
+
+  if(IF_STEP_PHI0) {
+    intervalLen = (unsigned long)floor((nSteps - nInitialSteps) / 80.0);
+  }
+  
   printf("dt = %f, #steps = %lu, T_STOP = %d\n", dt, nSteps, T_STOP);
   printf("prob updateFF = %f, prob update E = %f, prob update I = %f\n", probUpdateFF, probUpdateE, probUpdateI);
   nLastSteps = nSteps - (unsigned long int )((float)T_TRANSIENT / dt);
@@ -463,8 +507,15 @@ void RunSim() {
   std::random_device rdFF;  
   std::default_random_engine generatorFF(rdFF());
   std::discrete_distribution<int> MultinomialDistr {probUpdateFF, probUpdateE, probUpdateI};
-  
   for(i = 0; i < nSteps; i++) {
+    if(IF_STEP_PHI0) {
+      if((i > 0) && i % (unsigned long)floor((nSteps - nInitialSteps) / 8.0) == 0) {
+	// change stimulus after half time
+	phi_ext = phi_ext +  M_PI / 8.0;
+	// printf("hello %f\n", phi_ext * 180  / M_PI);      
+      }
+    
+    }
     if(i > 0 && i % (nSteps / 100) == 0) {
       runningFrFF = PopAvg(firingRatesFF, 0, NFF) / (double)(i + 1);      
       runningFre = PopAvg(firingRates, 0, NE) / (double)(i + 1);
@@ -479,8 +530,13 @@ void RunSim() {
 
     if(updatePop == 0) {
       updateNeuronIdx = RandFFNeuron();
-      spinOldFF = spinsFF[updateNeuronIdx];    
-      spinsFF[updateNeuronIdx] = UniformRand() <= FFTuningCurve(updateNeuronIdx); // FFTuning returons prob of state_i = 1
+      spinOldFF = spinsFF[updateNeuronIdx];
+      spinsFF[updateNeuronIdx] = 0;
+      if(UniformRand() <= FFTuningCurve(updateNeuronIdx, phi_ext)) {
+        // FFTuning returons prob of state_i = 1	
+	spinsFF[updateNeuronIdx] = 1;
+      }
+      
       if(spinOldFF == 0 && spinsFF[updateNeuronIdx] == 1) {
 	unsigned int tmpIdx, cntr;
 	cntr = 0;
@@ -577,6 +633,26 @@ void RunSim() {
 	}
       }
     }
+
+    VectorSum(ratesAtInterval, spins);           
+    if(i > 0 && (i % intervalLen == 0)){
+      VectorDivide(ratesAtInterval, (double)intervalLen);
+      M1ComponentE(ratesAtInterval, NE, &popME1, &popME1Phase);
+      	 
+      if(IF_STEP_PHI0) {
+	fprintf(fpInstM1, "%f;%f;%f\n", popME1, popME1Phase, phi_ext);
+        fflush(fpInstM1);
+      }
+      else {
+	fprintf(fpInstM1, "%f;%f\n", popME1, popME1Phase);
+	fflush(fpInstM1);
+      }
+      for(unsigned int ijk = 0; ijk < N_NEURONS; ijk++) {
+	ratesAtInterval[ijk] = 0;
+      }
+    }
+
+    
     if(spinOld == 0 && spins[updateNeuronIdx] == 1) {
       spkTimes.push_back(i * dt);
       spkNeuronIdx.push_back(updateNeuronIdx);
@@ -588,22 +664,24 @@ void RunSim() {
      VectorSum(frLast, spins);
    }
 
-   // Store Chunks 
-   // if(i >= nInitialSteps) {
-   //   VectorSum(firingRatesChk, spins);        
-   //   if(!((i - nInitialSteps) %  (unsigned int)(1000 / dt))) {
-   //     printf(" chk i = %lu \n", i);
-   //     chunkIdx += 1;
-   //     VectorCopy(firingRatesChk, firingRatesChkTMP);
-   //     VectorDivide(firingRatesChkTMP, (i - nInitialSteps));       
-   //     std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_chnk" + std::to_string(chunkIdx) + ".txt";
-   // 	 FILE *fpRates = fopen(txtFileName.c_str(), "w");
-   // 	 for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
-   // 	   fprintf(fpRates, "%f\n", firingRatesChkTMP[ii]);
-   // 	 }
-   // 	 fclose(fpRates);
-   //   }
-   // }
+   //   Store Chunks 
+   if(i >= nInitialSteps) {
+     VectorSum(firingRatesChk, spins);
+     if(i > nInitialSteps) {
+       if(!((i - nInitialSteps) %  (unsigned int)((nSteps - nInitialSteps - 1) / 2))) {
+	 printf("\n chk i = %lu \n", i - nInitialSteps);
+	 VectorCopy(firingRatesChk, firingRatesChkTMP);
+	 VectorDivide(firingRatesChkTMP, (i - nInitialSteps));       
+	 std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_chnk" + std::to_string(chunkIdx) + ".txt";
+	 chunkIdx += 1;       
+   	 FILE *fpRates = fopen(txtFileName.c_str(), "w");
+   	 for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+   	   fprintf(fpRates, "%f\n", firingRatesChkTMP[ii]);
+   	 }
+   	 fclose(fpRates);
+       }
+     }
+   }
 
   }
     
@@ -611,6 +689,7 @@ void RunSim() {
   VectorDivideFF(firingRatesFF, nSteps);  
   VectorDivide(frLast, (nSteps - nLastSteps));  
   fclose(fpInstRates);
+  fclose(fpInstM1);
     
   std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";  
   FILE *fpRates = fopen(txtFileName.c_str(), "w");
@@ -641,6 +720,10 @@ void RunSim() {
   firingRates.clear();
   netInputVec.clear();
   firingRatesChk.clear();
+
+  firingRatesAtT.clear();  
+  ratesAtInterval.clear();
+  
   printf("\nsee you later, alligator\n");
 }
   

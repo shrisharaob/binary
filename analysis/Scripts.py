@@ -2,24 +2,61 @@ import numpy as np
 import pylab as plt
 import os, sys
 import ipdb
-
-basefolder = "/homecentral/srao/Documents/code/mypybox"
-sys.path.append('/homecentral/srao/Documents/code/mypybox/utils')
+from pylatex import Document, Package, Section, Figure, NoEscape, SubFigure
+rootFolder = "" #"~/Documents/lab"
+basefolder = rootFolder + "/homecentral/srao/Documents/code/mypybox"
+print basefolder
+sys.path.append(rootFolder + '/homecentral/srao/Documents/code/mypybox/utils')
 from Print2Pdf import Print2Pdf
+from scipy.optimize import curve_fit
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.special import chdtrc as GammaQ
+from scipy.signal import argrelextrema
 
+def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
+    baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
 
-def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2):
-    baseFldr = '/homecentral/srao/Documents/code/binary/c/'
     if nPop == 1:
-	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
-	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-    # print baseFldr
+    	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    if IF_VERBOSE:
+    	print baseFldr
+
+    # if nPop == 1:
+    # 	baseFldr = baseFldr + 'onepop/data/old/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    # if nPop == 2:
+    # 	baseFldr = baseFldr + 'twopop/data/old/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    # if IF_VERBOSE:
+    # 	print baseFldr
+	
     filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
     return np.loadtxt(baseFldr + filename)
+
+def LoadFrChnk(p, gamma, phi, mExt, mExtOne, chkId, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
+    baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
+
+    if nPop == 1:
+    	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    if nPop == 2:
+    	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    if IF_VERBOSE:
+    	print baseFldr
+
+    # if nPop == 1:
+    # 	baseFldr = baseFldr + 'onepop/data/old/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    # if nPop == 2:
+    # 	baseFldr = baseFldr + 'twopop/data/old/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    # if IF_VERBOSE:
+    # 	print baseFldr
+	
+    filename = 'meanrates_theta%.6f_tr%s_chnk%s.txt'%(phi, trNo, chkId)
+    return np.loadtxt(baseFldr + filename)
+
  
 def LoadSpkTimes(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2):
-    baseFldr = '/homecentral/srao/Documents/code/binary/c/'
+    baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
     if nPop == 1:
 	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
@@ -220,12 +257,26 @@ def PlotInstantRates(stArray, spkTimeStart, spkTimeEnd, NE, NI, NFF, windowSize,
     
 def OSI(firingRate, atTheta):
     out = np.nan
-    zk = 2.0 * np.dot(firingRate, np.exp(2j * atTheta * np.pi / 180))
-    # print zk
-    # print firingRate.sum()
-    if(firingRate.mean() > 0.0):
-        out = np.absolute(zk) / np.sum(firingRate)
+    validIdx = firingRate > 0
+    # zk = 2.0 * np.dot(firingRate[validIdx], np.exp(2j * atTheta[validIdx] * np.pi / 180)) / validIdx.sum()
+    # print np.absolute(zk)
+    mA1 = M1Component(firingRate) * 0.5 
+    mA0 = np.nanmean(firingRate)
+    # print mA1, mA0
+    if(mA0 > 0):
+        out = mA1 / mA0
+    if(out > 1):
+        out = np.nan
     return out
+
+def GetPhase(firingRate, atTheta, IF_IN_RANGE = False):
+    out = np.nan
+    zk = np.dot(firingRate, np.exp(2j * atTheta * np.pi / 180))
+    out = np.angle(zk) * 180.0 / np.pi
+    if IF_IN_RANGE:
+	if(out < 0):
+	    out += 360
+    return out * 0.5
 
 def OSIOfPop(firingRates, atThetas):
     # thetas in degrees
@@ -235,27 +286,60 @@ def OSIOfPop(firingRates, atThetas):
         out[i] = OSI(firingRates[i , :], atThetas)
     return out
 
-def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
+
+def POofPopulation(tc, theta = np.arange(0.0, 180.0, 22.5)):
+    # return value in degrees
+    nNeurons, _ = tc.shape
+    po = np.zeros((nNeurons, ))
+    for kNeuron in np.arange(nNeurons):
+        po[kNeuron] = GetPhase(tc[kNeuron, :], theta)
+    return po 
+
+
+def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k'):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
     phis = np.linspace(0, 180, nPhis, endpoint = False)
+    if IF_NEW_FIG:
+	plt.figure()
     for i, iPhi in enumerate(phis):
         print 'loading from fldr: ', 
-	fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop)
+	fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = True)
         if(len(fr) == 1):
             if(np.isnan(fr)):
                 print 'file not found!'
-	# print fr.shape
 	tc[:, i] = fr
     osi = OSIOfPop(tc[:NE, :], phis)
-    plt.xlabel('OSI')
-    plt.ylabel('Density')
-    # plt.figure()
-    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\, \gamma = %s$'%(p, gamma))
-    plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
+    # plt.xlabel(r"$\mathrm{OSI} \,\,\,\,  (m_{E, i}^{(1)})$")
+    plt.xlabel('OSI', fontsize = 12)    
+    plt.ylabel('Density', fontsize = 12)
+    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\, \gamma = %s, \, m_0^{(1)} = %s$'%(p, gamma, mExtOne), color = color, lw = 2)
+    # plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
+    plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s$'%(NE, K, mExt,))
+    _, ymax = plt.ylim()
+    plt.vlines(np.nanmean(osi), 0, ymax, lw = 2, color = color)
+    print "mean OSI = ", np.nanmean(osi)
+    # print "MEAN OSI = ", np.nanmean(osi)
     return osi
 
+def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0):
+    if IF_NEW_FIG:
+	plt.figure()
+    colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList), endpoint = False)]
+    for mExtOne in mExtOneList:
+	for p in pList:
+	    for gamma in gList:
+		try:
+		    PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr])
+		    clrCntr += 1
+		except IOError:
+		    print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
+    plt.gca().set_position([0.2, 0.2, .65, .65])
+    if nPop == 2:
+	plt.savefig("./figs/twopop/compareOSI_.png")
+    
 def ComputeTuningForNeuron(p, gamma, nPhis, mExt, mExtOne, neuronIdx, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
     NE = N
     NI = N
@@ -265,14 +349,262 @@ def ComputeTuningForNeuron(p, gamma, nPhis, mExt, mExtOne, neuronIdx, trNo = 0, 
 	fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop)
 	# print fr.shape
 	tc[i] = fr[neuronIdx]
-    plt.figure()
-    plt.ion()
+    plt.ioff()
+    # plt.figure()
     plt.plot(phis, tc, 'ks-')
     osi = OSI(tc, phis)
-    plt.title('neuron# %s, osi = %s'%(i, osi))
-    return tc
+    plt.title('neuron# %s, osi = %s'%(neuronIdx, osi))
+    return tc, plt.gca()
+
+def ComputeTuningForNeuronSEM(p, gamma, nPhis, mExt, mExtOne, neuronIdx, nChnks = 2, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
+    NE = N
+    NI = N
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    tc = np.empty((2, nPhis))
+    tc[:] = np.nan
+    tmp = np.empty((nPhis))
+    tmp[:] = np.nan
+    # ipdb.set_trace()
+    for kChunk in range(nChnks):
+	for i, iPhi in enumerate(phis):
+	    fr = LoadFrChnk(p, gamma, iPhi, mExt, mExtOne, kChunk, trNo, T, NE, K, nPop)
+	    tmp[i] = fr[neuronIdx]
+	tc[kChunk, :] = tmp
+    tc = np.nanmean(tc, 0)
+    tcSem = np.nanstd(tc, 0) / np.sqrt(nChnks)
+    # plt.ioff()
+    (_, caps, _) = plt.errorbar(phis, tc, fmt = 'ko-', markersize = 3, yerr = tcSem, lw = 0.8, elinewidth=0.8)
+    for cap in caps:
+	# cap.set_color('red')
+	cap.set_markeredgewidth(0.8)
+    osi = OSI(tc, phis)
+    plt.title('neuron# %s, osi = %s'%(neuronIdx, osi))
+    return tc, plt.gca()
+
+def ComputeTuningSEM(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_PLOT = False, IF_FIT = False, nNeurons = 10000, neuronType = 'E'):
+    # plot tc with sem given atleast 2 chunks of simulations
+    NE = N
+    NI = N
+    nNeurons = NE + NI
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    tc = np.empty((2, nNeurons, nPhis))
+    tc[:] = np.nan
+    nParams = 4
+    degsOfFreedom = nPhis - nParams
+    significanceVal = 0.05
+    criticalChi2 = ChiSquared.isf(significanceVal, degsOfFreedom)
+    print 'criticalChi2 = ', criticalChi2
+    # ipdb.set_trace()
+    for kChunk in range(nChnks):
+	for i, iPhi in enumerate(phis):
+	    fr = LoadFrChnk(p, gamma, iPhi, mExt, mExtOne, kChunk, trNo, T, NE, K, nPop)
+	    tc[kChunk, :, i] = fr
+    # ipdb.set_trace()
+    tcSem = np.squeeze(np.nanstd(tc, 0)) / np.sqrt(nChnks)
+    tcSemOverAngles = np.nanstd(np.nanmean(tc, 2), 0) / np.sqrt(nChnks)
+    tc = np.squeeze(np.nanmean(tc, 0))
+    # ipdb.set_trace()
+    if IF_FIT and not IF_PLOT:
+	chiSquareArray = np.empty((nNeurons, ))
+	chiSquareArray[:] = np.nan
+	avgAbsResidual = np.empty((nNeurons, nPhis))
+	avgAbsResidual[:] = np.nan
+	for k in range(nNeurons):
+	# for k in range(10):
+	    _, _, chiSquareArray[k], avgAbsResidual[k, :] = FitVonMisses(phis * np.pi / 180, tc[k, :])
+    if IF_PLOT:
+        plt.ion()
+	
+    	for i in np.random.randint(0, NE, 101):
+	    # ipdb.set_trace()
+	    # i = 2571
+	    # i = 1664
+	    # plt.plot(np.concatenate((phis, [180])), np.concatenate((tc[i, :], [tc[i, 0]])), 'ks-')
+	    (_, caps, _) = plt.errorbar(np.concatenate((phis, [180])), np.concatenate((tc[i, :], [tc[i, 0]])), fmt = 'ko-', markersize = 3, yerr = np.concatenate((tcSem[i, :], [tcSem[i, 0]])), lw = 0.8, elinewidth=0.8)
+	    # print tcSem[i, :]
+	    for cap in caps:
+		# cap.set_color('red')
+		cap.set_markeredgewidth(0.8)
+	    osi = OSI(tc[i, :], phis)
+	    po = GetPhase(tc[i, :], phis, IF_IN_RANGE = True)
+	    _, ymax = plt.ylim()
+	    plt.vlines(po, 0, ymax, color = 'k')
+            IS_SINGLE_PEAK = False
+	    if IF_FIT:
+                fitParams, _, chiSquare, avgAbsRes = FitVonMisses(phis * np.pi / 180, tc[i, :], IF_PLOT_FIT = True)
+		print fitParams
+
+		if(~np.any(np.isnan(fitParams))):
+		    # print i, avgAbsRes, chiSquare
+		    # viddx = tcSem[i, :] != 0
+		    # tmpResidual = avgAbsRes[:-1]
+		    # print tmpResidual
+		    # print tcSem[i, viddx]
+		    # avgAbsRes = np.mean(tmpResidual[viddx] / tcSem[i, viddx])
+                    avgAbsRes /= tcSemOverAngles[i]
+		    avgAbsRes = avgAbsRes.mean()
+		    # print avgAbsRes, chiSquare
+		    # fitParams, _, chiSquare, _ = FitVonMisses(phis * np.pi / 180, tc[i, :], IF_PLOT_FIT = True)
+		    # ipdb.set_trace()
+		    meanRate = np.nanmean(tc[i, :])
+		    print 'i=', i, 'avgAbsRes =', avgAbsRes, 'chi2 = ', chiSquare, 'meanR = ', meanRate
+		    IS_SINGLE_PEAK = (avgAbsRes <= 2.0) or (chiSquare <= 0.02) and ((np.nanmax(tc[i, :]) - meanRate) >= 0.05)
+		    #IF_SINGLE_PEAK(tcSemOverAngles[i], avgAbsRes)
+		    # IS_SINGLE_PEAK2 = IF_SINGLE_PEAK(chiSquare, avgAbsRes)
+		    if(~np.any(np.isnan(fitParams))):
+			# theta = np.linspace(0, np.pi, 100)
+			# plt.plot(theta * 180 / np.pi, VonMisses(theta * np.pi / 180, *fitParams), 'r')
+			plt.title('neuron# %s, osi = %.4s, '%(i, osi) + r'$ \chi^2 = %.5s, \, SP = %s,$'%(chiSquare, int(IS_SINGLE_PEAK), ))
+		    # plt.title('neuron# %s, osi = %.4s, '%(i, osi) + r'$ \chi^2 = %.5s$'%(chiSquare))
+	    else:
+		plt.title('neuron# %s, osi = %.4s, '%(i, osi))
+            # ipdb.set_trace()		
+	    plt.waitforbuttonpress()
+	    plt.clf()
+    if IF_FIT and not IF_PLOT:
+	return tc, chiSquareArray, tcSem, tcSemOverAngles, avgAbsResidual
+    else:
+	return tc, tcSem, tcSemOverAngles
+
+def ComputeTuningSEM2(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_PLOT = False, IF_FIT = False, nNeurons = 10000, neuronType = 'E'):
+    # plot tc with sem given atleast 2 chunks of simulations
+    NE = N
+    NI = N
+    nNeurons = NE + NI
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    tc = np.empty((2, nNeurons, nPhis))
+    tc[:] = np.nan
+    for kChunk in range(nChnks):
+	for i, iPhi in enumerate(phis):
+	    fr = LoadFrChnk(p, gamma, iPhi, mExt, mExtOne, kChunk, trNo, T, NE, K, nPop)
+	    tc[kChunk, :, i] = fr
+    tcSem = np.squeeze(np.nanstd(tc, 0)) / np.sqrt(nChnks)
+    tc = np.squeeze(np.nanmean(tc, 0))
+    IS_GOOD_FIT = np.zeros((nNeurons, ))
+    IS_SINGLE_PEAKED = np.zeros((nNeurons, ))
+    if IF_FIT and not IF_PLOT:
+        chiSquareArray = np.empty((nNeurons, ))
+	chiSquareArray[:] = np.nan
+	for k in range(nNeurons):
+	    _, _, chiSquareArray[k], IS_GOOD_FIT[k] = FitVonMisses2(phis * np.pi / 180, tc[k, :], tcSem[k, :])
+	    tmpTc = tc[k, :]
+	    meanRate = np.nanmean(tc[k, :])
+	    tmpTc = np.concatenate((tmpTc, [tmpTc[0], tmpTc[1]]))
+	    peakIdx = argrelextrema(tmpTc, np.greater)[0]
+	    if(peakIdx.size >= 2):
+		secondPeak = np.sort(tmpTc[peakIdx])[-2]
+		IS_SINGLE_PEAKED[k] = IS_GOOD_FIT[k] and ((np.nanmax(tc[k, :]) - meanRate) >= 0.05) and ((secondPeak < 0.05))
+    if IF_PLOT:
+        plt.ion()
+    	for i in np.random.randint(0, NE, 101):
+	    print 'neuron#', i
+	    (_, caps, _) = plt.errorbar(np.concatenate((phis, [180])), np.concatenate((tc[i, :], [tc[i, 0]])), fmt = 'ko-', markersize = 3, yerr = np.concatenate((tcSem[i, :], [tcSem[i, 0]])), lw = 0.8, elinewidth=0.8)
+	    for cap in caps:
+		# cap.set_color('red')
+		cap.set_markeredgewidth(0.8)
+	    osi = OSI(tc[i, :], phis)
+	    po = GetPhase(tc[i, :], phis, IF_IN_RANGE = True)
+	    _, ymax = plt.ylim()
+	    plt.vlines(po, 0, ymax, color = 'k')
+            IS_SINGLE_PEAK = False
+	    # ipdb.set_trace()
+	    if IF_FIT:
+		fitParams, _, chiSquare, IS_SINGLE_PEAK = FitVonMisses2(phis * np.pi / 180, tc[i, :], tcSem[i, :], IF_PLOT)
+		if(~np.any(np.isnan(fitParams))):
+		    meanRate = np.nanmean(tc[i, :])
+		    print chiSquare, np.nanmax(tc[i, :]) - meanRate, GammaQ(4, chiSquare), GammaQ(5, chiSquare)
+		    tmpTc = tc[i, :]
+		    tmpTc = np.concatenate((tmpTc, [tmpTc[0], tmpTc[1]]))
+		    peakIdx = argrelextrema(tmpTc, np.greater)[0]
+		    print 'neuron idx = ', i, 'peak idices = ', peakIdx
+		    if(peakIdx.size >= 2):
+			secondPeak = np.sort(tmpTc[peakIdx])[-2]
+			print '2nd peak = ', secondPeak
+			IS_SINGLE_PEAK = IS_SINGLE_PEAK and ((np.nanmax(tc[i, :]) - meanRate) >= 0.05) and ((secondPeak < 0.05))
+			IS_SINGLE_PEAK2 = IS_SINGLE_PEAK and ((np.nanmax(tc[i, :]) - meanRate) >= 0.05) and ((secondPeak < 0.05))
+		    if(~np.any(np.isnan(fitParams))):
+			plt.title('neuron# %s, osi = %.4s, '%(i, osi) + r'$ \chi^2 = %.5s, \, SP = %s, sp2 = %s$'%(chiSquare, int(IS_SINGLE_PEAK), int(IS_SINGLE_PEAK2)))
+		        # plt.title('neuron# %s, osi = %.4s, '%(i, osi) + r'$ \chi^2 = %.5s, \, SP = %s, sp2 = %s$'%(chiSquare, int(IS_SINGLE_PEAK), int(IS_SINGLE_PEAK2)))
+	    else:
+		plt.title('neuron# %s, osi = %.4s, '%(i, osi))
+	    plt.waitforbuttonpress()
+	    plt.clf()
+    if IF_FIT and not IF_PLOT:
+	return tc, tcSem, chiSquareArray, IS_SINGLE_PEAKED, IS_GOOD_FIT
+    else:
+	return tc, tcSem
+
+def IF_SINGLE_PEAK(tcSemOverAngles, avgAbsResidual):
+    peakyMetric = avgAbsResidual / tcSemOverAngles
+    return peakyMetric < 1
+
+def IF_SINGLE_PEAK2(chiSquare, tcSemOverAngles):
+    peakyMetric = chiSquare / tcSemOverAngles
+    return peakyMetric < 1
+
+def PCA(X, ndims = 2, IF_PLOT = False):
+    # X  : trial-by-dim
+    centeredX = X - X.mean(0)
+    covMat = np.dot(X.T, X)
+    eigVal, eigVec = np.linalg.eig(covMat)
+    projection = np.dot(X, eigVec[:, :ndims])
+    if IF_PLOT:
+        fig = plt.figure()
+        if ndims == 2:
+            plt.plot(projection[:, 0], projection[:, 1], 'k.')
+        if ndims == 3:
+            ax = fig.add_subplot(111, projection='3d')
+            plt.plot(projection[:, 0], projection[:, 1], projection[:, 2], 'k.')
+    return eigVal, eigVec, projection
+
+def MultiPeaksDistr2(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_PLOT = False, IF_FIT = True, peakRate = 0.10, IF_COMPUTE = False):
+    if IF_COMPUTE:
+	NE = N
+	NI = N
+	print 'computing tc...',
+	sys.stdout.flush()
+	tc, tcSem, chiSquared, IS_SINGLE_PEAK, IS_GOOD_FIT = ComputeTuningSEM3(p, gamma, nPhis, mExt, mExtOne, nChnks, trNo, N, K, nPop, T, IF_PLOT, IF_FIT)
+	print ' done'
+	responsiveNeruonIdx = np.nanmax(tc, 1) >= peakRate
+        # IS_SINGLE_PEAK = np.logical_and(IS_SINGLE_PEAK, ((np.nanmax(tc, 1) - meanRate) >= 0.05))
+	percentSinglePeakE = IS_SINGLE_PEAK[:NE].sum() * 100 / float(NE) #float(responsiveNeruonIdx[:NE].sum())
+	percentSinglePeakI = IS_SINGLE_PEAK[NE:].sum() * 100 / float(NI) #float(responsiveNeruonIdx[NE:].sum())
+	np.save('./data/p%sg%s_m0%s_mOne%s'%(int(10 * p), int(10 * gamma), int(1e3 * mExt), int(1e3 * mExtOne)), np.array([tc, chiSquared, tcSem, IS_SINGLE_PEAK, IS_GOOD_FIT, percentSinglePeakE, percentSinglePeakI]))
+    else:
+	tc, chiSquared, tcSem, IS_SINGLE_PEAK, IS_GOOD_FIT, percentSinglePeakE, percentSinglePeakI = np.load('./data/p%sg%s_m0%s_mOne%s.npy'%(int(10 * p), int(10 * gamma), int(1e3 * mExt), int(1e3 * mExtOne)))
+    return percentSinglePeakE, percentSinglePeakI
+
+def MultiPeaksDistr(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_PLOT = False, IF_FIT = True, peakRate = 0.10, IF_COMPUTE = False):
+    if IF_COMPUTE:
+	NE = N
+	NI = N
+	print 'computing tc...',
+	sys.stdout.flush()
+	tc, chiSquared, tcSem, tcSemOverAngles, avgAbsResidual = ComputeTuningSEM(p, gamma, nPhis, mExt, mExtOne, nChnks, trNo, N, K, nPop, T, IF_PLOT, IF_FIT)
+	print ' done'
+	responsiveNeruonIdx = np.nanmax(tc, 1) >= peakRate
+	nResponsiveNeurons = responsiveNeruonIdx.sum()
+        print tcSemOverAngles.shape
+	print avgAbsResidual
+	nSinglePeakNeurons = 0
+	# ipdb.set_trace()
+	avgAbsRes = np.empty((NE + NI, ))
+	for k in range(NE + NI):
+	  avgAbsRes[k] = np.mean(avgAbsResidual[k] / tcSemOverAngles[k])
+        meanRate = np.nanmean(tc, 1)
+        IS_SINGLE_PEAK = np.logical_and(np.logical_or((avgAbsRes <= 2.0), (chiSquared <= 0.02)), ((np.nanmax(tc, 1) - meanRate) >= 0.05))
+	# peakyMetric = np.sqrt(chiSquared) / tcSemOverAngles
+	nSinglePeakNeuronsE = IS_SINGLE_PEAK.sum()
+        #np.logical_and(responsiveNeruonIdx, peakyMetric < 1)
+	percentSinglePeakE = IS_SINGLE_PEAK[:NE].sum() * 100 / float(responsiveNeruonIdx[:NE].sum())
+	percentSinglePeakI = IS_SINGLE_PEAK[NE:].sum() * 100 / float(responsiveNeruonIdx[NE:].sum())
+	np.save('./data/p%sg%s_m0%s_mOne%s'%(int(10 * p), int(10 * gamma), int(1e3 * mExt), int(1e3 * mExtOne)), np.array([tc, chiSquared, tcSem, tcSemOverAngles, avgAbsResidual, nSinglePeakNeurons, percentSinglePeakE, percentSinglePeakI]))
+    else:
+	tc, chiSquared, tcSem, tcSemOverAngles, avgAbsResidual, nSinglePeakNeurons, peakyMetric, percentSinglePeakE, percentSinglePeakI = np.load('./data/p%sg%s_m0%s_mOne%s.npy'%(int(10 * p), int(10 * gamma), int(1e3 * mExt), int(1e3 * mExtOne)))
+    return percentSinglePeakE, nSinglePeakNeurons, peakyMetric
+
     
-def ComputeTuning(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
+def ComputeTuning(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_PLOT = False, IF_FIT = False):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
@@ -282,16 +614,166 @@ def ComputeTuning(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000,
 	# print fr.shape
 	tc[:, i] = fr
     plt.ion()
-    for i in np.random.randint(0, NE, 101):
-	plt.plot(phis, tc[i, :], 'ks-')
-        osi = OSI(tc[i, :], phis)
-        plt.title('neuron# %s, osi = %s'%(i, osi))
-	plt.waitforbuttonpress()
-	plt.clf()
+    if IF_FIT and not IF_PLOT:
+	chiSquareArray = np.empty((N, ))
+	chiSquareArray[:] = np.nan
+	for k in range(N):
+	    _, _, chiSquareArray[k], _ = FitVonMisses(phis * np.pi / 180, tc[k, :])
+    if IF_PLOT:
+	for i in np.random.randint(0, NE, 101):
+	    plt.plot(np.concatenate((phis, [180])), np.concatenate((tc[i, :], [tc[i, 0]])), 'ks-')
+	    osi = OSI(tc[i, :], phis)
+	    po = GetPhase(tc[i, :], phis, IF_IN_RANGE = True)
+	    _, ymax = plt.ylim()
+	    plt.vlines(po, 0, ymax, color = 'k')
+	    if IF_FIT:
+                fitParams, _, chiSquare, _ = FitVonMisses(phis * np.pi / 180, tc[i, :], IF_PLOT_FIT = True)
+		if(~np.any(np.isnan(fitParams))):
+		    # theta = np.linspace(0, np.pi, 100)
+		    # plt.plot(theta * 180 / np.pi, VonMisses(theta * np.pi / 180, *fitParams), 'r')
+		    plt.title('neuron# %s, osi = %.4s, '%(i, osi) + r'$ \chi^2 = %.5s$'%(chiSquare))
+	    else:
+		plt.title('neuron# %s, osi = %.4s, '%(i, osi))
+	    plt.waitforbuttonpress()
+	    plt.clf()
+    if IF_FIT and not IF_PLOT:
+	return tc, chiSquareArray
+    else:
+	return tc
 
+def VonMisses(phi, baseLine, amplitude, width, po):
+    return baseLine + amplitude * np.exp(width * (np.cos(2.0 * (phi - po))))
+
+def FitVonMisses(x, y, ySEM, IF_PLOT_FIT = False):
+    # 
+    x = np.concatenate((x, [np.pi]))
+    y = np.concatenate((y, [y[0]]))
+    ySEM = np.concatenate((ySEM, [ySEM[0]]))
+    
+    # nParams = 4
+    # degsOfFreedom = nPhis - nParams
+    # significanceVal = 0.05
+    # criticalChi2 = ChiSquared.isf(significanceVal, degsOfFreedom)
+    try:
+	bnds = ((0, 0, -np.inf, 0), (1, 1, np.inf, np.pi))
+	#ipdb.set_trace()
+	fitParams, fitError = curve_fit(VonMisses, x, y, bounds = bnds, max_nfev = 4000) #, maxfev = 4000)
+	theta = np.linspace(0, np.pi, 100)
+	fitY = VonMisses(x, *fitParams)
+	chiSquare = ((y - fitY)**2 / ySEM).sum()
+	# avgAbsResidual = np.mean(np.abs(y - fitY))
+	avgAbsResidual = np.abs(y - fitY)
+	# chiSquare = ((y - fitY)**2).sum()   
+	if IF_PLOT_FIT:
+	    plt.plot(theta * 180 / np.pi, VonMisses(theta, *fitParams), 'r')
+    except RuntimeError, e:
+	fitParams = np.empty((4, ))
+	fitParams[:] = np.nan
+	fitError = np.nan
+	chiSquare = np.nan
+	avgAbsResidual = np.empty((len(x) - 1, ))
+	avgAbsResidual[:] = np.nan
+	print e
+    if(~np.any(np.isnan(fitParams))):
+	return fitParams, fitError, chiSquare, avgAbsResidual[:-1]
+    else:
+	return fitParams, fitError, chiSquare, avgAbsResidual
+
+
+def FitVonMisses2(x, y, ySEM, IF_PLOT_FIT = False):
+    #
+    x = np.concatenate((x, [np.pi]))
+    y = np.concatenate((y, [y[0]]))
+    ySEM = np.concatenate((ySEM, [ySEM[0]]))
+    nPhis = len(x)
+    nParams = 4
+    degsOfFreedom = nPhis - nParams
+    significanceVal = 0.05
+    try:
+	bnds = ((0, 0, -np.inf, 0), (1, 1, np.inf, np.pi))
+	fitParams, fitError = curve_fit(VonMisses, x, y, bounds = bnds, max_nfev = 4000) #, maxfev = 4000)
+	theta = np.linspace(0, np.pi, 100)
+	fitY = VonMisses(x, *fitParams)
+	vidx = y > 0
+	chiSquare = ((y[vidx] - fitY[vidx])**2 / ySEM[vidx]).sum()
+        qVal = GammaQ(degsOfFreedom, chiSquare) # probability the chi^2 is exceedes the computed value just by chance
+	IS_GOOD_FIT = qVal > significanceVal 
+	if IF_PLOT_FIT:
+	    plt.ion()
+	    plt.plot(theta * 180 / np.pi, VonMisses(theta, *fitParams), 'r')
+	    plt.show()
+    except RuntimeError, e:
+	fitParams = np.empty((4, ))
+	fitParams[:] = np.nan
+	fitError = np.nan
+	chiSquare = np.nan
+	print e
+    if(~np.any(np.isnan(fitParams))):
+	return fitParams, fitError, chiSquare, IS_GOOD_FIT
+    else:
+	return fitParams, fitError, chiSquare, False
+
+def ME1Analytic(JE0, JEE, JEI, gamma, p, m0One, mE0, mI0):
+    num = -HPrime(mE0) * gamma * JEE * m0One
+    alpha = JEE**2 * mE0 + JEI**2 * mI0
+    denom = np.sqrt(alpha) * (1.0 - HPrime(mE0) * JEE * p / np.sqrt(alpha))
+    return num / denom
+
+def AlignTuningCurves(tc, nPhis = 8, NE = 10000, NI = 10000):
+    prefferedOri = np.argmax(tc, 1)    
+    tcMat = np.empty((NE + NI, nPhis))
+    for kNeuron in np.arange(NE + NI):
+	tcMat[kNeuron, :] = np.roll(tc[kNeuron, :], -1 * prefferedOri[kNeuron])
+    return tcMat
+
+def CenterTuningCurve(tc, nPhis = 8):
+    maxFr = np.argmax(tc)
+    tc = np.roll(tc, -1 * maxFr)
+    return np.roll(tc, nPhis / 2)
+
+def TieZeroPI(x, IF_DEGREES = False):
+    theta = np.linspace(0, np.pi, len(x), endpoint = False)
+    theta = np.concatenate((theta, [np.pi]))
+    x = np.concatenate((x, [x[0]]))
+    if IF_DEGREES:
+        theta *= 180.0 / np.pi
+    return theta, x
+
+def PopAvgTuning(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k'):
+    NE = N
+    NI = N
+    tc = np.zeros((NE + NI, nPhis))
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    for i, iPhi in enumerate(phis):
+	fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop)
+	print fr.shape
+	tc[:, i] = fr
+    prefferedOri = np.argmax(tc, 1)    
+    tcMat = np.empty((NE + NI, nPhis))
+    for kNeuron in np.arange(NE + NI):
+	tcMat[kNeuron, :] = np.roll(tc[kNeuron, :], -1 * prefferedOri[kNeuron])
+    meanE = np.nanmean(tcMat[:NE, :], 0)
+    meanI = np.nanmean(tcMat[NE:, :], 0)
+    rotateMeanBy = 4
+    meanE = np.roll(meanE, rotateMeanBy)
+    meanI = np.roll(meanI, rotateMeanBy)
+    theta = np.linspace(-90, 90, nPhis, endpoint = False)
+    print "mE = ", np.nanmean(meanE), "MI = ", np.nanmean(meanI)
+    if IF_NEW_FIG:
+	plt.figure()
+    plt.plot(theta, meanE, 'o-', color = color, label = r"$m_0^{(1)} = %s, \, p = %s, \, \gamma = %s$"%(mExtOne, p, gamma))
+    # plt.plot(theta, meanI, 'ro-', label = 'I')
+    plt.title(r"$m_0 = %s$"%(mExt), fontsize = 16)
+    plt.xlabel(r'$\phi$' + '(deg)')
+    plt.ylabel(r'$m_E(\phi)$')
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})    
+    
 def M1Component(x):
-    dPhi = np.pi / len(x)
-    out = 2.0 * np.absolute(np.dot(x, np.exp(-2.0j * np.arange(len(x)) * dPhi))) / len(x)
+    out = np.nan
+    if len(x) > 0:
+	dPhi = np.pi / len(x)
+	out = 2.0 * np.absolute(np.dot(x, np.exp(-2.0j * np.arange(len(x)) * dPhi))) / len(x)
+  # zk = 2.0 * np.dot(firingRate[validIdx], np.exp(2j * atTheta[validIdx] * np.pi / 180)) / validIdx.sum()	
     # print 'm1 out: ', out
     return out
 
@@ -318,7 +800,6 @@ def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 10
                 # print "LoadFr() ", p, gamma, atPhi, mExt, mExtOne, n, T, NE, K, nPop
                 # print '#populations:', nPop
                 # raise SystemExit
-
                 m = LoadFr(p, gamma, atPhi, mExt, mExtOne, n, T, NE, K, nPop)
                 # ipdb.set_trace()
                 # print m
@@ -339,19 +820,18 @@ def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 10
             sys.stdout.flush()
         m1.append(np.nanmean(m1OfPhi))
     print "\n" + "--" * 25
-    
-    print 'mean m1 = ', np.mean(m1), 'SEM = ', np.std(m1) / np.sqrt(float(nValidTrials[0]))
+    print 'mean m1 = ', np.mean(m1), 'SEM = ', np.nanstd(m1) / np.sqrt(float(nValidTrials[0]))
     if IF_M1_SQRD:
 	print "sqrd"
 	return np.nanmean(np.array(m1)**2), np.std(np.array(m1)**2), np.std(np.array(m1)**2) / np.sqrt(float(nValidTrials[0]))
     else:
-	return np.nanmean(m1), np.std(m1), np.std(m1) / np.sqrt(float(nValidTrials[0]))
-
+	return np.nanmean(m1), np.nanstd(m1), np.nanstd(m1) / np.sqrt(float(nValidTrials[0]))
     
-def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList, KList, trNo = 0, nPop = 2, T = 1000, nTrials = 1, IF_NONSMOOTHED = False):
+def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList = [10000], KList =[1000], trNo = 0, nPop = 2, T = 1000, nTrials = 1, IF_NONSMOOTHED = False, IF_NEW_FIG = True):
     m1 = []
     # plt.ion()
-    # plt.figure()
+    if IF_NEW_FIG:
+	plt.figure()
     IF_LEGEND = False
     nTr = nTrials
     # ipdb.set_trace()
@@ -370,7 +850,7 @@ def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList, KList, trNo = 0, n
 		    tmpM1, dummy, tmpsem = NonSmoothedMeanM1(nNE, kK, p, mExt, nTr, T)
                 m1.append(tmpM1)
                 semM1.append(tmpsem)
-                print m1
+                # print m1
                 # m1Sqrd.append(tmpM1Sqrd)
                 # semM1Sqrd.append(tmpsemSqrd)
                 print '==' * 28; print '||' * 28; print '==' * 28
@@ -447,3 +927,367 @@ def CirConvolve(signal, windowSize):
     ker = np.concatenate((np.ones((windowSize, )), np.zeros((signal.size - windowSize, ))))
     return np.real(np.fft.ifft( np.fft.fft(signal)*np.fft.fft(ker))) * (1.0 / float(windowSize))
     
+
+
+def PrintTuningBook(tc, tcSem, neuronType, nNeurons, fname, NE = 10000, NI = 10000, nPhis = 8):
+    doc = Document(fname)
+    doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
+    nFigsPerPage = 12
+    nPages = int(np.ceil(nNeurons / float(nFigsPerPage)))
+    plt.figure()
+    plt.ioff()
+    theta = np.linspace(0, 180, nPhis, endpoint = False)
+    doc = Document(fname)
+    doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
+    width = r'.3\linewidth'
+    if neuronType == 'E':
+	rndNeurons = np.random.randint(0, NE, nNeurons)
+    else:
+	rndNeurons = np.random.randint(NE, NE + NI, nNeurons)	
+    for kk in range(nPages):
+	rndNeuronsx = rndNeurons[kk * nFigsPerPage: (kk + 1) * nFigsPerPage]
+	print kk * nFigsPerPage, (kk + 1) * nFigsPerPage
+	with doc.create(Figure(position='htbp')) as plot:
+	    for i in rndNeuronsx:
+		# print i
+		(_, caps, _) = plt.errorbar(np.concatenate((theta, [180])), np.concatenate((tc[i, :], [tc[i, 0]])), fmt = 'ko-', markersize = 3, yerr = np.concatenate((tcSem[i, :], [tcSem[i, 0]])), lw = 0.8, elinewidth=0.8)
+		for cap in caps:
+		    cap.set_markeredgewidth(0.8)		
+		mainAxis = plt.gca()
+		mainAxis.set_title('neuron#%s'%(i), fontsize = 10)
+		with doc.create(SubFigure(position='b', width=NoEscape(width))) as figure:
+		    figure.add_plot(width=NoEscape(r'\linewidth'), dpi = 300) #*args, **kwargs)
+		plt.clf()
+    
+    doc.generate_pdf(clean_tex=False)
+
+def LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
+    baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
+
+    if nPop == 1:
+    	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    if nPop == 2:
+    	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    if IF_VERBOSE:
+    	print baseFldr
+    filename = 'MI1_inst_theta%.6f_tr%s.txt'%(phi, trNo)
+    return np.loadtxt(baseFldr + filename, delimiter = ';')
+
+
+def PlotM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False):
+    try:
+	print p, gamma,
+	m1 = LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = False)
+	mE1 = m1[:, 0]
+	mE1Phase = m1[:, 1]
+	print m1.shape
+	xax = np.linspace(0, 1, len(mE1Phase))
+	plt.plot(xax, mE1Phase * 180.0 / np.pi, label = r'$p = %s, \gamma = %s$'%(p, gamma), alpha = 0.5)
+	_, xmax = plt.xlim()
+	if  IF_STIM_LEGEND:
+	    plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')
+	# else:
+	#     plt.hlines(phi, 0, xmax, lw = 2, linestyle = '--')
+	plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \,$"%(mExt, mExtOne), fontsize = 18)
+	plt.xlabel('Time (a.u)', fontsize = 16)
+	plt.ylabel(r"$\mathrm{arg}\left[ m_E(\phi) \right] \, \mathrm{(deg)}$", fontsize = 16)
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 14})
+	plt.gca().set_position([0.2, 0.2, .65, .65])    
+	print ''
+	if nPop == 2:
+	    plt.savefig('./figs/twopop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
+	if nPop == 1:
+	    plt.savefig('./figs/onepop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
+	# plt.figure()
+	# plt.plot(xax, mE1)
+	plt.show()
+    except IOError, e:
+	print ' not found'
+    
+    
+    
+def PrintTuningBook2(p, gamma, mExt, mExtOne, nPhis,  neuronType, nNeurons, fname, trNo = 0, nChnks= 2, T = 1000, NE = 10000, NI = 10000, K = 1000, nPop = 2, IF_FIT = True, IF_PLOT = True):
+    print p, gamma, mExt, mExtOne, nPhis,  neuronType, nNeurons, fname
+    doc = Document(fname)
+    doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
+    nFigsPerPage = 12
+    print nNeurons, nFigsPerPage
+    nPages = int(np.ceil(nNeurons / float(nFigsPerPage)))
+    plt.figure()
+    plt.ioff()
+    theta = np.linspace(0, 180, nPhis, endpoint = False)
+    doc = Document(fname)
+    doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
+    width = r'.3\linewidth'
+    if neuronType == 'E':
+	rndNeurons = np.random.randint(0, NE, nNeurons)
+    else:
+	rndNeurons = np.random.randint(NE, NE + NI, nNeurons)
+    nNeurons = NE + NI
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    tc = np.empty((2, nNeurons, nPhis))
+    tc[:] = np.nan
+    
+    for kChunk in range(nChnks):
+	for i, iPhi in enumerate(phis):
+	    fr = LoadFrChnk(p, gamma, iPhi, mExt, mExtOne, kChunk, trNo, T, NE, K, nPop)
+	    tc[kChunk, :, i] = fr
+    tcSem = np.squeeze(np.nanstd(tc, 0)) / np.sqrt(nChnks)
+    tc = np.squeeze(np.nanmean(tc, 0))
+    for kk in range(nPages):
+	rndNeuronsx = rndNeurons[kk * nFigsPerPage: (kk + 1) * nFigsPerPage]
+	print kk * nFigsPerPage, (kk + 1) * nFigsPerPage
+	with doc.create(Figure(position='htbp')) as plot:
+	    for i in rndNeuronsx:
+		yy = tc[i, :]
+		yysem = tcSem[i, :]
+		if(np.argmax(yy) == 0):
+		    yy = np.roll(yy, 4)
+		    yysem = np.roll(tcSem[i, :], 4)
+		(_, caps, _) = plt.errorbar(phis, yy, fmt = 'ko-', markersize = 3, yerr = yysem, lw = 0.8, elinewidth=0.8)
+		for cap in caps:
+		    cap.set_markeredgewidth(0.8)
+		osi = OSI(tc[i, :], phis)
+		po = GetPhase(tc[i, :], phis, IF_IN_RANGE = True)
+		_, ymax = plt.ylim()
+		# plt.vlines(po, 0, ymax, color = 'k')
+		IS_SINGLE_PEAK = False
+		if IF_FIT:
+		    fitParams, _, chiSquare, IS_SINGLE_PEAK = FitPeriodicGaussian(phis * np.pi / 180, yy, yysem, IF_PLOT)
+		    if(~np.any(np.isnan(fitParams))):
+			plt.title(r'$\mathrm{neuron} \,  %s, \, osi = %.4s, \, \chi^2 = %s$'%(i, osi, chiSquare))
+		    else:
+			plt.title(r'$neuron \, %s, \, osi = %.4s, \,$'%(i, osi))
+		with doc.create(SubFigure(position='b', width=NoEscape(width))) as figure:
+		    figure.add_plot(width=NoEscape(r'\linewidth'), dpi = 300) #*args, **kwargs)
+		plt.clf()
+    doc.generate_pdf(clean_tex=False)
+
+
+def PeriodicGaussianOld(theta, po, sigma, a, offset):
+    # po, sigma in degrees
+    out = 0.0
+    for n in np.arange(-5, 5):
+	out += a * np.exp(-(theta - po + 180.0 * n)**2 / (2 * sigma**2)) + offset
+    return out
+
+
+def PeriodicGaussian(theta, po, sigma, a, offset):
+    # po, sigma in degrees
+    out = 0.0
+    for n in np.arange(-5, 5):
+	out += a * np.exp(-(theta - po + 180.0 * n)**2 / (sigma**2)) + offset
+    return out
+
+def FitPeriodicGaussian(x, y, ySEM, IF_PLOT_FIT = False):
+    # x = np.concatenate((x, [np.pi]))
+    # y = np.concatenate((y, [y[0]]))
+    # ySEM = np.concatenate((ySEM, [ySEM[0]]))
+    nPhis = len(x)
+    nParams = 4
+    degsOfFreedom = nPhis - nParams
+    significanceVal = 0.05
+    # yy = y
+    # yysem = ySEM
+    # if(np.argmax(yy) == 0):
+    # 	yy = np.roll(yy, 4)
+    # 	yysem = np.roll(ySEM, 4)
+    # y = yy
+    # ySEM = yysem
+    po = GetPhase(y, x * np.pi / 180.0, IF_IN_RANGE = True)
+    # print po
+    _, ymax = plt.ylim()
+    plt.vlines(po, 0, .45)
+    # ipdb.set_trace()
+    try:
+	bnds = ((0, 0, 0, 0), (180, 180, 1, 1))
+	# fitParams, fitError = curve_fit(PeriodicGaussian, x, y, bounds = bnds, max_nfev = 4000) #, maxfev = 4000)
+        fitParams, fitError = curve_fit(PeriodicGaussian, x, y, p0 = [po, 25, 0.1, 1e-3], max_nfev = 4000, bounds = bnds, loss = 'soft_l1', f_scale=5.025) #, maxfev = 4000)
+        fitParams2, fitError = curve_fit(PeriodicGaussian, x, y, p0 = [po, 25, 0.1, 1e-3], max_nfev = 4000, bounds = bnds)
+	theta = np.linspace(0, np.pi, 100)
+	fitY = PeriodicGaussian(x, *fitParams)
+	vidx = y > 0
+	chiSquare = ((y[vidx] - fitY[vidx])**2 / ySEM[vidx]).sum()
+        qVal = GammaQ(degsOfFreedom, chiSquare) # probability the chi^2 is exceedes the computed value just by chance
+	IS_GOOD_FIT = qVal > significanceVal
+	fitParams[0] *= fitParams[0] * 180 / np.pi 
+	fitParams[1] *= fitParams[1] * 180 / np.pi 
+
+	fitParams2[0] *= fitParams2[0] * 180 / np.pi
+	fitParams2[1] *= fitParams2[1] * 180 / np.pi
+
+	print ''
+	print 'ffp 2 = ', fitParams2
+	print 'ffp   = ', fitParams
+	
+	if IF_PLOT_FIT:
+	    plt.ion()
+	    plt.plot(theta * 180 / np.pi, PeriodicGaussian(theta * 180 / np.pi, *fitParams2), 'r')
+            plt.plot(theta * 180 / np.pi, PeriodicGaussian(theta * 180 / np.pi, *fitParams), 'g')	    
+            # plt.vlines(po, 0, ymax, color = 'k')
+	    # plt.show()
+    except RuntimeError, e:
+	fitParams = np.empty((4, ))
+	fitParams[:] = np.nan
+	fitError = np.nan
+	chiSquare = np.nan
+	print e
+    if(~np.any(np.isnan(fitParams))):
+	return fitParams, fitError, chiSquare, IS_GOOD_FIT
+        print fitParams
+    else:
+	return fitParams, fitError, chiSquare, False
+
+def ComputeTuningSEM3(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_PLOT = False, IF_FIT = False, nNeurons = 10000, neuronType = 'E'):
+    # plot tc with sem given atleast 2 chunks of simulations
+    NE = N
+    NI = N
+    nNeurons = NE + NI
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    tc = np.empty((2, nNeurons, nPhis))
+    tc[:] = np.nan
+    for kChunk in range(nChnks):
+	for i, iPhi in enumerate(phis):
+	    fr = LoadFrChnk(p, gamma, iPhi, mExt, mExtOne, kChunk, trNo, T, NE, K, nPop)
+	    tc[kChunk, :, i] = fr
+    tcSem = np.squeeze(np.nanstd(tc, 0)) / np.sqrt(nChnks)
+    tc = np.squeeze(np.nanmean(tc, 0))
+    IS_GOOD_FIT = np.zeros((nNeurons, ))
+    IS_SINGLE_PEAKED = np.zeros((nNeurons, ))
+    if IF_FIT and not IF_PLOT:
+	yy = tc[i, :]
+	yysem = tcSem[i, :]
+	# if(np.argmax(yy) == 0):
+	#     yy = np.roll(yy, 4)
+	#     yysem = np.roll(tcSem[i, :], 4)
+        chiSquareArray = np.empty((nNeurons, ))
+	chiSquareArray[:] = np.nan
+	for k in range(nNeurons):
+	    fitParams, _, chiSquareArray[k], IS_GOOD_FIT[k] = FitPeriodicGaussian(phis, yy, yysem)
+	    tmpTc = tc[k, :]
+	    meanRate = np.nanmean(tc[k, :])
+	    tmpTc = np.concatenate((tmpTc, [tmpTc[0], tmpTc[1]]))
+	    peakIdx = argrelextrema(tmpTc, np.greater)[0]
+	    if(peakIdx.size >= 2):
+		secondPeak = np.sort(tmpTc[peakIdx])[-2]
+		IS_SINGLE_PEAKED[k] = IS_GOOD_FIT[k] and ((np.nanmax(tc[k, :]) - meanRate) >= 0.05) and ((secondPeak < 0.05))
+    if IF_PLOT:
+        plt.ion()
+    	for i in np.random.randint(0, NE, 101):
+	    # i = 2092
+	    yy = tc[i, :]
+	    yysem = tcSem[i, :]
+	    if(np.argmax(yy) == 0):
+		yy = np.roll(yy, 4)
+		yysem = np.roll(tcSem[i, :], 4)
+	    # print 'neuron#', i
+	    # (_, caps, _) = plt.errorbar(np.concatenate((phis, [180])), np.concatenate((yy, [yy[0]])), fmt = 'ko-', markersize = 3, yerr = np.concatenate((yysem, [yysem[0]])), lw = 0.8, elinewidth=0.8)
+	    
+
+	    (_, caps, _) = plt.errorbar(phis, yy, fmt = 'ko-', markersize = 3, yerr = yysem, lw = 0.8, elinewidth=0.8)
+
+	    for cap in caps:
+		# cap.set_color('red')
+		cap.set_markeredgewidth(0.8)
+	    osi = OSI(tc[i, :], phis)
+	    po = GetPhase(tc[i, :], phis, IF_IN_RANGE = True)
+	    _, ymax = plt.ylim()
+	    plt.vlines(po, 0, ymax, color = 'k')
+            IS_SINGLE_PEAK = False
+	    # ipdb.set_trace()
+	    print yy
+	    if IF_FIT:
+		fitParams, _, chiSquare, IS_SINGLE_PEAK = FitPeriodicGaussian(phis * np.pi / 180, yy, yysem, IF_PLOT)
+         	print 'neuron#', i, 'firparams = ', fitParams		
+		if(~np.any(np.isnan(fitParams))):
+                    plt.title(r'$\mathrm{neuron} %s, \, osi = %.4s, \, \chi^2 = %s$'%(i, osi, chiSquare))
+		    # print chiSquare, np.nanmax(tc[i, :]) - meanRate, GammaQ(4, chiSquare), GammaQ(5, chiSquare)
+		    # tmpTc = tc[i, :]
+		    # tmpTc = np.concatenate((tmpTc, [tmpTc[0], tmpTc[1]]))
+		    # peakIdx = argrelextrema(tmpTc, np.greater)[0]
+		    # print 'neuron idx = ', i, 'peak idices = ', peakIdx
+# 		    if(peakIdx.size >= 2):
+# 			secondPeak = np.sort(tmpTc[peakIdx])[-2]
+# 			print '2nd peak = ', secondPeak
+# 			IS_SINGLE_PEAK = IS_SINGLE_PEAK and ((np.nanmax(tc[i, :]) - meanRate) >= 0.05) and ((secondPeak < 0.05))
+# 			IS_SINGLE_PEAK2 = IS_SINGLE_PEAK and ((np.nanmax(tc[i, :]) - meanRate) >= 0.05) and ((secondPeak < 0.05))
+# 			if(~np.any(np.isnan(fitParams))):
+# 			    plt.title('neuron# %s, osi = %.4s, '%(i, osi) + r'$ \chi^2 = %.5s, \, SP = %s, sp2 = %s$'%(chiSquare, int(IS_SINGLE_PEAK), int(IS_SINGLE_PEAK2)))
+# x		        # plt.title('neuron# %s, osi = %.4s, '%(i, osi) + r'$ \chi^2 = %.5s, \, SP = %s, sp2 = %s$'%(chiSquare, int(IS_SINGLE_PEAK), int(IS_SINGLE_PEAK2)))
+
+        	else:
+		    plt.title(r'$neuron# %s, \, osi = %.4s, \,$'%(i, osi))
+	    plt.ion()
+	    plt.show()
+	    plt.waitforbuttonpress()
+	    plt.clf()
+
+    if IF_FIT and not IF_PLOT:
+	return tc, tcSem, chiSquareArray, IS_SINGLE_PEAKED, IS_GOOD_FIT
+    else:
+	return tc, tcSem
+
+def ComputeTuningSEMForNeuron3(p, gamma, nPhis, mExt, mExtOne, neuronIdx, nChnks = 2, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_PLOT = False, IF_FIT = False, nNeurons = 10000, neuronType = 'E'):
+    # plot tc with sem given atleast 2 chunks of simulations
+    NE = N
+    NI = N
+    nNeurons = NE + NI
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    tc = np.empty((2, nNeurons, nPhis))
+    tc[:] = np.nan
+    for kChunk in range(nChnks):
+	for i, iPhi in enumerate(phis):
+	    fr = LoadFrChnk(p, gamma, iPhi, mExt, mExtOne, kChunk, trNo, T, NE, K, nPop)
+	    tc[kChunk, :, i] = fr
+    tcSem = np.squeeze(np.nanstd(tc, 0)) / np.sqrt(nChnks)
+    tc = np.squeeze(np.nanmean(tc, 0))
+    # IS_GOOD_FIT = np.zeros((nNeurons, ))
+    # IS_SINGLE_PEAKED = np.zeros((nNeurons, ))
+    if IF_FIT and not IF_PLOT:
+        # chiSquareArray = np.empty((nNeurons, ))
+	# chiSquareArray[:] = np.nan
+	# for k in range(nNeurons):
+	_, _, chiSquare, IS_GOOD_FIT = FitPeriodicGaussian(phis, tc[neuronIdx, :], tcSem[k, :])
+	# tmpTc = tc[k, :]
+	# meanRate = np.nanmean(tc[k, :])
+	# tmpTc = np.concatenate((tmpTc, [tmpTc[0], tmpTc[1]]))
+	# peakIdx = argrelextrema(tmpTc, np.greater)[0]
+	# if(peakIdx.size >= 2):
+	#     secondPeak = np.sort(tmpTc[peakIdx])[-2]
+	#     IS_SINGLE_PEAKED[k] = IS_GOOD_FIT[k] and ((np.nanmax(tc[k, :]) - meanRate) >= 0.05) and ((secondPeak < 0.05))
+    if IF_PLOT:
+        plt.ioff()
+    	# for i in np.random.randint(0, NE, 101):
+	yy = tc[neruonIdx, :]
+	yysem = tcSem[neuronIdx, :]
+	if(np.argmax(yy) == 0):
+	    yy = np.roll(yy, 1)
+	    yysem = np.roll(tcSem[neuronIdx, :], 1)
+	(_, caps, _) = plt.errorbar(phis, yy, fmt = 'ko-', markersize = 3, yerr = yysem, lw = 0.8, elinewidth=0.8)
+	for cap in caps:
+	    # cap.set_color('red')
+	    cap.set_markeredgewidth(0.8)
+	osi = OSI(tc[neuronIdx, :], phis)
+	po = GetPhase(tc[y, :], phis, IF_IN_RANGE = True)
+	_, ymax = plt.ylim()
+	plt.vlines(po, 0, ymax, color = 'k')
+	IS_SINGLE_PEAK = False
+	# ipdb.set_trace()
+	if IF_FIT:
+	    fitParams, _, chiSquare, IS_SINGLE_PEAK = FitPeriodicGaussian(phis * np.pi / 180, yy, yysem, IF_PLOT)
+	    if(~np.any(np.isnan(fitParams))):
+		plt.title(r'$\mathrm{neuron} %s, \, osi = %.4s, \, \chi^2 = %s$'%(i, osi, chiSquare))
+	    else:
+		plt.title(r'$neuron# %s, \, osi = %.4s, \,$'%(i, osi))
+	plt.show()
+	plt.waitforbuttonpress()
+	plt.clf()
+
+    if IF_FIT and not IF_PLOT:
+	return tc, tcSem, chiSquareArray, IS_SINGLE_PEAKED, IS_GOOD_FIT
+    else:
+	return tc, tcSem
+
+
+
+

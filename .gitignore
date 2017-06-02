@@ -13,7 +13,11 @@
 *.sh
 *.pdf
 *.nfs*
+*.aux
+*.log
+*.tex
 
+sed*
 vm
 spkTimes
 
