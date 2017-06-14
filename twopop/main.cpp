@@ -203,6 +203,7 @@ void GenFFConMat() {
       if(j < NE) { //E-to-E
 	if(UniformRand(gen) <= ConProbFF(i * M_PI / (double)NFF, j * M_PI / (double)NE, NFF)) {
 	  conMatFF[i + NFF * j] = 1;
+  	  // conMatFF[i + NFF * j] = 1;
 	  nConnections += 1;
 	}
       }
@@ -452,7 +453,6 @@ void LoadFFSparseConMat() {
   fclose(fpIdxVecFF);
 }
 
-
 void RunSim() {
   double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld = 0, spinOldFF = 0;
   // uExternalE, uExternalI;
@@ -478,7 +478,6 @@ void RunSim() {
   std::string m1FileName;     
   m1FileName = "MI1_inst_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
   FILE *fpInstM1 = fopen(m1FileName.c_str(), "w");  
-
   
   dt = (TAU_FF * TAU_E * TAU_I) / (NE * TAU_FF * TAU_I + NI * TAU_FF * TAU_E + NFF * TAU_E * TAU_I);
   nSteps = (unsigned long)((tStop / dt) + (T_TRANSIENT / dt));
@@ -514,7 +513,6 @@ void RunSim() {
 	phi_ext = phi_ext +  M_PI / 8.0;
 	// printf("hello %f\n", phi_ext * 180  / M_PI);      
       }
-    
     }
     if(i > 0 && i % (nSteps / 100) == 0) {
       runningFrFF = PopAvg(firingRatesFF, 0, NFF) / (double)(i + 1);      
@@ -668,7 +666,8 @@ void RunSim() {
    if(i >= nInitialSteps) {
      VectorSum(firingRatesChk, spins);
      if(i > nInitialSteps) {
-       if(!((i - nInitialSteps) %  (unsigned int)((nSteps - nInitialSteps - 1) / 2))) {
+       if(!((i - nInitialSteps) %  (unsigned int)((nSteps - nInitialSteps - 1) / (double)N_SEGMENTS))) {
+       // if(!((i - nInitialSteps) %  (unsigned int)((nSteps - nInitialSteps - 1) / 2))) {	 
 	 printf("\n chk i = %lu \n", i - nInitialSteps);
 	 VectorCopy(firingRatesChk, firingRatesChkTMP);
 	 VectorDivide(firingRatesChkTMP, (i - nInitialSteps));       
@@ -682,7 +681,6 @@ void RunSim() {
        }
      }
    }
-
   }
     
   VectorDivide(firingRates, nSteps);

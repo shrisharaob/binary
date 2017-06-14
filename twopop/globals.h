@@ -28,11 +28,13 @@
 #define cFF 0.2
 #define SQRT_KFF (sqrt((double)K * cFF))
 
-#define T_STOP 100
-#define T_TRANSIENT (T_STOP * 0.40)
+#define T_STOP 10000
+#define T_TRANSIENT (T_STOP * 0.05)
 #define IF_GEN_MAT_DEFAULT 0
 #define IF_SAVE_SPKS 0
-#define IF_STEP_PHI0 1
+#define IF_STEP_PHI0 0
+
+#define N_SEGMENTS 20
 
 double m0, tStop, recModulation, ffModulation;
 double *conMat, *conMatFF;
