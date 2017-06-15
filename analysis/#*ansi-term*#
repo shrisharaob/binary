@@ -1,0 +1,946 @@
+srao@pcneurophys85:~/Documents/code/binary/c/analysis$ pwd
+/homecentral/srao/Documents/code/binary/c/analysis
+srao@pcneurophys85:~/Documents/code/binary/c/analysis$ ipython 
+/usr/lib/python2.7/dist-packages/IPython/utils/path.py:297: UserWarning: Ignoring ~/.config/ipython in favour of ~/.ipython. Remove ~/.conf
+ig/ipython to get rid of this message                                                                                                     
+  'to get rid of this message').format(cu(xdg_ipdir), cu(ipdir)))
+Python 2.7.12 (default, Nov 19 2016, 06:48:10) 
+Type "copyright", "credits" or "license" for more information.
+
+IPython 2.4.1 -- An enhanced Interactive Python.
+?         -> Introduction and overview of IPython's features.
+%quickref -> Quick reference.
+help      -> Python's own help system.
+object?   -> Details about 'object', use 'object??' for extra details.
+
+In [1]: import numpy as np
+
+In [2]: import pylab as plt
+
+In [3]: import Scripts as sc
+/homecentral/srao/Documents/code/mypybox
+
+In [4]: sc.P
+sc.PCA                  sc.PeriodicGaussianOld  sc.PlotM1vsT            sc.PopAvgTuning         
+sc.POofPopulation       sc.PlotAC               sc.PlotRaster           sc.Print2Pdf            
+sc.Package              sc.PlotCVDistr          sc.PlotRasterBasic      sc.PrintTuningBook      
+sc.PeriodicGaussian     sc.PlotInstantRates     sc.PltOSIHist           sc.PrintTuningBook2     
+
+In [4]: x = np.linspace(0, 180, 8, endpoint=False)
+
+In [5]: params = [x, 95, 20, .01, 1e-3]
+
+In [6]: y = sc.Per
+sc.PeriodicGaussian     sc.PeriodicGaussianOld  
+
+In [6]: y = sc.PeriodicGaussian(x, *pa
+%page      %paste     %pastebin  params     pass       
+
+In [6]: y = sc.PeriodicGaussian(x, *params)
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+<ipython-input-6-7e42190f6794> in <module>()
+----> 1 y = sc.PeriodicGaussian(x, *params)
+
+TypeError: PeriodicGaussian() takes exactly 5 arguments (6 given)
+
+In [7]: params = [95, 20, .01, 1e-3]
+
+In [8]: y = sc.PeriodicGaussian(x, *params)
+
+In [9]: y = sc.PeriodicGaussian(x, *params) + np.random.randn
+np.random.randn
+
+In [9]: y = sc.PeriodicGaussian(x, *params) + np.random.randn(len(x))
+
+In [10]: plt.plot(x, y, 'ks-')
+Out[10]: [<matplotlib.lines.Line2D at 0x7f566aab2fd0>]
+
+In [11]: plt.IOn()
+---------------------------------------------------------------------------
+AttributeError                            Traceback (most recent call last)
+<ipython-input-11-d8fd3f08f3f8> in <module>()
+----> 1 plt.IOn()
+
+AttributeError: 'module' object has no attribute 'IOn'
+
+In [12]: plt.ion()
+
+In [13]: plt.show()
+
+In [14]: sc.Fi
+sc.Figure               sc.FitPeriodicGaussian  sc.FitVonMisses         sc.FitVonMisses2        
+
+In [14]: fp, ferr = sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)
+
+ffp 2 =  [  6.41929558e+04   1.66968856e+05   7.25304366e-01   1.31740550e-22]
+ffp   =  [  6.02830998e+04   1.63263201e+05   7.25877474e-01   8.05623934e-16]
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-14-3b2c23d127aa> in <module>()
+----> 1 fp, ferr = sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)
+
+ValueError: too many values to unpack
+
+In [15]: fp, ferr, _= sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)                                                              
+
+ffp 2 =  [  6.41929558e+04   1.66968856e+05   7.25304366e-01   1.31740550e-22]
+ffp   =  [  6.02830998e+04   1.63263201e+05   7.25877474e-01   8.05623934e-16]
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-15-8ec88ccefc9b> in <module>()
+----> 1 fp, ferr, _= sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)
+
+ValueError: too many values to unpack
+
+In [16]: fp, ferr, _, _= sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)                                                           
+
+ffp 2 =  [  6.41929558e+04   1.66968856e+05   7.25304366e-01   1.31740550e-22]
+ffp   =  [  6.02830998e+04   1.63263201e+05   7.25877474e-01   8.05623934e-16]
+
+In [17]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[17]: <module 'Scripts' from 'Scripts.py'>
+
+In [18]: fp, ferr, _, _= sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-18-9d4cfacc1abc> in <module>()
+----> 1 fp, ferr, _, _= sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)
+
+/homecentral/srao/Documents/code/binary/c/analysis/Scripts.py in FitPeriodicGaussian(x, y, ySEM, p0, IF_PLOT_FIT)
+   1094         bnds = ((0, 0, 0, 0), (180, 180, 1, 1))
+   1095         # fitParams, fitError = curve_fit(PeriodicGaussian, x, y, bounds = bnds, max_nfev = 4000) #, maxfev = 4000)
+-> 1096         fitParams, fitError = curve_fit(PeriodicGaussian, x, y, p0 = p0, max_nfev = 4000, bounds = bnds, loss = 'soft_l1', f_scale5
+.025) #, maxfev = 4000)                                                                                                                   
+   1097         fitParams2, fitError = curve_fit(PeriodicGaussian, x, y, p0 = p0, max_nfev = 4000, bounds = bnds)
+   1098         theta = np.linspace(0, np.pi, 100)
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/minpack.pyc in curve_fit(f, xdata, ydata, p0, sigma, absolute_sigma, check_finite, bounds, 
+method, **kwargs)                                                                                                                         
+    656     else:
+    657         res = least_squares(func, p0, args=args, bounds=bounds, method=method,
+--> 658                             **kwargs)
+    659 
+    660         if not res.success:
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/_lsq/least_squares.pyc in least_squares(fun, x0, jac, bounds, method, ftol, xtol, gtol, x_s
+cale, loss, f_scale, diff_step, tr_solver, tr_options, jac_sparsity, max_nfev, verbose, args, kwargs)                                     
+    748 
+    749     if lb.shape != x0.shape or ub.shape != x0.shape:
+--> 750         raise ValueError("Inconsistent shapes between bounds and `x0`.")
+    751 
+    752     if np.any(lb >= ub):
+
+ValueError: Inconsistent shapes between bounds and `x0`.
+
+In [19]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[19]: <module 'Scripts' from 'Scripts.py'>
+
+In [20]: fp, ferr, _, _= sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-20-9d4cfacc1abc> in <module>()
+----> 1 fp, ferr, _, _= sc.FitPeriodicGaussian(x, y, 0.1 * np.ones(x.shape), 1)
+
+/homecentral/srao/Documents/code/binary/c/analysis/Scripts.py in FitPeriodicGaussian(x, y, ySEM, p0, IF_PLOT_FIT)
+   1094         bnds = ((0, 0, 0, 0), (180, 180, y.max(), y.max() + 0.001))
+   1095         # fitParams, fitError = curve_fit(PeriodicGaussian, x, y, bounds = bnds, max_nfev = 4000) #, maxfev = 4000)
+-> 1096         fitParams, fitError = curve_fit(PeriodicGaussian, x, y, p0 = p0, max_nfev = 4000, bounds = bnds, loss = 'soft_l1', f_scale=5.025) #, maxfev = 4000)
+   1097         fitParams2, fitError = curve_fit(PeriodicGaussian, x, y, p0 = p0, max_nfev = 4000, bounds = bnds)
+   1098         theta = np.linspace(0, np.pi, 100)
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/minpack.pyc in curve_fit(f, xdata, ydata, p0, sigma, absolute_sigma, check_finite, bounds, method, **kwargs)
+    656     else:
+    657         res = least_squares(func, p0, args=args, bounds=bounds, method=method,
+--> 658                             **kwargs)
+    659 
+    660         if not res.success:
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/_lsq/least_squares.pyc in least_squares(fun, x0, jac, bounds, method, ftol, xtol, gtol, x_scale, loss, f_scale, diff_step, tr_solver
+, tr_options, jac_sparsity, max_nfev, verbose, args, kwargs)                                                                                                                       
+    748 
+    749     if lb.shape != x0.shape or ub.shape != x0.shape:
+--> 750         raise ValueError("Inconsistent shapes between bounds and `x0`.")
+    751 
+    752     if np.any(lb >= ub):
+
+ValueError: Inconsistent shapes between bounds and `x0`.
+
+In [21]: popt, pcov = sc.curve_fit(sc.Pe
+sc.PeriodicGaussian     sc.PeriodicGaussianOld  
+
+In [21]: popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y)
+/usr/lib/python2.7/dist-packages/scipy/optimize/minpack.py:690: OptimizeWarning: Covariance of the parameters could not be estimated
+  category=OptimizeWarning)
+
+In [22]: pcov
+Out[22]: 
+array([[ inf,  inf,  inf,  inf],
+       [ inf,  inf,  inf,  inf],
+       [ inf,  inf,  inf,  inf],
+       [ inf,  inf,  inf,  inf]])
+
+In [23]: popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, p0 = params)
+
+In [24]: pcov
+Out[24]: 
+array([[  2.24237378e+04,   3.02168985e+04,  -7.60621983e+01,
+          7.23821783e+00],
+       [  3.02168985e+04,   9.77491095e+04,  -3.21137747e+02,
+          4.89692432e+01],
+       [ -7.60621983e+01,  -3.21137747e+02,   1.87450058e+00,
+         -2.20616389e-01],
+       [  7.23821783e+00,   4.89692432e+01,  -2.20616389e-01,
+          3.29140191e-02]])
+
+In [25]: np.diag(pcov)
+Out[25]: 
+array([  2.24237378e+04,   9.77491095e+04,   1.87450058e+00,
+         3.29140191e-02])
+
+In [26]: xx = np.linspace(0, 180, 100)
+
+In [27]: plt.plot(xx, sc.PeriodicGaussian(xx, *popt), 'c')                                                                                                                         
+Out[27]: [<matplotlib.lines.Line2D at 0x7f566a13d2d0>]
+
+In [28]: popt
+Out[28]: 
+array([ -8.91159502e+02,  -9.68734864e+01,   9.34892932e-01,
+        -2.05026548e-02])
+
+In [29]: 
+
+In [29]: y = sc.PeriodicGaussian(x, *params) + np.random.randn(len(x)) * 0.1
+
+In [30]: plt.plot(x, y, 'ks-')
+Out[30]: [<matplotlib.lines.Line2D at 0x7f566a13d450>]
+
+In [31]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[31]: <module 'Scripts' from 'Scripts.py'>
+
+In [32]: plt.plot(x, y, 'ks-')
+Out[32]: [<matplotlib.lines.Line2D at 0x7f5669122350>]
+
+In [33]: popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, p0 = params)
+
+In [34]: pcov
+Out[34]: 
+array([[  8.86644617e+01,   3.21076956e+01,  -1.42820222e-01,
+         -4.75327570e-03],
+       [  3.21076956e+01,   2.19607279e+02,  -6.36658869e-01,
+         -4.01535127e-02],
+       [ -1.42820222e-01,  -6.36658869e-01,   1.65408992e-02,
+         -2.16344564e-04],
+       [ -4.75327570e-03,  -4.01535127e-02,  -2.16344564e-04,
+          3.08656351e-05]])
+
+In [35]: np.diag(pcov)
+Out[35]: 
+array([  8.86644617e+01,   2.19607279e+02,   1.65408992e-02,
+         3.08656351e-05])
+
+In [36]: plt.plot(xx, sc.PeriodicGaussian(xx, *popt), 'c')
+Out[36]: [<matplotlib.lines.Line2D at 0x7f566a117b90>]
+
+In [37]: bnds = ((-90, -90, 0, 0), (90, 90, y.max(), y.max() + 0.001))
+
+In [38]: bnds = ((-90, -90, 0, 0), (90, 90, 1, 1))                                                                                                                                  
+
+In [39]: popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, p0 = params, bounds = bnds)
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-39-60ed97f9b01b> in <module>()
+----> 1 popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, p0 = params, bounds = bnds)
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/minpack.pyc in curve_fit(f, xdata, ydata, p0, sigma, absolute_sigma, check_finite, bounds, method, **kwargs)
+    656     else:
+    657         res = least_squares(func, p0, args=args, bounds=bounds, method=method,
+--> 658                             **kwargs)
+    659 
+    660         if not res.success:
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/_lsq/least_squares.pyc in least_squares(fun, x0, jac, bounds, method, ftol, xtol, gtol, x_scale, loss, f_scale, diff_step, tr_solver
+, tr_options, jac_sparsity, max_nfev, verbose, args, kwargs)                                                                                                                       
+    755 
+    756     if not in_bounds(x0, lb, ub):
+--> 757         raise ValueError("`x0` is infeasible.")
+    758 
+    759     x_scale = check_x_scale(x_scale, x0)
+
+ValueError: `x0` is infeasible.
+
+In [40]: popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, bounds = bnds)
+Scripts.py:1079: RuntimeWarning: divide by zero encountered in divide
+  out += a * np.exp(-(theta - po + 180.0 * n)**2 / (sigma**2)) + offset
+Scripts.py:1079: RuntimeWarning: invalid value encountered in divide
+  out += a * np.exp(-(theta - po + 180.0 * n)**2 / (sigma**2)) + offset
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-40-6f1e2f8c7123> in <module>()
+----> 1 popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, bounds = bnds)
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/minpack.pyc in curve_fit(f, xdata, ydata, p0, sigma, absolute_sigma, check_finite, bounds, method, **kwargs)
+    656     else:
+    657         res = least_squares(func, p0, args=args, bounds=bounds, method=method,
+--> 658                             **kwargs)
+    659 
+    660         if not res.success:
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/_lsq/least_squares.pyc in least_squares(fun, x0, jac, bounds, method, ftol, xtol, gtol, x_scale, loss, f_scale, diff_step, tr_solver
+, tr_options, jac_sparsity, max_nfev, verbose, args, kwargs)                                                                                                                       
+    773 
+    774     if not np.all(np.isfinite(f0)):
+--> 775         raise ValueError("Residuals are not finite in the initial point.")
+    776 
+    777     n = x0.size
+
+ValueError: Residuals are not finite in the initial point.
+
+In [41]: pcov
+Out[41]: 
+array([[  8.86644617e+01,   3.21076956e+01,  -1.42820222e-01,
+         -4.75327570e-03],
+       [  3.21076956e+01,   2.19607279e+02,  -6.36658869e-01,
+         -4.01535127e-02],
+       [ -1.42820222e-01,  -6.36658869e-01,   1.65408992e-02,
+         -2.16344564e-04],
+       [ -4.75327570e-03,  -4.01535127e-02,  -2.16344564e-04,
+          3.08656351e-05]])
+
+In [42]: popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, p0 = params, bounds = bnds)                                                                                           
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-42-60ed97f9b01b> in <module>()
+----> 1 popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, p0 = params, bounds = bnds)
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/minpack.pyc in curve_fit(f, xdata, ydata, p0, sigma, absolute_sigma, check_finite, bounds, method, **kwargs)
+    656     else:
+    657         res = least_squares(func, p0, args=args, bounds=bounds, method=method,
+--> 658                             **kwargs)
+    659 
+    660         if not res.success:
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/_lsq/least_squares.pyc in least_squares(fun, x0, jac, bounds, method, ftol, xtol, gtol, x_scale, loss, f_scale, diff_step, tr_solver
+, tr_options, jac_sparsity, max_nfev, verbose, args, kwargs)                                                                                                                       
+    755 
+    756     if not in_bounds(x0, lb, ub):
+--> 757         raise ValueError("`x0` is infeasible.")
+    758 
+    759     x_scale = check_x_scale(x_scale, x0)
+
+ValueError: `x0` is infeasible.
+
+In [43]: bnds = ((0, 0, 0, 0), (180, 180, 1, 1))                                                                                                                                    
+
+In [44]: popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, p0 = params, bounds = bnds)
+
+In [45]: popt
+Out[45]: 
+array([  1.78360143e+02,   1.84997517e-02,   1.14592011e-05,
+         9.52076223e-03])
+
+In [46]: np.diag(pcov)
+Out[46]: 
+array([  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
+         3.33485233e-05])
+
+In [47]: params = [95, 20, .01, 1e-3]
+
+In [48]: y = sc.PeriodicGaussian(x, *params) + np.random.randn(len(x)) * 0.01
+
+In [49]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[49]: <module 'Scripts' from 'Scripts.pyc'>
+
+In [50]: plt.plot(x, y, 'ks-')
+Out[50]: [<matplotlib.lines.Line2D at 0x7f56743ca810>]
+
+In [51]: y = sc.PeriodicGaussian(x, *params) + np.random.randn(len(x)) * 0.001
+
+In [52]: plt.plot(x, y, 'ks-')
+Out[52]: [<matplotlib.lines.Line2D at 0x7f566a117810>]
+
+In [53]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[53]: <module 'Scripts' from 'Scripts.pyc'>
+
+In [54]: plt.plot(x, y, 'ks-')
+Out[54]: [<matplotlib.lines.Line2D at 0x7f566912b490>]
+
+In [55]: popt, pcov = sc.curve_fit(sc.PeriodicGaussian, x, y, p0 = params, bounds = bnds)
+
+In [56]: popt
+
+In [71]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[71]: <module 'Scripts' from 'Scripts.py'>
+
+In [72]: params = [95, 20, .01, 1e-3]
+
+In [73]: y = sc.PeriodicGaussian(x, *params) + 0 * np.random.randn(len(x)) * 0.001                                                                                                  
+
+In [74]: plt.plot(x, y, 'ks-')
+Out[74]: [<matplotlib.lines.Line2D at 0x7f566a9a5650>]
+
+In [75]: sc.FitPeriodicGaussian(x, y, ysem, 1)
+---------------------------------------------------------------------------
+NameError                                 Traceback (most recent call last)
+<ipython-input-75-b775a71947a9> in <module>()
+----> 1 sc.FitPeriodicGaussian(x, y, ysem, 1)
+
+NameError: name 'ysem' is not defined
+
+In [76]: ysem = tc[1][5492, :]
+---------------------------------------------------------------------------
+NameError                                 Traceback (most recent call last)
+<ipython-input-76-3a5e6d47ed74> in <module>()
+----> 1 ysem = tc[1][5492, :]
+
+NameError: name 'tc' is not defined
+
+In [77]: tc = sc.ComputeTuningSEM2(7, 2, 8, .075, 0.0375, IF_PLOT=0, IF_FIT = 0)
+
+In [78]: ysem = tc[1][5492, :]
+
+In [79]: sc.FitPeriodicGaussian(x, y, ysem, 1)
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-79-b775a71947a9> in <module>()
+----> 1 sc.FitPeriodicGaussian(x, y, ysem, 1)
+
+/homecentral/srao/Documents/code/binary/c/analysis/Scripts.py in FitPeriodicGaussian(x, y, ySEM, p0, IF_PLOT_FIT)
+   1094         bnds = ((-np.inf, -np.inf, 0, 0), (np.inf, np.inf, 1, 1))
+   1095         # fitParams, fitError = curve_fit(PeriodicGaussian, x, y, bounds = bnds, max_nfev = 4000) #, maxfev = 4000)
+-> 1096         fitParams, fitError = curve_fit(PeriodicGaussian, x, y, p0 = p0, max_nfev = 4000, bounds = bnds, loss = 'soft_l1', f_scale=5.025) #, maxfev = 4000)
+   1097         fitParams2, fitError = curve_fit(PeriodicGaussian, x, y, p0 = p0, max_nfev = 4000, bounds = bnds)
+   1098         theta = np.linspace(0, np.pi, 100)
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/minpack.pyc in curve_fit(f, xdata, ydata, p0, sigma, absolute_sigma, check_finite, bounds, method, **kwargs)
+    656     else:
+    657         res = least_squares(func, p0, args=args, bounds=bounds, method=method,
+--> 658                             **kwargs)
+    659 
+    660         if not res.success:
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/_lsq/least_squares.pyc in least_squares(fun, x0, jac, bounds, method, ftol, xtol, gtol, x_scale, loss, f_scale, diff_step, tr_solver
+, tr_options, jac_sparsity, max_nfev, verbose, args, kwargs)                                                                                                                       
+    748 
+    749     if lb.shape != x0.shape or ub.shape != x0.shape:
+--> 750         raise ValueError("Inconsistent shapes between bounds and `x0`.")
+    751 
+    752     if np.any(lb >= ub):
+
+ValueError: Inconsistent shapes between bounds and `x0`.
+
+In [80]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[80]: <module 'Scripts' from 'Scripts.py'>
+
+In [81]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[81]: <module 'Scripts' from 'Scripts.pyc'>
+
+In [82]: sc.FitPeriodicGaussian(x, y, ysem, 1)
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-82-b775a71947a9> in <module>()
+----> 1 sc.FitPeriodicGaussian(x, y, ysem, 1)
+
+/homecentral/srao/Documents/code/binary/c/analysis/Scripts.pyc in FitPeriodicGaussian(x, y, ySEM, p0, IF_PLOT_FIT)
+   1095         # fitParams, fitError = curve_fit(PeriodicGaussian, x, y, bounds = bnds, max_nfev = 4000) #, maxfev = 4000)
+   1096         fitParams, fitError = curve_fit(PeriodicGaussian, x, y, p0 = [90, 25, 0.1, 1e-3], max_nfev = 4000, bounds = bnds, loss = 'soft_l1', f_scale=5.025) #, maxfev = 4000)
+-> 1097         fitParams2, fitError = curve_fit(PeriodicGaussian, x, y, p0 = p0, max_nfev = 4000, bounds = bnds)
+   1098         theta = np.linspace(0, np.pi, 100)
+   1099         fitY = PeriodicGaussian(x, *fitParams)
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/minpack.pyc in curve_fit(f, xdata, ydata, p0, sigma, absolute_sigma, check_finite, bounds, method, **kwargs)
+    656     else:
+    657         res = least_squares(func, p0, args=args, bounds=bounds, method=method,
+--> 658                             **kwargs)
+    659 
+    660         if not res.success:
+
+/usr/lib/python2.7/dist-packages/scipy/optimize/_lsq/least_squares.pyc in least_squares(fun, x0, jac, bounds, method, ftol, xtol, gtol, x_scale, loss, f_scale, diff_step, tr_solver
+, tr_options, jac_sparsity, max_nfev, verbose, args, kwargs)                                                                                                                       
+    748 
+    749     if lb.shape != x0.shape or ub.shape != x0.shape:
+--> 750         raise ValueError("Inconsistent shapes between bounds and `x0`.")
+    751 
+    752     if np.any(lb >= ub):
+
+ValueError: Inconsistent shapes between bounds and `x0`.
+
+In [83]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[83]: <module 'Scripts' from 'Scripts.py'>
+
+In [84]: sc.FitPeriodicGaussian(x, y, ysem, 1)
+Scripts.py:1101: RuntimeWarning: divide by zero encountered in divide
+  chiSquare = ((y[vidx] - fitY[vidx])**2 / ySEM[vidx]).sum()
+
+ffp 2 =  [  5.17094410e+05   2.29183118e+04   1.00000000e-02   1.00000000e-03]
+ffp   =  [  5.17094352e+05   2.29183816e+04   9.99998124e-03   1.00000001e-03]
+Out[84]: 
+(array([  5.17094352e+05,   2.29183816e+04,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [85]: sc.FitPeriodicGaussian(x, y, ysem, 1)
+
+ffp 2 =  [  5.17094410e+05   2.29183118e+04   1.00000000e-02   1.00000000e-03]
+ffp   =  [  5.17094352e+05   2.29183816e+04   9.99998124e-03   1.00000001e-03]
+Out[85]: 
+(array([  5.17094352e+05,   2.29183816e+04,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [86]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[86]: <module 'Scripts' from 'Scripts.pyc'>
+
+In [87]: sc.FitPeriodicGaussian(x, y, ysem, 1)
+
+ffp 2 =  [  5.17094410e+05   2.29183118e+04   1.00000000e-02   1.00000000e-03]
+ffp   =  [  5.17094352e+05   2.29183816e+04   9.99998124e-03   1.00000001e-03]
+Out[87]: 
+(array([  5.17094352e+05,   2.29183816e+04,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [88]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp 2 =  [  5.17094410e+05   2.29183118e+04   1.00000000e-02   1.00000000e-03]
+ffp   =  [  5.17094352e+05   2.29183816e+04   9.99998124e-03   1.00000001e-03]
+Out[88]: 
+(array([  5.17094352e+05,   2.29183816e+04,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [89]: plt.show()
+
+In [90]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp 2 =  [  5.17094410e+05   2.29183118e+04   1.00000000e-02   1.00000000e-03]
+ffp   =  [  5.17094352e+05   2.29183816e+04   9.99998124e-03   1.00000001e-03]
+Out[90]: 
+(array([  5.17094352e+05,   2.29183816e+04,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [91]: np.diag(_[1])
+Out[91]: 
+array([  1.27952656e-21,   2.66804563e-21,   3.97723327e-28,
+         5.75145393e-31])
+
+In [92]: params
+Out[92]: [95, 20, 0.01, 0.001]
+
+In [93]: fp, _ = sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)                                                                                                                  
+
+ffp 2 =  [  5.17094410e+05   2.29183118e+04   1.00000000e-02   1.00000000e-03]
+ffp   =  [  5.17094352e+05   2.29183816e+04   9.99998124e-03   1.00000001e-03]
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-93-422500364b47> in <module>()
+----> 1 fp, _ = sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ValueError: too many values to unpack
+
+In [94]: fp = sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp 2 =  [  5.17094410e+05   2.29183118e+04   1.00000000e-02   1.00000000e-03]
+ffp   =  [  5.17094352e+05   2.29183816e+04   9.99998124e-03   1.00000001e-03]
+
+In [95]: plt.plot(xx, sc.PeriodicGaussian(xx, *fp[0]), 'g', lw = 2)                                                                                                                 
+Out[95]: [<matplotlib.lines.Line2D at 0x7f5668e23f50>]
+
+In [96]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[96]: <module 'Scripts' from 'Scripts.pyc'>
+
+In [97]: plt.plot(xx, sc.PeriodicGaussian(xx, *fp[0]), 'g', lw = 2)
+Out[97]: [<matplotlib.lines.Line2D at 0x7f56689ea4d0>]
+
+In [98]: fp[0]
+Out[98]: 
+array([  5.17094352e+05,   2.29183816e+04,   9.99998124e-03,
+         1.00000001e-03])
+
+In [99]: params
+Out[99]: [95, 20, 0.01, 0.001]
+
+In [100]: po = fp[0]
+
+In [101]: while po > 180:
+    po -= 180
+   .....:     
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-101-7bf45e853e80> in <module>()
+----> 1 while po > 180:
+      2     po -= 180
+      3 
+
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+
+In [102]: po
+Out[102]: 
+array([  5.17094352e+05,   2.29183816e+04,   9.99998124e-03,
+         1.00000001e-03])
+
+In [103]: po = fp[0][0]
+
+In [104]: while po > 180:
+    po -= 180
+   .....:     
+
+In [105]: po
+Out[105]: 134.35169406060595
+
+In [106]: params
+Out[106]: [95, 20, 0.01, 0.001]
+
+In [107]: sig = fp[0][1]
+
+In [108]: while sig > 180:                                                                                                                                                          
+    sig -= 180                                                                                                                                                                      
+   .....:     
+
+In [109]: sig
+Out[109]: 58.381641472995398
+
+In [110]: plt.plot(xx, sc.PeriodicGaussian(xx, [po, sig, fp[0][2], fp[0][3]]), 'g', lw = 2)                                                                                         
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+<ipython-input-110-8ae19a8f13ab> in <module>()
+----> 1 plt.plot(xx, sc.PeriodicGaussian(xx, [po, sig, fp[0][2], fp[0][3]]), 'g', lw = 2)
+
+TypeError: PeriodicGaussian() takes exactly 5 arguments (2 given)
+
+In [111]: plt.plot(xx, sc.PeriodicGaussian(xx, *[po, sig, fp[0][2], fp[0][3]]), 'g', lw = 2)                                                                                        
+Out[111]: [<matplotlib.lines.Line2D at 0x7f5668c5b3d0>]
+
+In [112]: fp[0]
+Out[112]: 
+array([  5.17094352e+05,   2.29183816e+04,   9.99998124e-03,
+         1.00000001e-03])
+
+In [113]: plt.plot(xx, sc.PeriodicGaussian(xx, *[fp[0][0], sig, fp[0][2], fp[0][3]]), 'g', lw = 2)                                                                                  
+Out[113]: [<matplotlib.lines.Line2D at 0x7f5668c5bcd0>]
+
+In [114]: plt.plot(xx, sc.PeriodicGaussian(xx, *[fp[0][0], sig, fp[0][2], fp[0][3]]), 'r', lw = 2)                                                                                  
+Out[114]: [<matplotlib.lines.Line2D at 0x7f5668c7e490>]
+
+In [115]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[115]: <module 'Scripts' from 'Scripts.py'>
+
+In [116]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+Scripts.py:1108: RuntimeWarning: divide by zero encountered in divide
+  fitParams2[0] *= fitParams2[0] * 180 / np.pi
+
+ffp 2 =  [  9.50000000e+01   2.00000000e+01   1.00000000e-02   1.00000000e-03]
+ffp   =  [  9.49999946e+01   2.00000305e+01   9.99998124e-03   1.00000001e-03]
+Out[116]: 
+(array([  9.49999946e+01,   2.00000305e+01,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [117]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[117]: <module 'Scripts' from 'Scripts.pyc'>
+
+In [118]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp 2 =  [  9.50000000e+01   2.00000000e+01   1.00000000e-02   1.00000000e-03]
+ffp   =  [  9.49999946e+01   2.00000305e+01   9.99998124e-03   1.00000001e-03]
+Out[118]: 
+(array([  9.49999946e+01,   2.00000305e+01,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [119]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[119]: <module 'Scripts' from 'Scripts.py'>
+
+In [120]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp 2 =  [  9.50000000e+01   2.00000000e+01   1.00000000e-02   1.00000000e-03]
+ffp   =  [  9.49999946e+01   2.00000305e+01   9.99998124e-03   1.00000001e-03]
+Out[120]: 
+(array([  9.49999946e+01,   2.00000305e+01,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [121]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[121]: <module 'Scripts' from 'Scripts.py'>
+
+In [122]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp 2 =  [  9.50000000e+01   2.00000000e+01   1.00000000e-02   1.00000000e-03]
+ffp   =  [  9.49999946e+01   2.00000305e+01   9.99998124e-03   1.00000001e-03]
+Out[122]: 
+(array([  9.49999946e+01,   2.00000305e+01,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [123]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[123]: <module 'Scripts' from 'Scripts.py'>
+
+In [124]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp 2 =  [  9.50000000e+01   2.00000000e+01   1.00000000e-02   1.00000000e-03]
+ffp   =  [  9.49999946e+01   2.00000305e+01   9.99998124e-03   1.00000001e-03]
+Out[124]: 
+(array([  9.49999946e+01,   2.00000305e+01,   9.99998124e-03,
+          1.00000001e-03]),
+ array([[  1.27952656e-21,  -8.51521695e-22,   2.12558327e-25,
+           4.23764287e-27],
+        [ -8.51521695e-22,   2.66804563e-21,  -4.27209114e-25,
+          -1.78407220e-26],
+        [  2.12558327e-25,  -4.27209114e-25,   3.97723327e-28,
+          -3.62644145e-30],
+        [  4.23764287e-27,  -1.78407220e-26,  -3.62644145e-30,
+           5.75145393e-31]]),
+ inf,
+ False)
+
+In [125]: plt.plot(x, y, 'ks-')
+Out[125]: [<matplotlib.lines.Line2D at 0x7f5668af88d0>]
+
+In [126]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[126]: <module 'Scripts' from 'Scripts.py'>
+
+In [127]: params
+Out[127]: [95, 20, 0.01, 0.001]
+
+In [128]: y = sc.PeriodicGaussian(x, *params) + np.random.randn(len(x)) * 0.001                                                                                                
+
+In [129]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp sqr error =  [  1.00749302e+02   7.95292896e+00   4.78654454e-02   1.06747655e-03]
+ffp   =  [  1.00749091e+02   7.95460226e+00   4.78252226e-02   1.06747655e-03]
+Out[129]: 
+(array([  1.00749091e+02,   7.95460226e+00,   4.78252226e-02,
+          1.06747655e-03]),
+ array([[  1.14019872e+09,  -9.05527923e+09,   2.17678939e+08,
+           9.99851091e-01],
+        [ -9.05527923e+09,   7.19156061e+10,  -1.72877196e+09,
+          -7.94067519e+00],
+        [  2.17678939e+08,  -1.72877196e+09,   4.15577737e+07,
+           1.90884907e-01],
+        [  9.99851091e-01,  -7.94067519e+00,   1.90884907e-01,
+           3.26047127e-09]]),
+ inf,
+ False)
+
+In [130]: plt.clf(); reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[130]: <module 'Scripts' from 'Scripts.pyc'>
+
+In [131]: plt.plot(x, y, 'ks-')
+Out[131]: [<matplotlib.lines.Line2D at 0x7f5668720c50>]
+
+In [132]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp sqr error =  [  1.00749302e+02   7.95292896e+00   4.78654454e-02   1.06747655e-03]
+ffp   =  [  1.00749091e+02   7.95460226e+00   4.78252226e-02   1.06747655e-03]
+Out[132]: 
+(array([  1.00749091e+02,   7.95460226e+00,   4.78252226e-02,
+          1.06747655e-03]),
+ array([[  1.14019872e+09,  -9.05527923e+09,   2.17678939e+08,
+           9.99851091e-01],
+        [ -9.05527923e+09,   7.19156061e+10,  -1.72877196e+09,
+          -7.94067519e+00],
+        [  2.17678939e+08,  -1.72877196e+09,   4.15577737e+07,
+           1.90884907e-01],
+        [  9.99851091e-01,  -7.94067519e+00,   1.90884907e-01,
+           3.26047127e-09]]),
+ inf,
+ False)
+
+In [133]: plt.plot(xx, sc.PeriodicGaussian(xx, *params), 'c', lw = 2)                                                                                                               
+Out[133]: [<matplotlib.lines.Line2D at 0x7f5668a9dd50>]
+
+In [134]: params
+Out[134]: [95, 20, 0.01, 0.001]
+
+In [135]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[135]: <module 'Scripts' from 'Scripts.py'>
+
+In [136]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp sqr error =  [  1.00760972e+02   7.85970376e+00   5.02008115e-02   1.06747656e-03]
+ffp   =  [  1.00759247e+02   7.87355205e+00   4.98413347e-02   1.06747656e-03]
+Out[136]: 
+(array([  1.00759247e+02,   7.87355205e+00,   4.98413347e-02,
+          1.06747656e-03]),
+ array([[  2.21415278e+09,  -1.77930462e+10,   4.64789216e+08,
+           1.39360643e+00],
+        [ -1.77930462e+10,   1.42985839e+11,  -3.73507017e+09,
+          -1.11991080e+01],
+        [  4.64789216e+08,  -3.73507017e+09,   9.75673485e+07,
+           2.92542448e-01],
+        [  1.39360643e+00,  -1.11991080e+01,   2.92542448e-01,
+           3.26083871e-09]]),
+ inf,
+ False)
+
+In [137]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[137]: <module 'Scripts' from 'Scripts.py'>
+
+In [138]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp sqr error =  [  1.00760972e+02   7.85970376e+00   5.02008115e-02   1.06747656e-03]
+ffp   =  [  1.00762471e+02   7.84751634e+00   5.05189194e-02   1.06749851e-03]
+Out[138]: 
+(array([  1.00762471e+02,   7.84751634e+00,   5.05189194e-02,
+          1.06749851e-03]),
+ array([[  2.21415278e+09,  -1.77930462e+10,   4.64789216e+08,
+           1.39360643e+00],
+        [ -1.77930462e+10,   1.42985839e+11,  -3.73507017e+09,
+          -1.11991080e+01],
+        [  4.64789216e+08,  -3.73507017e+09,   9.75673485e+07,
+           2.92542448e-01],
+        [  1.39360643e+00,  -1.11991080e+01,   2.92542448e-01,
+           3.26083871e-09]]),
+ inf,
+ False)
+
+In [139]: s
+---------------------------------------------------------------------------
+NameError                                 Traceback (most recent call last)
+<ipython-input-139-f4d5d0c0671b> in <module>()
+----> 1 s
+
+NameError: name 's' is not defined
+
+In [140]: reload(sc)
+/homecentral/srao/Documents/code/mypybox
+Out[140]: <module 'Scripts' from 'Scripts.py'>
+
+In [141]: s
+---------------------------------------------------------------------------
+NameError                                 Traceback (most recent call last)
+<ipython-input-141-f4d5d0c0671b> in <module>()
+----> 1 s
+
+NameError: name 's' is not defined
+
+In [142]: sc.FitPeriodicGaussian(x, y, ysem, IF_PLOT_FIT=1)
+
+ffp sqr error =  [  1.00760972e+02   7.85970376e+00   5.02008115e-02   1.06747656e-03]
+ffp   =  [  1.00573558e+02   1.72735915e+02   6.68900423e-02   1.07429758e-03]
+Out[142]: 
+(array([  1.00573558e+02,   1.72735915e+02,   6.68900423e-02,
+          1.07429758e-03]),
+ array([[  2.21415278e+09,  -1.77930462e+10,   4.64789216e+08,
+           1.39360643e+00],
+        [ -1.77930462e+10,   1.42985839e+11,  -3.73507017e+09,
+          -1.11991080e+01],
+        [  4.64789216e+08,  -3.73507017e+09,   9.75673485e+07,
+           2.92542448e-01],
+        [  1.39360643e+00,  -1.11991080e+01,   2.92542448e-01,
+           3.26083871e-09]]),
+ inf,
+ False)
+
+In [143]: plt.ylim(0,.1)
+Out[143]: (0, 0.1)
+
+In [144]: plt.ylim(0,.08)
+Out[144]: (0, 0.08)
+
+In [145]: plt.ylim(0,.07)
+Out[145]: (0, 0.07)
+
+In [146]: 

@@ -667,17 +667,23 @@ void RunSim() {
      VectorSum(firingRatesChk, spins);
      if(i > nInitialSteps) {
        if(!((i - nInitialSteps) %  (unsigned int)((nSteps - nInitialSteps - 1) / (double)N_SEGMENTS))) {
-       // if(!((i - nInitialSteps) %  (unsigned int)((nSteps - nInitialSteps - 1) / 2))) {	 
+	 double chunckLength = (double)((nSteps - nInitialSteps - 1) / (double)N_SEGMENTS);
+	 // if(!((i - nInitialSteps) %  (unsigned int)((nSteps - nInitialSteps - 1) / 2))) {	 
 	 printf("\n chk i = %lu \n", i - nInitialSteps);
 	 VectorCopy(firingRatesChk, firingRatesChkTMP);
-	 VectorDivide(firingRatesChkTMP, (i - nInitialSteps));       
+	 // VectorDivide(firingRatesChkTMP, (i - nInitialSteps));
+	 VectorDivide(firingRatesChkTMP, chunckLength);
 	 std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_chnk" + std::to_string(chunkIdx) + ".txt";
 	 chunkIdx += 1;       
-   	 FILE *fpRates = fopen(txtFileName.c_str(), "w");
-   	 for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
-   	   fprintf(fpRates, "%f\n", firingRatesChkTMP[ii]);
-   	 }
-   	 fclose(fpRates);
+	 FILE *fpRates = fopen(txtFileName.c_str(), "w");
+	 for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+	   fprintf(fpRates, "%f\n", firingRatesChkTMP[ii]);
+	 }
+	 fclose(fpRates);
+	 for(unsigned int ijk = 0; ijk < N_NEURONS; ijk++) {
+	   firingRatesChk[ijk] = 0;
+	 }
+	 
        }
      }
    }

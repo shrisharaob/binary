@@ -1075,11 +1075,20 @@ def PeriodicGaussianOld(theta, po, sigma, a, offset):
 def PeriodicGaussian(theta, po, sigma, a, offset):
     # po, sigma in degrees
     out = 0.0
+    po = AngleInRange(po)
+    sigma = AngleInRange(sigma)
     for n in np.arange(-5, 5):
 	out += a * np.exp(-(theta - po + 180.0 * n)**2 / (sigma**2)) + offset
     return out
 
-def FitPeriodicGaussian(x, y, ySEM, IF_PLOT_FIT = False):
+def AngleInRange(theta):
+    while theta > 180:
+        theta -= 180
+    while theta < 0:
+        theta += 180
+    return theta
+
+def FitPeriodicGaussian(x, y, ySEM, p0 = [90, 25, 0.1, 1e-3], IF_PLOT_FIT = False):
     # x = np.concatenate((x, [np.pi]))
     # y = np.concatenate((y, [y[0]]))
     # ySEM = np.concatenate((ySEM, [ySEM[0]]))
@@ -1087,45 +1096,44 @@ def FitPeriodicGaussian(x, y, ySEM, IF_PLOT_FIT = False):
     nParams = 4
     degsOfFreedom = nPhis - nParams
     significanceVal = 0.05
-    # yy = y
-    # yysem = ySEM
-    # if(np.argmax(yy) == 0):
-    # 	yy = np.roll(yy, 4)
-    # 	yysem = np.roll(ySEM, 4)
-    # y = yy
-    # ySEM = yysem
     po = GetPhase(y, x * np.pi / 180.0, IF_IN_RANGE = True)
-    # print po
-    _, ymax = plt.ylim()
-    plt.vlines(po, 0, .45)
-    # ipdb.set_trace()
+    # _, ymax = plt.ylim()
+    # plt.vlines(po, 0, ymax)
     try:
-	bnds = ((0, 0, 0, 0), (180, 180, 1, 1))
+	bnds = ((-np.inf, -np.inf, 0, 0), (np.inf, np.inf, 1, 1))
 	# fitParams, fitError = curve_fit(PeriodicGaussian, x, y, bounds = bnds, max_nfev = 4000) #, maxfev = 4000)
-        fitParams, fitError = curve_fit(PeriodicGaussian, x, y, p0 = [po, 25, 0.1, 1e-3], max_nfev = 4000, bounds = bnds, loss = 'soft_l1', f_scale=5.025) #, maxfev = 4000)
-        fitParams2, fitError = curve_fit(PeriodicGaussian, x, y, p0 = [po, 25, 0.1, 1e-3], max_nfev = 4000, bounds = bnds)
+        fitParams, fitError = curve_fit(PeriodicGaussian, x, y, p0 = [90, 50, 0.1, 1e-3], max_nfev = 4000, bounds = bnds, loss = 'soft_l1', f_scale= .025, method = 'trf') #, maxfev = 4000)
+        fitParams2, fitError = curve_fit(PeriodicGaussian, x, y, p0 = [90, 50, 0.1, 1e-3], max_nfev = 4000, bounds = bnds)
 	theta = np.linspace(0, np.pi, 100)
 	fitY = PeriodicGaussian(x, *fitParams)
 	vidx = y > 0
 	chiSquare = ((y[vidx] - fitY[vidx])**2 / ySEM[vidx]).sum()
         qVal = GammaQ(degsOfFreedom, chiSquare) # probability the chi^2 is exceedes the computed value just by chance
 	IS_GOOD_FIT = qVal > significanceVal
-	fitParams[0] *= fitParams[0] * 180 / np.pi 
-	fitParams[1] *= fitParams[1] * 180 / np.pi 
 
-	fitParams2[0] *= fitParams2[0] * 180 / np.pi
-	fitParams2[1] *= fitParams2[1] * 180 / np.pi
+
+        fitParams[0] = AngleInRange(fitParams[0])
+        fitParams[1] = AngleInRange(fitParams[1])
+        fitParams2[0] = AngleInRange(fitParams2[0])
+        fitParams2[1] = AngleInRange(fitParams2[1])
+
+	# fitParams[0] *= fitParams[0] * 180 / np.pi 
+	# fitParams[1] *= fitParams[1] * 180 / np.pi 
+
+	# fitParams2[0] *= fitParams2[0] * 180 / np.pi
+	# fitParams2[1] *= fitParams2[1] * 180 / np.pi
 
 	print ''
-	print 'ffp 2 = ', fitParams2
+	print 'ffp sqr error = ', fitParams2
 	print 'ffp   = ', fitParams
 	
 	if IF_PLOT_FIT:
+	    print 'xx'*50
 	    plt.ion()
 	    plt.plot(theta * 180 / np.pi, PeriodicGaussian(theta * 180 / np.pi, *fitParams2), 'r')
-            plt.plot(theta * 180 / np.pi, PeriodicGaussian(theta * 180 / np.pi, *fitParams), 'g')	    
+            plt.plot(theta * 180 / np.pi, PeriodicGaussian(theta * 180 / np.pi, *fitParams), 'c')	    
             # plt.vlines(po, 0, ymax, color = 'k')
-	    # plt.show()
+	    plt.show()
     except RuntimeError, e:
 	fitParams = np.empty((4, ))
 	fitParams[:] = np.nan
@@ -1177,9 +1185,9 @@ def ComputeTuningSEM3(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 
 	    # i = 2092
 	    yy = tc[i, :]
 	    yysem = tcSem[i, :]
-	    if(np.argmax(yy) == 0):
-		yy = np.roll(yy, 4)
-		yysem = np.roll(tcSem[i, :], 4)
+	    # if(np.argmax(yy) == 0):
+	    # 	yy = np.roll(yy, 4)
+	    # 	yysem = np.roll(tcSem[i, :], 4)
 	    # print 'neuron#', i
 	    # (_, caps, _) = plt.errorbar(np.concatenate((phis, [180])), np.concatenate((yy, [yy[0]])), fmt = 'ko-', markersize = 3, yerr = np.concatenate((yysem, [yysem[0]])), lw = 0.8, elinewidth=0.8)
 	    
@@ -1191,16 +1199,18 @@ def ComputeTuningSEM3(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 
 		cap.set_markeredgewidth(0.8)
 	    osi = OSI(tc[i, :], phis)
 	    po = GetPhase(tc[i, :], phis, IF_IN_RANGE = True)
-	    _, ymax = plt.ylim()
-	    plt.vlines(po, 0, ymax, color = 'k')
+	    # _, ymax = plt.ylim()
+	    # plt.vlines(po, 0, ymax, color = 'k')
             IS_SINGLE_PEAK = False
 	    # ipdb.set_trace()
 	    print yy
 	    if IF_FIT:
-		fitParams, _, chiSquare, IS_SINGLE_PEAK = FitPeriodicGaussian(phis * np.pi / 180, yy, yysem, IF_PLOT)
-         	print 'neuron#', i, 'firparams = ', fitParams		
+		fitParams, _, chiSquare, IS_SINGLE_PEAK = FitPeriodicGaussian(phis * np.pi / 180, yy, yysem, IF_PLOT_FIT = IF_PLOT)
+         	print 'neuron#', i, 'firparams = ', fitParams
+		plt.show()
 		if(~np.any(np.isnan(fitParams))):
                     plt.title(r'$\mathrm{neuron} %s, \, osi = %.4s, \, \chi^2 = %s$'%(i, osi, chiSquare))
+		    
 		    # print chiSquare, np.nanmax(tc[i, :]) - meanRate, GammaQ(4, chiSquare), GammaQ(5, chiSquare)
 		    # tmpTc = tc[i, :]
 		    # tmpTc = np.concatenate((tmpTc, [tmpTc[0], tmpTc[1]]))
@@ -1269,8 +1279,8 @@ def ComputeTuningSEMForNeuron3(p, gamma, nPhis, mExt, mExtOne, neuronIdx, nChnks
 	    cap.set_markeredgewidth(0.8)
 	osi = OSI(tc[neuronIdx, :], phis)
 	po = GetPhase(tc[y, :], phis, IF_IN_RANGE = True)
-	_, ymax = plt.ylim()
-	plt.vlines(po, 0, ymax, color = 'k')
+	# _, ymax = plt.ylim()
+	# plt.vlines(po, 0, ymax, color = 'k')
 	IS_SINGLE_PEAK = False
 	# ipdb.set_trace()
 	if IF_FIT:
