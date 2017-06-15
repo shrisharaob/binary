@@ -16,6 +16,7 @@
 *.aux
 *.log
 *.tex
+*.el
 
 sed*
 vm
