@@ -34,8 +34,8 @@ def MultiPeaksDistr(p, gamma, nPhis, mExt, mExtOne, nChnks = 10, trNo = 0, N = 1
 	    chiSquare.append(ChiSquare(tc[i, :], tcSem[i, :], fity))
 	    fitMax = np.max(fg.PeriodicGaussian(np.linspace(0, 180, 100, endpoint = 0), *fitParams[i, :]))
 	    fitError.append(np.sqrt(np.mean((tc[i, :] - fity) **2)) / fitMax)
-	    tcMax = np.max(tc[i, :])
-	    peakError = 100.0 * np.abs(tcMax - fitMax) / tcMax
+	    tcMean = np.mean(tc[i, :])
+	    peakError = 100.0 * np.abs(tcMax - fitMax)
 	    plt.ion()
 	    if fitError[i] < 0.06 and peakError < 5:
 		plt.plot(thetas, tc[i, :], 'k.-')
@@ -47,6 +47,7 @@ def MultiPeaksDistr(p, gamma, nPhis, mExt, mExtOne, nChnks = 10, trNo = 0, N = 1
         percentSinglePeakE = float(np.sum((fitError[:NE] < 0.06))) / float(NE)
 	percentSinglePeakI = float(np.sum((fitError[NE:] < 0.06))) / float(NI)
     else:
+        print 'loadint file: ', 'fit_p%sg%s_m0%s_mOne%s_nPhis%s.npz'%(int(10 * p), int(10 * gamma), int(1e3 * mExt), int(1e3 * mExtOne), nPhis)
         out = np.load('./data/fit_p%sg%s_m0%s_mOne%s_nPhis%s.npz'%(int(10 * p), int(10 * gamma), int(1e3 * mExt), int(1e3 * mExtOne), nPhis))
         tc = out['tc']
         tcSem = out['tcSem']
@@ -61,14 +62,16 @@ def MultiPeaksDistr(p, gamma, nPhis, mExt, mExtOne, nChnks = 10, trNo = 0, N = 1
 	for i in range(NE + NI):
 	    fity = fg.PeriodicGaussian(thetas, *fitParams[i, :])
 	    fitMax = np.max(fg.PeriodicGaussian(np.linspace(0, 180, 100, endpoint = 0), *fitParams[i, :]))
-	    tcMax = np.max(tc[i, :])	    
+	    tcMax = np.max(tc[i, :])
+
+	    # tcMax = np.mean(tc[i, :])	    	    
 	    fitError.append(np.sqrt(np.mean((tc[i, :] - fity) **2)) / tcMax)
 
 	    peakError.append(100.0 * np.abs(tcMax - fitMax) / tcMax)
 	# fg.ipdb.set_trace()
 	peakError = np.array(peakError)
         fitError = np.array(fitError)
-	# errorMeasure = np.logical_and(fitError < 0.06, peakError < 5)
+	# errorMeasure = np.logical_and(fitError < 0.1, peakError < 10)
 	errorMeasure = fitError < 0.1
 	distantMeasure = fitError[errorMeasure[:NE]]
 	print 'distantMeasure shape', distantMeasure.shape
@@ -85,7 +88,7 @@ def PlotCumulativeDistr(x, IF_NEW_FIGURE = True, label = ''):
     plt.plot(x, yvals, label = label)
     plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
     plt.xlabel('dist')
-    plt.ylabel('prob')
+    plt.ylabel('CDF')
 
 def ChiSquare(y, ysem, fity):
     vidx = ysem > 0
@@ -100,22 +103,29 @@ def ChiSquare(y, ysem, fity):
     # return ((y[vidx] - fity[vidx])**2).sum() # / ysem[vidx]).sum()
 
 if __name__ == "__main__":
+    NE = 10000
     IF_COMPUTE = int(sys.argv[1])
     mExt = float(sys.argv[2])
-    nPhis = 36
-    NE = 10000
+    mExtOne = float(sys.argv[3])
+    p = float(sys.argv[4])
+    gamma = float(sys.argv[5])
+    trialNo = int(sys.argv[6])
+    T = int(sys.argv[7])
+    nChnks = int(sys.argv[8])
+    nPhis = int(sys.argv[9])    
     if IF_COMPUTE:
-	mExtOne = float(sys.argv[3])
-	p = float(sys.argv[4])
-	gamma = float(sys.argv[5])
-	trialNo = int(sys.argv[6])
-	T = int(sys.argv[7])
-	nChnks = int(sys.argv[8])
+	# mExtOne = float(sys.argv[3])
+	# p = float(sys.argv[4])
+	# gamma = float(sys.argv[5])
+	# trialNo = int(sys.argv[6])
+	# T = int(sys.argv[7])
+	# nChnks = int(sys.argv[8])
+        # nPhis = int(sys.argv[9])
 	out = MultiPeaksDistr(p, gamma, nPhis, mExt, mExtOne, IF_PLOT = 0, IF_FIT = 1, IF_COMPUTE = 1, trNo = trialNo, T = T, nChnks = nChnks)
     else:
 	pList = [0, 7] #range(9)
-	gList = [0] #, 1, 2, 3, 4, 5, 6, 7] #range(7) #, 2, 4, 6, 7]
-	mExtOneList = [0.075] #, 0.075]
+	gList = [0.1] #, 1, 2, 3, 4, 5, 6, 7] #range(7) #, 2, 4, 6, 7]
+	mExtOneList = [0.0375] #, 0.075]
 	fg0 = plt.figure()
 	fg1 = plt.figure()
 	IF_CDF_FIGURE = False
@@ -139,12 +149,13 @@ if __name__ == "__main__":
 			    validPList.append(p)
 			    validGList.append(gamma)
 
-                            label = r'$p = %s, \gamma = %s$'%(p, gamma)
+                            label = r'$p = %s$'%(p)
 			    if not IF_CDF_FIGURE:
 				PlotCumulativeDistr(distantMeasure, not IF_CDF_FIGURE, label = label)
 				IF_CDF_FIGURE = True
 			    else:
 				PlotCumulativeDistr(distantMeasure, False, label = label)
+			    plt.savefig('./figs/twopop/dist_cdf.png')
                         
 			except IOError, errorMsg:
 			    print"hello there: ", errorMsg

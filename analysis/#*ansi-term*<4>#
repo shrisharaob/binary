@@ -1,46 +1,3 @@
-neuron# 4 firparams =  [  1.13050347e+02   9.25333596e+01   1.93802527e-01   5.09807955e-20] qprob =  0.983720667895
-neuron# 5 firparams =  [  8.91444397e+01   8.01229365e+01   3.71423535e-01   9.63040086e-20] qprob =  0.999998917418
-neuron# 6 firparams =  [  1.22069765e+02   7.91770833e+01   1.97712265e-01   2.49839361e-19] qprob =  0.999998001384
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex)
- restricted \write18 enabled.
-entering extended mode
-(./p0g0_m75.tex
-LaTeX2e <2016/02/01>
-Babel <3.9q> and hyphenation patterns for 3 language(s) loaded.
-(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
-Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
-(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/utf8.def
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.dfu)
-(/usr/share/texlive/texmf-dist/tex/latex/base/ot1enc.dfu)
-(/usr/share/texlive/texmf-dist/tex/latex/base/omsenc.dfu)))
-(/usr/share/texmf/tex/latex/lm/lmodern.sty)
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
-(/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
 (/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
 (/usr/share/texlive/texmf-dist/tex/latex/base/fontenc.sty
 (/usr/share/texlive/texmf-dist/tex/latex/base/t1enc.def))
@@ -2046,4 +2003,47 @@ In [262]: fg.GetSinglePeakNeurons(7, 0, .075, .075, 36, 'E', 1000, './figs/twopo
 IF_GEN_RAND_NEURONS=1, nChnks=10)                                                                                                       
 \/\/\/\/\/\/\/\/\/\/
 fitting params ...
-^[OB^[OB^[OB^[OB^[OB^[OB^[OB^[OB
+^[OB^[OB^[OB^[OB^[OB^[OB^[OB^[OB\/\/\/\/\/\/\/\/\/\/
+printing pdf...
+n sp neurons =  26
+nPasges =  2
+neuron# 1291 firparams =  [  1.28106796e+02   6.26339198e+01   5.73033700e-01   2.09485295e-17] qprob =  0.999999861737
+neuron# 1291 firparams =  [  1.28106796e+02   6.26339201e+01   5.73033699e-01   3.04318666e-21] qprob =  0.999999861737
+neuron# 1701 firparams =  [  1.26567107e+02   6.19301356e+01   5.83449067e-01   3.87929861e-03] qprob =  0.999999343141
+neuron# 1701 firparams =  [  1.26567105e+02   6.19301375e+01   5.83449090e-01   3.87929737e-03] qprob =  0.999999343141
+neuron# 1701 firparams =  [  1.26567105e+02   6.19301503e+01   5.83449253e-01   3.87928870e-03] qprob =  0.999999343142
+neuron# 1701 firparams =  [  1.26567113e+02   6.19302517e+01   5.83450536e-01   3.87922049e-03] qprob =  0.999999343143
+neuron# 1701 firparams =  [  1.26567105e+02   6.19301536e+01   5.83449295e-01   3.87928647e-03] qprob =  0.999999343142
+neuron# 1752 firparams =  [  1.31186264e+02   5.39810526e+01   2.98683421e-01   5.98337570e-15] qprob =  0.999999999998
+neuron# 1893 firparams =  [  1.38887940e+02   5.28690447e+01   4.24078082e-01   1.15480268e-23] qprob =  0.999999997383
+neuron# 1954 firparams =  [  1.36015393e+02   6.64046099e+01   6.01432314e-01   3.59818675e-15] qprob =  0.999999996217
+neuron# 1962 firparams =  [  1.68608025e+02   4.67855400e+01   4.64006969e-01   3.45440720e-03] qprob =  0.999999999294
+neuron# 2053 firparams =  [  1.30015124e+02   6.39604991e+01   3.68114441e-01   3.40108200e-21] qprob =  0.999999999993
+neuron# 2130 firparams =  [  1.26449152e+02   8.36669047e+01   7.64274183e-01   9.67927239e-20] qprob =  0.999999915442
+neuron# 2130 firparams =  [  1.26449152e+02   8.36669047e+01   7.64274183e-01   8.85705099e-19] qprob =  0.999999915442
+neuron# 2284 firparams =  [  1.54633753e+02   5.41047672e+01   4.67257817e-01   3.30547561e-20] qprob =  0.999999999157
+neuron# 2297 firparams =  [  1.52517367e+02   7.37602623e+01   4.98688521e-01   1.93478112e-15] qprob =  0.999999999821
+neuron# 2300 firparams =  [  1.67979842e+02   6.17967616e+01   4.53881988e-01   5.27470844e-03] qprob =  0.999999983355
+neuron# 2322 firparams =  [  1.34003060e+02   6.73200616e+01   4.94892336e-01   2.99852972e-24] qprob =  0.99999999812
+neuron# 2334 firparams =  [  1.06181163e+02   4.37566200e+01   4.86483236e-01   6.82257466e-03] qprob =  0.999999873645
+neuron# 2334 firparams =  [  1.06181163e+02   4.37566213e+01   4.86483239e-01   6.82257429e-03] qprob =  0.999999873645
+neuron# 2596 firparams =  [  1.74296935e+02   5.72534957e+01   4.76320915e-01   5.40324324e-03] qprob =  0.999999998881
+neuron# 2648 firparams =  [  1.09980054e+02   3.37416507e+01   1.36458037e-01   2.92234369e-02] qprob =  0.999997660352
+neuron# 2648 firparams =  [  1.09980554e+02   3.37455945e+01   1.36457131e-01   2.92231870e-02] qprob =  0.99999766133
+neuron# 2650 firparams =  [  1.74011845e+02   8.45142359e+01   7.87196277e-01   1.12315411e-19] qprob =  0.999999164746
+neuron# 2650 firparams =  [  1.74011845e+02   8.45142359e+01   7.87196277e-01   1.11446044e-19] qprob =  0.999999164746
+neuron# 2653 firparams =  [  1.21868666e+02   4.49722430e+01   4.10260656e-01   3.56278913e-03] qprob =  0.999999999964
+
+In [263]: np.lin
+np.linalg    np.linspace  
+
+In [263]: np.linspace(0, 180, 20, endpoint=0)
+Out[263]: 
+array([   0.,    9.,   18.,   27.,   36.,   45.,   54.,   63.,   72.,
+         81.,   90.,   99.,  108.,  117.,  126.,  135.,  144.,  153.,
+        162.,  171.])
+
+In [264]: np.linspace(0, 180, 9, endpoint=0)                                                                                            
+Out[264]: array([   0.,   20.,   40.,   60.,   80.,  100.,  120.,  140.,  160.])
+
+In [265]: 

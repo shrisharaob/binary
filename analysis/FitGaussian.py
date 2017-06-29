@@ -153,7 +153,7 @@ def FitPeriodicGaussian(x, y, ySEM, p0 = [90, 30, 0.1, 1], IF_PLOT_FIT = False, 
 		qvalList = []
 		chi2List = []
 		tmpErrorList = []
-		for kk in range(20):
+		for kk in range(10):
 		    # p0 = [x[np.argmax(y)], 100 + 50 * np.random.randn(), np.nanmax(y), np.random.rand()]
    		    # p0 = [x[np.argmax(y)], 100 + 50 * np.random.randn(), np.nanmax(y) + np.random.rand(), 1.0]
 		    p0 = [x[np.argmax(y)], 50 + 20 * np.random.randn(), np.nanmax(y) + np.random.rand(), 1.0]
@@ -230,7 +230,7 @@ def ComputeTuningSEM(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 1
 	fitParams = []
 	fitError = []
 	for k in range(nNeurons):
-	    print k
+	    # print k
 	    yy = tc[k, :]
 	    yysem = tcSem[k, :]
 	    fitParamsTmp, fitErrorTmp, chiSquareArray[k], IS_GOOD_FIT[k], IS_RESPONSIVE[k] = FitPeriodicGaussian(phis, yy, yysem)
@@ -257,7 +257,8 @@ def ComputeTuningSEM(p, gamma, nPhis, mExt, mExtOne, nChnks = 2, trNo = 0, N = 1
 		plt.show()
 		if(~np.any(np.isnan(fitParams))):
 		    spVal = GammaQ(nPhis - 4, chiSquare) > 0.75
-                    plt.title(r'$\mathrm{neuron} %s, \, osi = %.4s, \, \chi^2 = %.4s, \, sp=%s$'%(i, osi, chiSquare, spVal))
+		    plt.title(r'$neuron# %s $'%(i, osi))		    
+                    # plt.title(r'$\mathrm{neuron} %s, \, osi = %.4s, \, \chi^2 = %.4s, \, sp=%s$'%(i, osi, chiSquare, spVal))
         	else:
 		    plt.title(r'$neuron# %s, \, osi = %.4s, \,$'%(i, osi))
 	    # plt.ion()
@@ -358,8 +359,8 @@ def PrintTuningBook(p, gamma, mExt, mExtOne, nPhis,  neuronType, nNeurons, fname
 		if True: #fitError < 0.06 and peakError < 5:
 		    with doc.create(SubFigure(position='b', width=NoEscape(width))) as figure:
 			figure.add_plot(width=NoEscape(r'\linewidth'), dpi = 300) #*args, **kwargs)
-		# plt.ion()
-	        # plt.waitforbuttonpress()
+		plt.ion()
+	        plt.waitforbuttonpress()
 		plt.clf()
     doc.generate_pdf(clean_tex=False)
 
@@ -399,7 +400,7 @@ def GetSinglePeakNeurons(p, gamma, mExt, mExtOne, nPhis,  neuronType, nNeurons, 
     	po = GetPhase(tc[i, :], phis, IF_IN_RANGE = True)
     	IS_SINGLE_PEAK = False
     	if IF_FIT:
-    	    fitParams, _, chiSquare, IS_SINGLE_PEAK, IS_RESPONSIVE = FitPeriodicGaussian(phis, yy, yysem, IF_PLOT_FIT = IF_PLOT, MIN_PEAK_RATE = 0.)
+    	    fitParams, _, chiSquare, IS_SINGLE_PEAK, IS_RESPONSIVE = FitPeriodicGaussian(phis, yy, yysem, IF_PLOT_FIT = IF_PLOT, MIN_PEAK_RATE = 0)
     	    fity = PeriodicGaussian(np.linspace(0, 180, nPhis, endpoint = False), *fitParams)
     	    fitMax = np.max(PeriodicGaussian(np.linspace(0, 180, 100, endpoint = 0), *fitParams))
     	    tcMax = np.max(yy)
@@ -416,7 +417,7 @@ def GetSinglePeakNeurons(p, gamma, mExt, mExtOne, nPhis,  neuronType, nNeurons, 
     print 'printing pdf...'
     print 'n sp neurons = ', len(singlePeakedIdx)
     # singlePeakedIdx = range(2)
-    
+    fname = './figs/twopop/p%sg%s_m%s_nphis%s'%(int(p*10), int(gamma*10), int(mExtOne * 1e3), nPhis)
     if len(singlePeakedIdx) > 0:
 	doc = Document(fname)
 	doc.packages.append(Package('geometry', options=['left=1cm', 'right=1cm', 'top=.8cm', 'bottom=1.2cm']))
@@ -447,7 +448,8 @@ def GetSinglePeakNeurons(p, gamma, mExt, mExtOne, nPhis,  neuronType, nNeurons, 
 		    if IF_VERBOSE:
 			print 'neuron#', i, 'firparams = ', fitParams, 'qprob = ', GammaQ(nPhis - 4, chiSquare)
 		    if(~np.any(np.isnan(fitParams))):
-			plt.title(r'$\mathrm{neuron:} %s, \, \chi^2 = %.4s$'%(i, chiSquare))
+			# plt.title(r'$\mathrm{neuron:} %s, \, \chi^2 = %.4s$'%(i, chiSquare))
+			plt.title(r'$\mathrm{neuron:} %s$'%(i, ))			
 		    else:
 			plt.title(r'$\mathrm{neuron:} %s$'%(i,))
 		    with doc.create(SubFigure(position='b', width=NoEscape(width))) as figure:

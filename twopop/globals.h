@@ -28,15 +28,16 @@
 #define cFF 0.2
 #define SQRT_KFF (sqrt((double)K * cFF))
 
-#define T_STOP 10000
-#define T_TRANSIENT (T_STOP * 0.05)
+#define T_STOP 1000
+#define T_TRANSIENT (T_STOP * 0.5)
 #define IF_GEN_MAT_DEFAULT 0
-#define IF_SAVE_SPKS 0
+#define IF_SAVE_SPKS 1
 #define IF_STEP_PHI0 0
 
-#define N_SEGMENTS 20
+#define N_SEGMENTS 10
 
-double m0, tStop, recModulation, ffModulation;
+double m0, tStop, ffModulation;
+double recModulationEE, recModulationEI, recModulationIE;
 double *conMat, *conMatFF;
 int trialNumber;
 unsigned int *nPostNeurons, *sparseConVec, *idxVec;

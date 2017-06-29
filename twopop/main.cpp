@@ -107,14 +107,25 @@ unsigned int RandINeuron() { //unsigned int min, unsigned int max) {
 }
 
 
-double ConProb(double phiI, double phiJ, unsigned int N) {
-  double out = ((double)K / (double)N) * (1 + 2.0 * (recModulation / SQRT_K) * cos(2.0 * (phiI - phiJ)));
+// double ConProb(double phiI, double phiJ, unsigned int N) {
+//   double out = ((double)K / (double)N) * (1 + 2.0 * (recModulation / SQRT_K) * cos(2.0 * (phiI - phiJ)));
+//   if((out < 0) | (out > 1)) {
+//     cout << "connection probability not in range [0, 1]!" << endl;
+//     exit(1);
+//   }
+//   return out;
+// }
+
+
+double ConProb(double phiI, double phiJ, unsigned int N, double recModulationAB) {
+  double out = ((double)K / (double)N) * (1 + 2.0 * (recModulationAB / SQRT_K) * cos(2.0 * (phiI - phiJ)));
   if((out < 0) | (out > 1)) {
     cout << "connection probability not in range [0, 1]!" << endl;
     exit(1);
   }
   return out;
 }
+
 
 double ConProbFF(double phiI, double phiJ, unsigned int N) {
   double out = ((double)K * cFF / (double)N) * (1 + 2.0 * (ffModulation / SQRT_KFF) * cos(2.0 * (phiI - phiJ)));
@@ -183,7 +194,7 @@ void GenSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, u
   for(i = 0; i < NE; i++) {
     // printf("%llu:\n", i); //    %f\n", i, shiftedVec[i] / (double)NE);    
     //fprintf(fp, "%f\n", shiftedVec[i] / (double)NE);
-    fprintf(fp2, "%f\n", ConProb(0.0, (double)i * M_PI / (double)NE, NE));
+    fprintf(fp2, "%f\n", ConProb(0.0, (double)i * M_PI / (double)NE, NE, recModulationEE));
   }
   fclose(fp2);
   // shiftedVecBuff.clear();
@@ -270,18 +281,24 @@ void GenConMat() {
     for (unsigned long int j = 0; j < N_NEURONS; j++)  {
       // i --> j
       if(i < NE && j < NE) { //E-to-E
-	if(UniformRand(gen) <= ConProb(i * M_PI / (double)NE, j * M_PI / (double)NE, NE)) {
+	if(UniformRand(gen) <= ConProb(i * M_PI / (double)NE, j * M_PI / (double)NE, NE, recModulationEE)) {
 	  conMat[i + N_NEURONS * j] = 1;
 	  nConnections += 1;
 	}
       }
       if(i < NE && j >= NE) { //E-to-I
-	if(UniformRand(gen) <= (double)K / (double)NE) {
+	if(UniformRand(gen) <= ConProb(i * M_PI / (double)NE, j * M_PI / (double)NI, NE, recModulationIE)) {
 	  conMat[i + N_NEURONS * j] = 1;
 	  nConnections += 1;
 	}
       }
-      if(i >= NE) { //I-to-E and i-to-i
+      if(i >= NE && j < NE) { //I-to-E
+	if(UniformRand(gen) <= ConProb(i * M_PI / (double)NI, j * M_PI / (double)NE, NI, recModulationEI)) {
+	  conMat[i + N_NEURONS * j] = 1;
+	  nConnections += 1;
+	}
+      }
+      if(i >= NE && j >= NE) { //I-to-I
 	if(UniformRand(gen) <= (double)K / (double)NI) {
 	  conMat[i + N_NEURONS * j] = 1;
 	  nConnections += 1;
@@ -473,7 +490,8 @@ void RunSim() {
   vector<double> firingRatesChkTMP(N_NEURONS);
   vector<double> firingRatesAtT(N_NEURONS);  
   vector<double> ratesAtInterval(N_NEURONS);
-  double popME1, popME1Phase;  // popMI1, popMI1Phase, 
+  double popME1, popME1Phase;  // popMI1, popMI1Phase,
+  double phiExtOld = phi_ext;
 
   std::string m1FileName;     
   m1FileName = "MI1_inst_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
@@ -493,6 +511,7 @@ void RunSim() {
 
 
   if(IF_STEP_PHI0) {
+    // used for computing m_E^1(t)
     intervalLen = (unsigned long)floor((nSteps - nInitialSteps) / 80.0);
   }
   
@@ -506,11 +525,14 @@ void RunSim() {
   std::random_device rdFF;  
   std::default_random_engine generatorFF(rdFF());
   std::discrete_distribution<int> MultinomialDistr {probUpdateFF, probUpdateE, probUpdateI};
+
+  int nPhisInSteps = 2;
   for(i = 0; i < nSteps; i++) {
     if(IF_STEP_PHI0) {
-      if((i > 0) && i % (unsigned long)floor((nSteps - nInitialSteps) / 8.0) == 0) {
+      
+      if((i > 0) && i % (unsigned long)floor((nSteps - nInitialSteps) / (double)nPhisInSteps) == 0) {
 	// change stimulus after half time
-	phi_ext = phi_ext +  M_PI / 8.0;
+	phi_ext = phi_ext +  0.5 * M_PI / (double)nPhisInSteps;
 	// printf("hello %f\n", phi_ext * 180  / M_PI);      
       }
     }
@@ -695,14 +717,14 @@ void RunSim() {
   fclose(fpInstRates);
   fclose(fpInstM1);
     
-  std::string txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";  
+  std::string txtFileName = "meanrates_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";  
   FILE *fpRates = fopen(txtFileName.c_str(), "w");
   for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
     fprintf(fpRates, "%f\n", firingRates[ii]);
   }
   fclose(fpRates);
 
-  txtFileName = "meanrates_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";  
+  txtFileName = "meanrates_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";  
   fpRates = fopen(txtFileName.c_str(), "w");
   for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
     fprintf(fpRates, "%f\n", frLast[ii]);
@@ -710,7 +732,7 @@ void RunSim() {
   fclose(fpRates);
 
   if(IF_SAVE_SPKS) {
-      txtFileName = "spktimes_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
+      txtFileName = "spktimes_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
       FILE *fpSpks = fopen(txtFileName.c_str(), "w");
       for(unsigned long long int ii = 0; ii < spkNeuronIdx.size(); ii++) {
 	fprintf(fpSpks, "%lu;%f\n", spkNeuronIdx[ii], spkTimes[ii]);
@@ -724,10 +746,8 @@ void RunSim() {
   firingRates.clear();
   netInputVec.clear();
   firingRatesChk.clear();
-
   firingRatesAtT.clear();  
   ratesAtInterval.clear();
-  
   printf("\nsee you later, alligator\n");
 }
   
@@ -736,13 +756,14 @@ int main(int argc, char *argv[]) {
   if(argc > 1) {
     m0_ext = atof(argv[1]);
   }
-
   if(argc > 2) {
     printf("hello mExtOn1\n");
     m1_ext = atof(argv[2]);
   }
   if(argc > 3) {
-    recModulation = atof(argv[3]); // parameter p
+    recModulationEE = atof(argv[3]); // parameter p
+    recModulationIE = recModulationEE;
+    recModulationEI = recModulationEE;
   }
   if(argc > 4) {
     ffModulation = atof(argv[4]); // parameter gamma
@@ -756,14 +777,14 @@ int main(int argc, char *argv[]) {
 
   tStop = T_STOP;
 
-  cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulation << " m0 = " << m0_ext << " m0_One = " << m1_ext << endl;
-  cout << "gamma = " << recModulation << " KFF = " << cFF * K << " Phi_Ext = " << phi_ext * 180.0 / M_PI << endl;
+  cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulationEE << " m0 = " << m0_ext << " m0_One = " << m1_ext << endl;
+  cout << "gamma = " << ffModulation << " KFF = " << cFF * K << " Phi_Ext = " << phi_ext * 180.0 / M_PI << endl;
   cout << "TAU_E = " << TAU_E << " Tau_I = " << TAU_I << endl;
   cout << "Trial# = " << trialNumber << endl;
   //  sprintf(folderName, "N%uK%um0%dpgamma%dT%d", N_NEURONS, (int)(m0 * 1e3), K, recModulation, ffModulation, (int)(tStop * 1e-3));
   // folderName = "./data/N" + std::to_string(N_NEURONS) + "K" + std::to_string(K) + "m0" + std::to_string((int)(m0 * 1e3)) + "p" + std::to_string((unsigned int)(10 * recModulation)) + "gamma" + std::to_string((unsigned int)(ffModulation)) + std::to_string((int)(tStop * 1e-3));
 
-  folderName = "./data/N" + std::to_string(N_NEURONS) + "K" + std::to_string(K) + "m0" + std::to_string((int)(m0 * 1e3)) + "p" + std::to_string((unsigned int)(10 * recModulation)) + "gamma0" + std::to_string((int)(tStop * 1e-3));  
+  folderName = "./data/N" + std::to_string(N_NEURONS) + "K" + std::to_string(K) + "m0" + std::to_string((int)(m0 * 1e3)) + "p" + std::to_string((unsigned int)(10 * recModulationEE)) + "gamma0" + std::to_string((int)(tStop * 1e-3));  
 
   // string mkdirp = "mkdir -p " ;
   // Create_Dir(folderName);

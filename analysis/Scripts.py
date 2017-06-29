@@ -13,14 +13,20 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.special import chdtrc as GammaQ
 from scipy.signal import argrelextrema
+import matplotlib.animation as animation
+import statsmodels.api as statsmodels
+
 
 def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
     baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
-
+    
     if nPop == 1:
     	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
-    	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+	if gamma >= .1:
+	    baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+	else:
+	    baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	    
     if IF_VERBOSE:
     	print baseFldr
 
@@ -32,11 +38,11 @@ def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000
     # 	print baseFldr
 	
     filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
+    print filename
     return np.loadtxt(baseFldr + filename)
 
 def LoadFrChnk(p, gamma, phi, mExt, mExtOne, chkId, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
     baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
-
     if nPop == 1:
     	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
@@ -254,20 +260,29 @@ def PlotInstantRates(stArray, spkTimeStart, spkTimeEnd, NE, NI, NFF, windowSize,
     plt.plot(binsE[:-1], cntE / (float(windowSize) * NE), color = 'k')
     plt.plot(binsI[:-1], cntI / (float(windowSize) * NI), color = [0.7, .1, .1])
     plt.grid()
-    
+
+
 def OSI(firingRate, atTheta):
     out = np.nan
-    validIdx = firingRate > 0
-    # zk = 2.0 * np.dot(firingRate[validIdx], np.exp(2j * atTheta[validIdx] * np.pi / 180)) / validIdx.sum()
-    # print np.absolute(zk)
-    mA1 = M1Component(firingRate) * 0.5 
-    mA0 = np.nanmean(firingRate)
-    # print mA1, mA0
-    if(mA0 > 0):
-        out = mA1 / mA0
-    if(out > 1):
-        out = np.nan
+    zk = np.dot(firingRate, np.exp(2j * atTheta * np.pi / 180))
+    # denum = np.absolute(np.dot(firingRate, np.exp(2j * np.zeros(len(atTheta)))))
+    if(firingRate.mean() > 0.0):
+        out = np.absolute(zk) / np.sum(firingRate)
     return out
+
+# def OSI(firingRate, atTheta):
+#     out = np.nan
+#     validIdx = firingRate > 0
+#     # zk = 2.0 * np.dot(firingRate[validIdx], np.exp(2j * atTheta[validIdx] * np.pi / 180)) / validIdx.sum()
+#     # print np.absolute(zk)
+#     mA1 = M1Component(firingRate) * 0.5 
+#     mA0 = np.nanmean(firingRate)
+#     # print mA1, mA0
+#     if(mA0 > 0):
+#         out = mA1 / mA0
+#     if(out > 1):
+#         out = np.nan
+#     return out
 
 def GetPhase(firingRate, atTheta, IF_IN_RANGE = False):
     out = np.nan
@@ -304,26 +319,37 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nP
     if IF_NEW_FIG:
 	plt.figure()
     for i, iPhi in enumerate(phis):
-        print 'loading from fldr: ', 
-	fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = True)
-        if(len(fr) == 1):
-            if(np.isnan(fr)):
-                print 'file not found!'
-	tc[:, i] = fr
+	print i, iPhi
+	try:
+	    if i == 0:
+		print 'loading from fldr: ',	    
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = True)
+	    else:
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = False)
+	    if(len(fr) == 1):
+		if(np.isnan(fr)):
+		    print 'file not found!'
+	    tc[:, i] = fr
+	except IOError:
+	    print 'file not found!'
     osi = OSIOfPop(tc[:NE, :], phis)
     # plt.xlabel(r"$\mathrm{OSI} \,\,\,\,  (m_{E, i}^{(1)})$")
     plt.xlabel('OSI', fontsize = 12)    
     plt.ylabel('Density', fontsize = 12)
-    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\, \gamma = %s, \, m_0^{(1)} = %s$'%(p, gamma, mExtOne), color = color, lw = 2)
-    # plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
-    plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s$'%(NE, K, mExt,))
+    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\,\gamma = %s$'%(p, gamma, ), color = color, lw = 1)
+    plt.xlim(0, 1)
+    plt.gca().set_xticks([0, 0.5, 1])
     _, ymax = plt.ylim()
-    plt.vlines(np.nanmean(osi), 0, ymax, lw = 2, color = color)
+    plt.gca().set_yticks([0, np.ceil(ymax)])    
+    # plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
+    plt.title(r'$m_0^{(0)} = %s, \,m_0^{(1)} = %s $'%(mExt, mExtOne))
+    _, ymax = plt.ylim()
+    plt.vlines(np.nanmean(osi), 0, ymax, lw = 1, color = color)
     print "mean OSI = ", np.nanmean(osi)
     # print "MEAN OSI = ", np.nanmean(osi)
     return osi
 
-def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0):
+def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True):
     if IF_NEW_FIG:
 	plt.figure()
     colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList), endpoint = False)]
@@ -331,14 +357,20 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, K = 
 	for p in pList:
 	    for gamma in gList:
 		try:
-		    PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr])
+		    PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T)
 		    clrCntr += 1
 		except IOError:
 		    print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
-    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
-    plt.gca().set_position([0.2, 0.2, .65, .65])
+    # plt.gca().legend(bbox_to_anchor = (1.1, 1.5))
+    if IF_LEGEND:
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+
+    plt.gca().set_position([0.15, 0.15, .65, .65])
     if nPop == 2:
-	plt.savefig("./figs/twopop/compareOSI_.png")
+	# plt.savefig("./figs/twopop/compareOSI_.png")
+	# plt.savefig("./figs/twopop/compareOSI_"+filename + '.png')
+	paperSize = [4, 3]
+        Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])	
     
 def ComputeTuningForNeuron(p, gamma, nPhis, mExt, mExtOne, neuronIdx, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
     NE = N
@@ -777,6 +809,23 @@ def M1Component(x):
     # print 'm1 out: ', out
     return out
 
+
+def M1Phase(x, IF_DEGREES = False):
+  dPhi = np.pi / float(len(x));
+  xCord = 0
+  yCord = 0
+  n = len(x)
+  for i in range(len(x)):
+    xCord += x[i] * np.cos(2.0 * i * dPhi);
+    yCord += x[i] * np.sin(2.0 * i * dPhi);
+  # m1 = (2.0 / float(n)) * np.sqrt(xCord * xCord + yCord * yCord);
+  phase = 0.5 * np.arctan2(yCord, xCord);
+  if(phase < 0):
+    phase = phase + np.pi;
+  if IF_DEGREES:
+      phase = phase * 180 / np.pi
+  return phase
+
 def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 1000, nTr = 1, nPop = 2, T = 1000, neuronType = 'E', IF_M1_SQRD = False, IF_SMOOTHED = False):
     m1 = []
     winSize = int(float(NE) / 10.0)
@@ -967,28 +1016,47 @@ def LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1
     if nPop == 1:
     	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
-    	baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+	if gamma >= .1:
+	    baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+	else:
+	    baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	    
+
+	
+    	# baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if IF_VERBOSE:
     	print baseFldr
+    # os.system('ls %s'%(baseFldr))
+    # mr = 
     filename = 'MI1_inst_theta%.6f_tr%s.txt'%(phi, trNo)
     return np.loadtxt(baseFldr + filename, delimiter = ';')
 
 
-def PlotM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False):
+def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False, phi = 0, smoothFraction = .1):
     try:
 	print p, gamma,
-	m1 = LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = False)
+	m1 = LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
 	mE1 = m1[:, 0]
 	mE1Phase = m1[:, 1]
-	print m1.shape
+        _, nClmns = m1.shape
 	xax = np.linspace(0, 1, len(mE1Phase))
-	plt.plot(xax, mE1Phase * 180.0 / np.pi, label = r'$p = %s, \gamma = %s$'%(p, gamma), alpha = 0.5)
+	
+	if nClmns == 3:
+	    stimAngle = m1[:, 2]
+	    stimChange = xax[np.diff(stimAngle) > 0]
+	    plt.plot(xax, stimAngle * 180 / np.pi, 'k', label = 'stimulus', lw = 2, linestyle = '--')
+	else:
+	    plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')	
+	print m1.shape
+	plt.plot(xax, mE1Phase * 180.0 / np.pi, label = 'bump phase', alpha = 0.5)
+	plt.grid()
 	_, xmax = plt.xlim()
-	if  IF_STIM_LEGEND:
-	    plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')
+	# cosFunc = lambda m0, m1, theta: m0 + m1 * np.cos(2 * theta)
+	plt.ylim(0, 180)
+	# if  IF_STIM_LEGEND:
+	#     plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')
 	# else:
 	#     plt.hlines(phi, 0, xmax, lw = 2, linestyle = '--')
-	plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \,$"%(mExt, mExtOne), fontsize = 18)
+	plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \, p = %s, \gamma = %s$"%(mExt, mExtOne, p, gamma), fontsize = 18)
 	plt.xlabel('Time (a.u)', fontsize = 16)
 	plt.ylabel(r"$\mathrm{arg}\left[ m_E(\phi) \right] \, \mathrm{(deg)}$", fontsize = 16)
 	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 14})
@@ -998,12 +1066,118 @@ def PlotM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1
 	    plt.savefig('./figs/twopop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
 	if nPop == 1:
 	    plt.savefig('./figs/onepop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
-	# plt.figure()
-	# plt.plot(xax, mE1)
+	plt.figure()
+	plt.plot(xax, mE1)
+	lowess = statsmodels.nonparametric.lowess(mE1, xax, frac = smoothFraction)	
+	plt.plot(lowess[:, 0], lowess[:, 1], 'r', lw = 2, label = 'smoothed')
+	_, ymax = plt.ylim()
+	plt.vlines(stimChange[0], 0, ymax, 'k')
+	plt.vlines(stimChange[1], 0, ymax, 'k', label = 'stim change')	
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 14})	
+	plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \, p = %s, \gamma = %s$"%(mExt, mExtOne, p, gamma), fontsize = 18)
+	# plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \,$"%(mExt, mExtOne), fontsize = 18)
+	plt.xlabel('Time (a.u)', fontsize = 16)
+	plt.ylabel(r"$m_E^{(1)}$", fontsize = 16)
+	plt.savefig('./figs/twopop/mE1amp_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))	
+	plt.grid()
 	plt.show()
     except IOError, e:
 	print ' not found'
     
+
+def AnimateAux(i, *fargs):
+    m0, m1, theta = fargs
+    cosFunc = lambda m0, m1, theta: m0 + m1 * np.cos(2 * theta)    
+    line.set_ydata(cosFunc(m0, m1[i], theta[i]))
+    return line,
+
+def AnimateBumpvsT(p, gamma, mExt, mExtOne, nSegments = 1, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False, phi = 0):
+
+
+    mE0 = []
+    mE1 = []
+    mE1Phase = []
+    cosFunc = lambda m0, m1, theta: m0 + m1 * np.cos(2 * theta)    
+    xax = np.linspace(0, 180, 100)
+    xaxRad = xax * np.pi / 180
+    for i in range(nSegments):
+	mr = LoadFrChnk(p, gamma, phi, mExt, mExtOne, i, trNo, T, N, K, nPop, IF_VERBOSE = True)
+	mE0.append(mr[:N].mean())
+	mE1.append(M1Component(mr[:N]))
+	mE1Phase.append(M1Phase(mr[:N], IF_DEGREES = False))
+	# plt.plot(xax, cosFunc(mE0[i], mE1[i], (xaxRad - mE1Phase[i])))
+
+
+    print mE1
+    print mE0
+    plt.plot(mE0)
+    plt.plot(mE1)
+    plt.show()
+
+    # fig, ax = plt.subplots()
+    # line, = plt.plot(xax, cosFunc(mE0[0], mE1[0], (xax - mE1Phase[0])))
+    # ani = animation.FuncAnimation(fig, AnimateAux, np.arange(1, len(mE1)), fargs = [mE0, mE1, mE1Phase],interval=100, blit=True)
+    # plt.show()
+
+
+
+    
+    # try:
+    # 	print p, gamma,
+    # 	m1 = LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
+    # 	mE1 = m1[:, 0]
+    # 	mE1Phase = m1[:, 1]
+    #     _, nClmns = m1.shape
+    # 	xax = np.linspace(0, 180, 100)
+
+
+    # 	 cosFunc = lambda m0, m1, theta: m0 + m1 * np.cos(2 * theta)
+
+	
+    #     mE0 = LoadFr(p, gamma, 90, mExt, mExtOne, trNo, T, N, K, nPop)
+
+    # 	# ipdb.set_trace()
+	
+    # 	mE0 = np.mean(mE0[:N])
+    # 	print 'm0 = ', mE0
+
+	
+
+        
+	# plt.plot(xax, mE1Phase * 180.0 / np.pi, label = r'$p = %s, \gamma = %s$'%(p, gamma), alpha = 0.5)        
+
+
+	
+	# if nClmns == 3:
+	#     stimAngle = m1[:, 2]
+	#     plt.plot(xax, stimAngle * 180 / np.pi, 'k', label = 'stimulus', lw = 2, linestyle = '--')
+	# else:
+	#     plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')	
+	# print m1.shape
+	# plt.plot(xax, mE1Phase * 180.0 / np.pi, label = r'$p = %s, \gamma = %s$'%(p, gamma), alpha = 0.5)
+	# _, xmax = plt.xlim()
+	# plt.ylim(0, 180)
+	# # if  IF_STIM_LEGEND:
+	# #     plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')
+	# # else:
+	# #     plt.hlines(phi, 0, xmax, lw = 2, linestyle = '--')
+	# plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \,$"%(mExt, mExtOne), fontsize = 18)
+	# plt.xlabel('Time (a.u)', fontsize = 16)
+	# plt.ylabel(r"$\mathrm{arg}\left[ m_E(\phi) \right] \, \mathrm{(deg)}$", fontsize = 16)
+	# plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 14})
+	# plt.gca().set_position([0.2, 0.2, .65, .65])    
+	# print ''
+	# if nPop == 2:
+	#     plt.savefig('./figs/twopop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
+	# if nPop == 1:
+	#     plt.savefig('./figs/onepop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
+	# plt.figure()
+	# plt.plot(xax, mE1)
+	# plt.show()
+    # except IOError, e:
+    # 	print e.message,  ' not found'
+
+
     
     
 def PrintTuningBook2(p, gamma, mExt, mExtOne, nPhis,  neuronType, nNeurons, fname, trNo = 0, nChnks= 2, T = 1000, NE = 10000, NI = 10000, K = 1000, nPop = 2, IF_FIT = True, IF_PLOT = True):
