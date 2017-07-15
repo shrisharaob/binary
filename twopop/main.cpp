@@ -762,8 +762,8 @@ int main(int argc, char *argv[]) {
   }
   if(argc > 3) {
     recModulationEE = atof(argv[3]); // parameter p
-    recModulationIE = recModulationEE;
-    recModulationEI = recModulationEE;
+    recModulationIE = 0; //-1.0 * recModulationEE;
+    recModulationEI = 0; //-1.0 * recModulationEE;
   }
   if(argc > 4) {
     ffModulation = atof(argv[4]); // parameter gamma

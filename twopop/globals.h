@@ -31,10 +31,10 @@
 #define T_STOP 1000
 #define T_TRANSIENT (T_STOP * 0.5)
 #define IF_GEN_MAT_DEFAULT 0
-#define IF_SAVE_SPKS 1
+#define IF_SAVE_SPKS 0
 #define IF_STEP_PHI0 0
 
-#define N_SEGMENTS 10
+#define N_SEGMENTS 2
 
 double m0, tStop, ffModulation;
 double recModulationEE, recModulationEI, recModulationIE;

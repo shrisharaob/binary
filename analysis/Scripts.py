@@ -15,7 +15,7 @@ from scipy.special import chdtrc as GammaQ
 from scipy.signal import argrelextrema
 import matplotlib.animation as animation
 import statsmodels.api as statsmodels
-
+from matplotlib.ticker import FormatStrFormatter
 
 def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
     baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
@@ -23,7 +23,7 @@ def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000
     if nPop == 1:
     	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
-	if gamma >= .1:
+	if gamma >= .1 or gamma == 0:
 	    baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
 	else:
 	    baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	    
@@ -157,12 +157,13 @@ def AvgAutoCorrInInterval(starray, neuronsList, spkTimeStart, spkTimeEnd, minSpk
             # print meanRate
             st = np.histogram(np.squeeze(spkTimes), spkBins)
             tmpCorr = AutoCorr(st[0])
+	    # CONVERGES TO MEAN RATE
             avgCorr += tmpCorr / ((downSampleBinSize) **2 * nSpkBins * meanRate)
     avgCorr = avgCorr / nValidNeurons
     bins = np.array(downSampleBinSize)
     avgCorr[np.argmax(avgCorr)] = 0.0
     avgCorr = avgCorr[: maxTimeLag]
-    print 'avgRate = ', avgRate / N
+    print avgRate / N
     if(len(avgCorr) > 0):
         return avgCorr
     else :
@@ -175,7 +176,12 @@ def PlotAC(st, nNeurons, spkTimeStart, spkTimeEnd, minSpks = 100, maxTimeLag = 1
         nENeurons = np.random.randint(0, NE, nNeurons)
     if nNeurons < NI:
         nINeurons = np.random.randint(NE, NE + NI, nNeurons)
+    meanRateE = np.sum(st[:, 0] < NE) / (float(NE) * (spkTimeEnd - spkTimeStart))
+    meanRateI = np.sum(st[:, 0] > NE) / (float(NI) * (spkTimeEnd - spkTimeStart))    
+    print 'avgRate E = ',	
     acE = AvgAutoCorrInInterval(st, nENeurons, spkTimeStart, spkTimeEnd, NE = NE, NI = NI, NFF = NFF, TAU_E = TAU_E, TAU_I = TAU_I, TAU_FF = TAU_FF, theta = theta, maxTimeLag = maxTimeLag)
+    plt.hlines(meanRateE, 0, plt.xlim()[1])
+    print 'avgRate I = ',	    
     acI = AvgAutoCorrInInterval(st, nINeurons, spkTimeStart, spkTimeEnd, NE = NE, NI = NI, NFF = NFF, TAU_E = TAU_E, TAU_I = TAU_I, TAU_FF = TAU_FF, theta = theta, maxTimeLag = maxTimeLag, minSpks = minSpks)
     plt.figure()
     plt.plot(acE, 'k', label = 'E')
@@ -302,12 +308,13 @@ def OSIOfPop(firingRates, atThetas):
     return out
 
 
-def POofPopulation(tc, theta = np.arange(0.0, 180.0, 22.5)):
+def POofPopulation(tc, theta = np.arange(0.0, 180.0, 22.5), IF_IN_RANGE = False):
     # return value in degrees
-    nNeurons, _ = tc.shape
+    nNeurons, nAngles = tc.shape
+    theta = np.linspace(0, 180, nAngles, endpoint = False)
     po = np.zeros((nNeurons, ))
     for kNeuron in np.arange(nNeurons):
-        po[kNeuron] = GetPhase(tc[kNeuron, :], theta)
+        po[kNeuron] = GetPhase(tc[kNeuron, :], theta, IF_IN_RANGE)
     return po 
 
 
@@ -333,10 +340,12 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nP
 	except IOError:
 	    print 'file not found!'
     osi = OSIOfPop(tc[:NE, :], phis)
+    print "K = ", K, ", osi simulation: ", np.nanmean(osi)
     # plt.xlabel(r"$\mathrm{OSI} \,\,\,\,  (m_{E, i}^{(1)})$")
     plt.xlabel('OSI', fontsize = 12)    
     plt.ylabel('Density', fontsize = 12)
-    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\,\gamma = %s$'%(p, gamma, ), color = color, lw = 1)
+    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$K=%s$'%(K, ), color = color, lw = 1)    
+    # plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\,\gamma = %s$'%(p, gamma, ), color = color, lw = 1)
     plt.xlim(0, 1)
     plt.gca().set_xticks([0, 0.5, 1])
     _, ymax = plt.ylim()
@@ -349,18 +358,21 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nP
     # print "MEAN OSI = ", np.nanmean(osi)
     return osi
 
-def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True):
+# global clrCntr
+# clrCntr = 0
+def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = ''):
     if IF_NEW_FIG:
 	plt.figure()
     colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList), endpoint = False)]
     for mExtOne in mExtOneList:
 	for p in pList:
 	    for gamma in gList:
-		try:
-		    PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T)
-		    clrCntr += 1
-		except IOError:
-		    print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
+		for K in KList:
+		    try:
+			PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T, K=K)
+			clrCntr += 1
+		    except IOError:
+			print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
     # plt.gca().legend(bbox_to_anchor = (1.1, 1.5))
     if IF_LEGEND:
 	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
@@ -370,6 +382,8 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, K = 
 	# plt.savefig("./figs/twopop/compareOSI_.png")
 	# plt.savefig("./figs/twopop/compareOSI_"+filename + '.png')
 	paperSize = [4, 3]
+	# ipdb.set_trace()
+	filename = filename + "p%sg%s"%(p, gamma)
         Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])	
     
 def ComputeTuningForNeuron(p, gamma, nPhis, mExt, mExtOne, neuronIdx, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
@@ -849,7 +863,7 @@ def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 10
                 # print "LoadFr() ", p, gamma, atPhi, mExt, mExtOne, n, T, NE, K, nPop
                 # print '#populations:', nPop
                 # raise SystemExit
-                m = LoadFr(p, gamma, atPhi, mExt, mExtOne, n, T, NE, K, nPop)
+                m = LoadFr(p, gamma, atPhi, mExt, mExtOne, n, T, NE, K, nPop, IF_VERBOSE = True)
                 # ipdb.set_trace()
                 # print m
                 if(neuronType == 'E'):
@@ -1016,9 +1030,9 @@ def LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1
     if nPop == 1:
     	baseFldr = baseFldr + 'onepop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
-	if gamma >= .1:
+	if gamma >= .1 or gamma == 0:
 	    baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-	else:
+	if gamma == 0.05:
 	    baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	    
 
 	
@@ -1030,8 +1044,185 @@ def LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1
     filename = 'MI1_inst_theta%.6f_tr%s.txt'%(phi, trNo)
     return np.loadtxt(baseFldr + filename, delimiter = ';')
 
+def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
+    NE = N
+    NI = N
+    tc = np.zeros((NE + NI, nPhis))
+    tc[:] = np.nan
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    for i, iPhi in enumerate(phis):
+	print i, iPhi
+	try:
+	    if i == 0:
+		print 'loading from fldr: ',	    
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = True)
+	    else:
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = False)
+	    if(len(fr) == 1):
+		if(np.isnan(fr)):
+		    print 'file not found!'
+	    tc[:, i] = fr
+	except IOError:
+	    print 'file not found!'
+    return tc
 
-def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False, phi = 0, smoothFraction = .1):
+def PopVectorPhase(fr, p, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True):
+    nNeurons = fr.size
+    thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
+    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo, N, K, nPop, T)
+    prefferedOri = POofPopulation(tc[:N]) * np.pi / 180.0
+    popVector = np.dot(fr, np.exp(2j * prefferedOri))
+    out = np.angle(popVector) * 180.0 / np.pi    
+    if IF_IN_RANGE:
+	if(out < 0):
+	    out += 360
+    return out * 0.5
+
+def LocationVsPO(p, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True):
+    plt.figure()
+    nNeurons = N
+    thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
+    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo, N, K, nPop, T)
+    prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
+    neuronLoc = np.linspace(0, 180, nNeurons, endpoint = False)
+    plt.plot(neuronLoc, prefferedOri * 180 / np.pi, 'k.')
+    plt.plot([0, plt.xlim()[1]], [0, plt.ylim()[1]], 'r', lw = 2)
+    plt.title(r'$p=%s, \, \gamma = %s$'%(p, gamma))
+    plt.xlabel('neuron location (deg)')
+    plt.ylabel('PO (deg)')
+
+def LocationVsPOCorr(pList, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, IF_NEW_FIG = True, IF_LEGEND = False):
+    if IF_NEW_FIG:
+	plt.figure()
+    nNeurons = N
+    thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
+    avgCorrVsp = []
+    validP = []
+    for p in pList:
+	try:
+	    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo, N, K, nPop, T)
+	    prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
+	    neuronLoc = np.linspace(0, 180, nNeurons, endpoint = False)
+	    avgCorrVsp.append(np.mean(np.cos(2 * (neuronLoc * np.pi / 180.0 - prefferedOri))))
+	    validP.append(p)	    
+	except IOError:
+	    print 'files not found'
+    plt.plot(validP, avgCorrVsp, 'o-', label = r'$\gamma = %s$'%(gamma))
+    plt.xlabel('p', fontsize = 14)
+    plt.ylabel(r'$\langle \cos(2 (\phi_i - \phi_{i}^{po})) \rangle_i$', fontsize = 14)
+    plt.gca().set_position([0.25, 0.2, .65, .65])
+    paperSize = [4, 3]
+    figFormat = 'png'
+    figFolder = './figs/twopop/'
+    figname = 'location_vs_po_g%s'%(gamma)
+    if IF_LEGEND:
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})	    
+    print figFolder, figname
+    plt.ylim(0, 1)
+    FixAxisLimits(plt.gcf())
+    Print2Pdf(plt.gcf(),  figFolder + figname,  paperSize, figFormat=figFormat, labelFontsize = 14, tickFontsize=10, titleSize = 10.0)
+    plt.show()
+
+
+def LocalPOCorr(neuronIdx, po, nLocalNeurons = 51):
+    nNeurons = po.size	
+    nFlankingNeurons = nLocalNeurons / 2
+    # ipdb.set_trace()
+    neurons2Left = np.mod(neuronIdx - np.arange(nFlankingNeurons) - 1, nNeurons)
+    neurons2Right = np.mod(neuronIdx + np.arange(nFlankingNeurons) + 1, nNeurons)
+    neuronsList = np.concatenate((neurons2Left, neurons2Right))
+    corr = np.empty((len(neuronsList), ))
+    corr[:] = np.nan
+    poOfCenterdNeuron = po[neuronIdx]
+    for i, neuronJ in enumerate(neuronsList):
+	corr[i] = np.cos(2 * (poOfCenterdNeuron - po[neuronJ]))
+    avgCorr = np.nanmean(corr)
+    return avgCorr
+
+def PopLocalPOCorr(po, nLocalNeurons = 51):
+    nNeurons = po.size
+    out = []
+    for i in range(nNeurons):
+	out.append(LocalPOCorr(i, po, nLocalNeurons))
+    out = np.array(out)
+    return np.nanmean(out)
+	
+def LocalPOCorrVsP(pList, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, IF_NEW_FIG = True, IF_LEGEND = False, nLocalNeurons = 51):
+    # local PO correlation 
+    if IF_NEW_FIG:
+	plt.figure()
+    nNeurons = N
+    thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
+    avgLocalCorrVsp = []
+    validP = []
+    for p in pList:
+	try:
+	    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo, N, K, nPop, T)
+	    prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
+	    avgLocalCorrVsp.append(PopLocalPOCorr(prefferedOri, nLocalNeurons))
+	    validP.append(p)
+	except IOError:
+	    print 'files not found'
+    plt.plot(validP, avgLocalCorrVsp, 'o-', label = r'$\gamma = %s$'%(gamma))
+    plt.xlabel('p', fontsize = 14)
+    plt.ylabel(r'$\langle \cos(2 (\phi_i^{po} - \phi_{j}^{po})) \rangle_{\delta \phi}$', fontsize = 14)
+    plt.gca().set_position([0.25, 0.2, .65, .65])
+    paperSize = [4, 3]
+    figFormat = 'png'
+    figFolder = './figs/twopop/'
+    figname = 'localPOCorr_vs_p_g%s'%(gamma)
+    if IF_LEGEND:
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})	    
+    print figFolder, figname
+    plt.ylim(0, 1)
+    FixAxisLimits(plt.gcf())
+    Print2Pdf(plt.gcf(),  figFolder + figname,  paperSize, figFormat=figFormat, labelFontsize = 14, tickFontsize=10, titleSize = 10.0)
+    plt.show()    
+    
+def FixAxisLimits(fig):
+    ax = fig.axes[0]
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    ax.set_xticks([xmin, 0.5 *(xmin + xmax), xmax])
+    ax.set_yticks([ymin, 0.5 *(ymin + ymax), ymax])
+    plt.draw()
+
+def StimulusDecodingVsP(phi_ext, pList, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, IF_NEW_FIG = True, IF_LEGEND = False, nLocalNeurons = 51):
+    # local PO correlation 
+    if IF_NEW_FIG:
+	plt.figure()
+    nNeurons = N
+    thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
+    stimDecodedVsp = []
+    validP = []
+    for p in pList:
+	try:
+	    mr = LoadFr(p, gamma, phi_ext, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
+	    popVecPhase = PopVectorPhase(mr[:N], p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T)
+	    stimDecodedVsp.append(np.cos(2.0 * (phi_ext - popVecPhase)))
+	    validP.append(p)
+	except IOError:
+	    print 'files not found'
+    plt.plot(validP, stimDecodedVsp, 'o-', label = r'$\gamma = %s$'%(gamma))
+    plt.xlabel('p', fontsize = 14)
+    plt.ylabel(r'$\langle \cos(2 (\phi_i^{po} - \phi_{j}^{po})) \rangle_{\delta \phi}$', fontsize = 14)
+    plt.gca().set_position([0.25, 0.2, .65, .65])
+    paperSize = [4, 3]
+    figFormat = 'png'
+    figFolder = './figs/twopop/'
+    figname = 'stimDecodedVsp_vs_p_g%s'%(gamma)
+    if IF_LEGEND:
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})	    
+    print figFolder, figname
+    plt.ylim(0, 1)
+    FixAxisLimits(plt.gcf())
+    Print2Pdf(plt.gcf(),  figFolder + figname,  paperSize, figFormat=figFormat, labelFontsize = 14, tickFontsize=10, titleSize = 10.0)
+    plt.show()    
+
+
+def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False, phi = 0, smoothFraction = .1, nPhis = 8):
     try:
 	print p, gamma,
 	m1 = LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
@@ -1039,7 +1230,7 @@ def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, 
 	mE1Phase = m1[:, 1]
         _, nClmns = m1.shape
 	xax = np.linspace(0, 1, len(mE1Phase))
-	
+	_, xmax = plt.xlim()	
 	if nClmns == 3:
 	    stimAngle = m1[:, 2]
 	    stimChange = xax[np.diff(stimAngle) > 0]
@@ -1048,8 +1239,12 @@ def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, 
 	    plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')	
 	print m1.shape
 	plt.plot(xax, mE1Phase * 180.0 / np.pi, label = 'bump phase', alpha = 0.5)
+	mr = LoadFr(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
+	popVecPhase = PopVectorPhase(mr[:N], p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T)
+	ipdb.set_trace()	
+	print 'pop vec phase = ', popVecPhase
+	plt.hlines(popVecPhase, 0, xmax, label = 'popvec', color = 'g')
 	plt.grid()
-	_, xmax = plt.xlim()
 	# cosFunc = lambda m0, m1, theta: m0 + m1 * np.cos(2 * theta)
 	plt.ylim(0, 180)
 	# if  IF_STIM_LEGEND:
@@ -1066,6 +1261,10 @@ def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, 
 	    plt.savefig('./figs/twopop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
 	if nPop == 1:
 	    plt.savefig('./figs/onepop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
+	    
+	ipdb.set_trace()
+
+
 	plt.figure()
 	plt.plot(xax, mE1)
 	lowess = statsmodels.nonparametric.lowess(mE1, xax, frac = smoothFraction)	
@@ -1092,8 +1291,6 @@ def AnimateAux(i, *fargs):
     return line,
 
 def AnimateBumpvsT(p, gamma, mExt, mExtOne, nSegments = 1, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False, phi = 0):
-
-
     mE0 = []
     mE1 = []
     mE1Phase = []
@@ -1106,8 +1303,6 @@ def AnimateBumpvsT(p, gamma, mExt, mExtOne, nSegments = 1, trNo = 0, T = 1000, N
 	mE1.append(M1Component(mr[:N]))
 	mE1Phase.append(M1Phase(mr[:N], IF_DEGREES = False))
 	# plt.plot(xax, cosFunc(mE0[i], mE1[i], (xaxRad - mE1Phase[i])))
-
-
     print mE1
     print mE0
     plt.plot(mE0)

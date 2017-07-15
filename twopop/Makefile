@@ -1,4 +1,3 @@
-
 CC=g++
 CFLAGS=-Ofast -O4 -Wall
 DEPS=globals.h

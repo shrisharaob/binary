@@ -164,8 +164,7 @@ def UE0GivenUE1(u0Guess, *args):
     # solve for u_E(0) given U_E(1)
     u0 = u0Guess
     jee, alpha, u1, meanFieldRate = args
-    funcME0 = lambda phi: (1.0 / np.pi) * MyErfc((1.0 - u0 - u1 * np.cos(2.0 * phi)) / np.sqrt(alpha))    
-    return meanFieldRate - quad(funcME0, 0, np.pi)[0]
+    funcME0 = lambda phi: (1.0 / np.pi) * MyErfc((1.0 - u0 - u1 * np.cos(2.0 * phi)) / np.sqrt(alpha))      return meanFieldRate - quad(funcME0, 0, np.pi)[0]
 
 def Eq0(u0Guess, *args):
     # solve for u_E(0)
@@ -379,7 +378,7 @@ if __name__ == "__main__":
     CheckBalConditions(JEE, JEI, JIE, JII, JE0, JI0)
     gamma = 0.0
     m0 = 0.075
-    p = 1
+    p = 7
     K = int(sys.argv[2])
     simTime = int(sys.argv[3])
     solverType = 'fsolve'
