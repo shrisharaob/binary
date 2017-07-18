@@ -420,16 +420,17 @@ void LoadSparseConMat() {
   printf("%p %p %p\n", fpIdxVec, fpNpostNeurons, fpSparseConVec);
   dummy = fread(nPostNeurons, sizeof(*nPostNeurons), N_NEURONS, fpNpostNeurons);
   fclose(fpNpostNeurons);
-  printf("#Post read\n");
   for(unsigned int i = 0; i < N_NEURONS; ++i) {
     nConnections += nPostNeurons[i];
   }
+  printf("#Post read\n #rec cons = %lu \n", nConnections);  
   sparseConVec = new unsigned int[nConnections] ;
   dummy = fread(sparseConVec, sizeof(*sparseConVec), nConnections, fpSparseConVec);
   if(dummy != nConnections) {
     printf("sparseConvec read error ? \n");
 
   }
+  printf("#sparse cons = %lu \n\n", dummy);    
   printf("sparse vector read\n");  
   dummy = fread(idxVec, sizeof(*idxVec), N_NEURONS, fpIdxVec);
   printf("#idx vector read\n");    
@@ -797,7 +798,7 @@ int main(int argc, char *argv[]) {
 
 
 
-  if(phi_ext == 0) {
+  if(trialNumber == 0) {
     clock_t timeStartCM = clock(); 
     GenFFConMat();    
     GenConMat();

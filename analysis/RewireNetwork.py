@@ -87,7 +87,7 @@ def Convert2OutDegree(preNeurons, nPostNeurons):
 	# ipdb.set_trace()
 	for kk in iPreNeurons:
 	    sparseConVec[kk].append(i)
-    return np.hstack(sparseConVec)
+    return np.asarray(np.hstack(sparseConVec), dtype = np.int32)
 
 def RewireSqrtK(preNeurons, recModulation, po, K, NE):
     N = NE #len(preNeurons)
@@ -169,6 +169,7 @@ def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 100
 	    tc[:, i] = fr
 	except IOError:
 	    print 'file not found!'
+	    raise SystemExit
     return tc
 
 
@@ -255,11 +256,10 @@ if __name__ == '__main__':
     tmp = sparseVec[sparseVec < NE]
     print np.sort(tmp[:10])
     # REWIRE
-    # po = GetPOofPop(p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True)
-    po = np.linspace(0, np.pi, NE + NI)
+    po = GetPOofPop(p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True)
     preNeurons = Convert2InDegree(idxvec, nPostNeurons, sparseVec)
-    rewiredPreNeurons = RewireSqrtK(preNeurons, p, po, K, NE)
-    # rewiredPreNeurons = preNeurons
+    # rewiredPreNeurons = RewireSqrtK(preNeurons, p, po, K, NE)
+    rewiredPreNeurons = preNeurons
     sparseConVec = Convert2OutDegree(rewiredPreNeurons, nPostNeurons)
     sparseVec = np.require(sparseConVec, np.int32, requires)
 
@@ -267,7 +267,6 @@ if __name__ == '__main__':
     print np.sort(tmp[:10])
     print 'nConnections = ', nPostNeurons.sum()
     print 'sparsevec length = ', sparseVec.size
-    raise SystemExit
 
 
     trNo += 1 # connectivity written to another folder
@@ -283,9 +282,12 @@ if __name__ == '__main__':
 
     os.system('mkdir -p ' + baseFldrNew)
     os.system('cp ' + baseFldr + '/*.out ' + baseFldrNew)
+    os.system('cp ' + baseFldr + '/*FF.dat ' + baseFldrNew)
     
 
     # WRITE
+    print '--'*20
+    print 'saving files to: ', baseFldrNew
     fpsparsevec = open(baseFldrNew + '/' + 'sparseConVec.dat', 'wb')
     sparseVec.tofile(fpsparsevec)
     fpsparsevec.close()
@@ -296,56 +298,3 @@ if __name__ == '__main__':
     nPostNeurons.tofile(fpNpostNeurons)
     fpNpostNeurons.close()    
 
-###########################################################################
-        
-#     print 'generating  connectivity matrix...',
-#     sys.stdout.flush()
-#     if NetworkType == 'fixed_in_degree':
-#         cprob = GenerateFixedInDegreeMat(cprob, K, NE, NI)
-#     else:
-#         cprob = cprob > np.random.uniform(size = (cprob.shape))
-#     print 'done!'
-#     idxvec = np.zeros((NE + NI, ), dtype = np.int32)
-#     nPostNeurons = np.zeros((NE + NI, ), dtype = np.int32)
-#     sparseVec = np.zeros(shape = (cprob.sum(), ), dtype = np.int32)
-#     rows = NE + NI
-#     clmns = NE + NI
-#     print 'Generating sparse representation ...',
-#     sys.stdout.flush()
-#     cprob = cprob.transpose()
-#     GenSparseMat(cprob.astype(np.int32), rows, clmns, sparseVec, idxvec, nPostNeurons)
-#     print 'done!'
-#     print 'npost sum =', nPostNeurons.sum()
-#     print 'convec sum = ', cprob.sum()
-#     xxx = cprob[:NE, :NE]
-#     # plt.plot(xxx.sum(0))
-#     plt.hist(xxx.sum(0), 100, histtype = 'step', normed = 1)
-#     plt.show()
-# #     plt.ion()
-# #     xxx = cprob[:NE, :NE]
-# #     plt.hist(xxx.sum(0), 100)
-# #     plt.waitforbuttonpress()
-# #     plt.clf()
-# # #    np.save('convec', cprob.astype(np.int32))
-# # #    convec[:NE, :NE] = cprob[:NE, :NE] > np.random.uniform(size = (cprob[:NE, :NE].shape))
-#     figFolder = figFolder = basefolder + '/nda/spkStats/figs/rewiring/'
-#     plotCon = 'I'
-#     for i in range(2):
-#         if(plotCon == 'E'):
-#             poe = po[:NE]
-#             idx = np.random.randint(0, NE, 1)[0]
-#             plt.hist(poe[cprob[idx, :NE]] * 180.0 / np.pi)
-# #            plt.hist(poe[cprob[idx, :NE]] * 180.0 / np.pi)
-#             plt.title("PO = %s"%(poe[idx] * 180.0 / np.pi))
-#             plt.waitforbuttonpress()
-#             Print2Pdf(plt.gcf(),  figFolder + 'rewired_input_ori_distr_fig%s'%(i), [4.6,  3.39], figFormat='png', labelFontsize = 12, tickFontsize=12, titleSize = 12.0, IF_ADJUST_POSITION = True, axPosition = [0.175, 0.15, .78, .75])
-#             plt.clf()
-#         elif(plotCon == 'I'):
-#             poi = po[NE:]
-#             idx = np.random.randint(NE, NE+NI, 1)[0]
-#             plt.hist(poi[cprob[idx, NE:]] * 180.0 / np.pi)
-#             plt.title("PO = %s"%(po[idx] * 180.0 / np.pi))
-#             plt.waitforbuttonpress()
-#             Print2Pdf(plt.gcf(),  figFolder + 'rewired_input_ori_distr_fig%s'%(i), [4.6,  3.39], figFormat='png', labelFontsize = 12, tickFontsize=12, titleSize = 12.0, IF_ADJUST_POSITION = True, axPosition = [0.175, 0.15, .78, .75])
-#             plt.clf()
-#     kb.keyboard()
