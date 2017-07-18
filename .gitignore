@@ -17,6 +17,7 @@
 *.log
 *.tex
 *.el
+*.odp
 
 sed*
 vm
