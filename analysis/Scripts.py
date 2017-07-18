@@ -1085,11 +1085,20 @@ def LocationVsPO(p, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 10
     tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo, N, K, nPop, T)
     prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
     neuronLoc = np.linspace(0, 180, nNeurons, endpoint = False)
-    plt.plot(neuronLoc, prefferedOri * 180 / np.pi, 'k.')
+    plt.plot(neuronLoc, prefferedOri * 180 / np.pi, 'k.', markersize = .85)
     plt.plot([0, plt.xlim()[1]], [0, plt.ylim()[1]], 'r', lw = 2)
     plt.title(r'$p=%s, \, \gamma = %s$'%(p, gamma))
     plt.xlabel('neuron location (deg)')
     plt.ylabel('PO (deg)')
+
+    plt.gca().set_position([0.25, 0.2, .65, .65])
+    paperSize = [4, 3]
+    figFormat = 'png'
+    figFolder = './figs/twopop/'
+    figname = 'location_vs_po_scatter_p%sg%s'%(int(p*100), int(gamma*100))
+    FixAxisLimits(plt.gcf())
+    Print2Pdf(plt.gcf(),  figFolder + figname,  paperSize, figFormat=figFormat, labelFontsize = 14, tickFontsize=10, titleSize = 10.0)
+    plt.show()
 
 def LocationVsPOCorr(pList, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, IF_NEW_FIG = True, IF_LEGEND = False):
     if IF_NEW_FIG:
@@ -1199,15 +1208,16 @@ def StimulusDecodingVsP(phi_ext, pList, gamma, mExt, mExtOne, nPhis = 8, trNo = 
     validP = []
     for p in pList:
 	try:
-	    mr = LoadFr(p, gamma, phi_ext, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
-	    popVecPhase = PopVectorPhase(mr[:N], p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T)
+	    mr = LoadFr(p, gamma, phi_ext, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = False)
+	    popVecPhase = PopVectorPhase(mr[:N], p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T) * np.pi / 180.0
 	    stimDecodedVsp.append(np.cos(2.0 * (phi_ext - popVecPhase)))
 	    validP.append(p)
 	except IOError:
 	    print 'files not found'
     plt.plot(validP, stimDecodedVsp, 'o-', label = r'$\gamma = %s$'%(gamma))
     plt.xlabel('p', fontsize = 14)
-    plt.ylabel(r'$\langle \cos(2 (\phi_i^{po} - \phi_{j}^{po})) \rangle_{\delta \phi}$', fontsize = 14)
+    plt.ylabel(r'$\cos(2 (\Phi_{ext} - \Phi_{pop}))$', fontsize = 14)
+    plt.title('population vector decoding')
     plt.gca().set_position([0.25, 0.2, .65, .65])
     paperSize = [4, 3]
     figFormat = 'png'
@@ -1238,10 +1248,11 @@ def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, 
 	else:
 	    plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')	
 	print m1.shape
-	plt.plot(xax, mE1Phase * 180.0 / np.pi, label = 'bump phase', alpha = 0.5)
+	if p != 0:
+	    plt.plot(xax, mE1Phase * 180.0 / np.pi, label = 'bump phase', alpha = 0.5)
 	mr = LoadFr(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
 	popVecPhase = PopVectorPhase(mr[:N], p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T)
-	ipdb.set_trace()	
+	# ipdb.set_trace()	
 	print 'pop vec phase = ', popVecPhase
 	plt.hlines(popVecPhase, 0, xmax, label = 'popvec', color = 'g')
 	plt.grid()
@@ -1251,17 +1262,24 @@ def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, 
 	#     plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')
 	# else:
 	#     plt.hlines(phi, 0, xmax, lw = 2, linestyle = '--')
-	plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \, p = %s, \gamma = %s$"%(mExt, mExtOne, p, gamma), fontsize = 18)
+	# plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \, p = %s, \gamma = %s$"%(mExt, mExtOne, p, gamma), fontsize = 18)
+	plt.title(r"$p = %s, \gamma = %s$"%(p, gamma), fontsize = 18)	
 	plt.xlabel('Time (a.u)', fontsize = 16)
-	plt.ylabel(r"$\mathrm{arg}\left[ m_E(\phi) \right] \, \mathrm{(deg)}$", fontsize = 16)
-	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 14})
-	plt.gca().set_position([0.2, 0.2, .65, .65])    
+	# plt.ylabel(r"$\mathrm{arg}\left[ m_E(\phi) \right] \, \mathrm{(deg)}$", fontsize = 16)
+	plt.ylabel(r"Phase (deg)", fontsize = 16)	
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+	plt.gca().set_position([0.25, 0.2, .65, .65])
+        FixAxisLimits(plt.gcf())	
 	print ''
 	if nPop == 2:
-	    plt.savefig('./figs/twopop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
+	    # plt.savefig('./figs/twopop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
+	    figname = 'mE1_vs_T_N%s_K%s_m0%s_m0One%s_p%sg%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 100), int(gamma * 100))
 	if nPop == 1:
 	    plt.savefig('./figs/onepop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
-	    
+        figFolder = './figs/twopop/'
+        paperSize = [4, 3]
+	figFormat = 'png'
+        Print2Pdf(plt.gcf(),  figFolder + figname,  paperSize, figFormat=figFormat, labelFontsize = 14, tickFontsize=10, titleSize = 10.0)	    
 	ipdb.set_trace()
 
 
