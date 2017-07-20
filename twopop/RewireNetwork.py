@@ -91,15 +91,42 @@ def Convert2OutDegree(preNeurons, nPostNeurons):
     return np.asarray(np.hstack(sparseConVec), dtype = np.int32)
 
 
-def RewireProbFunc(po0, po1, FuncType = 'cos'):
-    if FuncType == 'cos':
-	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1]))
-    elif FuncType == 'exp':
-	z = 1.0
-	out = z * np.exp(-z * np.abs(po0 - po1))
+def RewireProbFunc(po0, po1, funcType = 'cos'):
+    out = 0
+    # if funcType == 'cos':
+    # 	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1)))
+    if funcType == 'exp':
+    	z = 1.0
+    	out = z * np.exp(-z * np.abs(po0 - po1))
+    else:
+	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1)))
     return out
 
-def RewireSqrtK(preNeurons, recModulation, po, K, NE):
+def GetNLinks(neuronIdx, po, nLinks2Break, iPreNeurons):
+    # returns n links that are far in the orientaion space
+    po0 = po[neuronIdx]
+    
+    maxIters = iPreNeurons.size
+    iterCount = 0
+    z = 1.0
+    kPreNeurons = iPreNeurons.size
+    randomPreNeuron = np.random.permutation(iPreNeurons)
+    linksRemoved = []
+    nLinksCount = 0
+    while nLinksCount < nLinks2Break and iterCount < maxIters:
+	prob = 1 - z * np.exp(-z * np.abs(po0 - po[randomPreNeuron[iterCount]]))
+	if prob < 0 or prob > 1:
+	    print 'link removal prob not in range!!!'
+	    raise SystemExit
+	if prob >= np.random.rand():
+	    linksRemoved.append(randomPreNeuron[iterCount])
+	    nLinksCount = nLinksCount + 1
+	iterCount += 1
+    linksRemovedIdx = [np.where(iPreNeurons == lll)[0][0] for lll in linksRemoved]
+    #ipdb.set_trace()
+    return np.array(linksRemovedIdx)
+	
+def RewireSqrtK(preNeurons, recModulation, po, K, NE, rewireType):
     N = NE #len(preNeurons)
     recModulation = 1
     print 'nPre befor = ', len(np.hstack(preNeurons))
@@ -111,7 +138,10 @@ def RewireSqrtK(preNeurons, recModulation, po, K, NE):
 	iPreNeurons = iPreNeurons[iPreNeurons < N]
 	iK = len(iPreNeurons)
 	nLinks2Break = int(np.sqrt(float(iK)))
-    	links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))
+	if rewireType == 'rand':
+	    links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))
+	if rewireType == 'exp':
+	    links2Break = GetNLinks(i, po, nLinks2Break, iPreNeurons)
 	maxIters = nLinks2Break * 50
 	if maxIters > N:
 	    maxIters = N
@@ -128,7 +158,7 @@ def RewireSqrtK(preNeurons, recModulation, po, K, NE):
 	    nRewiredCount = 0	
 	    while nRewiredCount < 1 and iterCount < maxIters:
 		# prob = 0.5 * (1 + np.cos(2.0 * (po[i] - po[randomPreNeuron[iterCount]])))
-                prob = RewireProbFunc(po[i], po[randomPreNeuron[iterCount]]		
+                prob = RewireProbFunc(po[i], po[randomPreNeuron[iterCount]], 'cos')		
 		if(prob >= np.random.rand()):
 		    if j > 0:
 			if not np.any(iPreNeurons == randomPreNeuron[iterCount]):
@@ -144,23 +174,37 @@ def RewireSqrtK(preNeurons, recModulation, po, K, NE):
     return preNeurons
 
 
-def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
+
+def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2):
+    if rewireType == 'rand':
+	tag = ''
+    if rewireType == 'exp':
+	tag = '1'
+
+    rootFolder = ''
     baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
     if nPop == 1:
-    	baseFldr = baseFldr + 'onepop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    	baseFldr = baseFldr + 'onepop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
 	if gamma >= .1 or gamma == 0:
-	    baseFldr = baseFldr + 'twopop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+	    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
 	else:
-	    baseFldr = baseFldr + 'twopop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	    
+	    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	        
+    return baseFldr
+		
+		
+def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, rewireType = 'rand'):
+
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
     if IF_VERBOSE:
     	print baseFldr
+
     filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
     print filename
     return np.loadtxt(baseFldr + filename)
 
 
-def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
+def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
@@ -171,9 +215,9 @@ def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 100
 	try:
 	    if i == 0:
 		print 'loading from fldr: ',	    
-		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = True)
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, rewireType = rewireType, IF_VERBOSE = True)
 	    else:
-		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = False)
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, trNo, T, NE, K, nPop, rewireType = rewireType, IF_VERBOSE = False)
 	    if(len(fr) == 1):
 		if(np.isnan(fr)):
 		    print 'file not found!'
@@ -202,16 +246,16 @@ def POofPopulation(tc, theta = np.arange(0.0, 180.0, 22.5), IF_IN_RANGE = False)
         po[kNeuron] = GetPhase(tc[kNeuron, :], theta, IF_IN_RANGE)
     return po 
 
-def GetPOofPop(p, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True):
+def GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True):
     nNeurons = N
     thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
-    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, trNo, N, K, nPop, T)
+    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T)
     prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
     return prefferedOri
 
 if __name__ == '__main__':
     # NetworkType : {'uni', 'ori'}, 'uni' is for standard random network, 'ori' is to rewire depending on the distance in ori space
-    [trNo, p, gamma, mExt, mExtOne, nPhis, K, NE, NI, thetaSig, thetaSigI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 0, 0, .075, .075, 8, 1000, 10000, 10000, .75, 0.75, 2, 1000])
+    [trNo, rewireType, p, gamma, mExt, mExtOne, nPhis, K, NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 'rand', 0, 0, .075, .075, 8, 1000, 10000, 10000,  2, 1000])
     NE = int(NE)
     NI = int(NI)
     N = NE
@@ -223,24 +267,15 @@ if __name__ == '__main__':
     gamma = float(gamma)
     nPop = int(nPop)
     nPhis = int(nPhis)
-    thetaSig = float(thetaSig)
-    thetaSigI = float(thetaSigI)
-    # cprob = np.zeros((NE + NI, NE + NI))
-    rootFolder = ''
-    baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
-    if nPop == 1:
-    	baseFldr = baseFldr + 'onepop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-    if nPop == 2:
-    	if gamma >= .1 or gamma == 0:
-    	    baseFldr = baseFldr + 'twopop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-    	if gamma == 0.05:
-    	    baseFldr = baseFldr + 'twopop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	    
 
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
 
-    # baseFldr = './'
-    # NE = 500
-    # NI = 500
-    # K = 50
+    IF_TEST = False
+    if IF_TEST:
+	baseFldr = './'
+	NE = 500
+	NI = 500
+	K = 50
 
     requires = ['CONTIGUOUS', 'ALIGNED']
     # convec = np.require(convec, np.int32, requires)
@@ -253,59 +288,53 @@ if __name__ == '__main__':
     nPostNeurons = np.require(nPostNeurons, np.int32, requires);
 
     # READ
-    fpsparsevec = open(baseFldr + '/' + 'sparseConVec.dat', 'rb')
+    fpsparsevec = open(baseFldr + 'sparseConVec.dat', 'rb')
     sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
     fpsparsevec.close()
-    fpIdxVec = open(baseFldr + '/' + 'idxVec.dat', 'rb')
+    fpIdxVec = open(baseFldr + 'idxVec.dat', 'rb')
     idxvec = np.fromfile(fpIdxVec, dtype = np.int32)
     fpIdxVec.close()
-    fpNpostNeurons = open(baseFldr + '/' + 'nPostNeurons.dat', 'rb')
+    fpNpostNeurons = open(baseFldr + 'nPostNeurons.dat', 'rb')
     nPostNeurons = np.fromfile(fpNpostNeurons, dtype = np.int32)
     fpNpostNeurons.close()    
-
     nPostE = nPostNeurons[:NE].sum()
     tmp = sparseVec[sparseVec < NE]
     print np.sort(tmp[:10])
+
     # REWIRE
-    po = GetPOofPop(p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True)
+    if IF_TEST:
+	po = np.linspace(0, np.pi, 1000)
+    else:
+	po = GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True)
     preNeurons = Convert2InDegree(idxvec, nPostNeurons, sparseVec)
-    # rewiredPreNeurons = RewireSqrtK(preNeurons, p, po, K, NE)
-    rewiredPreNeurons = preNeurons
+    rewiredPreNeurons = RewireSqrtK(preNeurons, p, po, K, NE, rewireType)
     sparseConVec = Convert2OutDegree(rewiredPreNeurons, nPostNeurons)
     sparseVec = np.require(sparseConVec, np.int32, requires)
-
     tmp = sparseVec[sparseVec < NE]
     print np.sort(tmp[:10])
     print 'nConnections = ', nPostNeurons.sum()
     print 'sparsevec length = ', sparseVec.size
 
-
     trNo += 1 # connectivity written to another folder
-    baseFldrNew = rootFolder + '/homecentral/srao/Documents/code/binary/c/'    
-    if nPop == 1:
-    	baseFldrNew = baseFldrNew + 'onepop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-    if nPop == 2:
-    	if gamma >= .1 or gamma == 0:
-    	    baseFldrNew = baseFldrNew + 'twopop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-    	if gamma == 0.05:
-    	    baseFldrNew = baseFldrNew + 'twopop/data/rewire/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	    
-
-
-    os.system('mkdir -p ' + baseFldrNew)
-    os.system('cp ' + baseFldr + '/*.out ' + baseFldrNew)
-    os.system('cp ' + baseFldr + '/*FF.dat ' + baseFldrNew)
+    if not IF_TEST:
+	baseFldrNew = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
+    else:
+	raise SystemExit
     
+    os.system('mkdir -p ' + baseFldrNew)
+    os.system('cp ' + baseFldr + '*.out ' + baseFldrNew)
+    os.system('cp ' + baseFldr + '*FF.dat ' + baseFldrNew)
 
     # WRITE
     print '--'*20
     print 'saving files to: ', baseFldrNew
-    fpsparsevec = open(baseFldrNew + '/' + 'sparseConVec.dat', 'wb')
+    fpsparsevec = open(baseFldrNew + 'sparseConVec.dat', 'wb')
     sparseVec.tofile(fpsparsevec)
     fpsparsevec.close()
-    fpIdxVec = open(baseFldrNew + '/' + 'idxVec.dat', 'wb')
+    fpIdxVec = open(baseFldrNew + 'idxVec.dat', 'wb')
     idxvec.tofile(fpIdxVec)
     fpIdxVec.close()
-    fpNpostNeurons = open(baseFldrNew + '/' + 'nPostNeurons.dat', 'wb')
+    fpNpostNeurons = open(baseFldrNew + 'nPostNeurons.dat', 'wb')
     nPostNeurons.tofile(fpNpostNeurons)
     fpNpostNeurons.close()    
 
