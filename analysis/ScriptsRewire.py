@@ -68,6 +68,27 @@ def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10
 	    raise SystemExit
     return tc
 
+
+def FixAxisLimits(fig):
+    ax = fig.axes[0]
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    ax.set_xticks([xmin, 0.5 *(xmin + xmax), xmax])
+    ax.set_yticks([ymin, 0.5 *(ymin + ymax), ymax])
+    plt.draw()
+
+def press(event):
+    print('press', event.key)
+    sys.stdout.flush()
+    if event.key == 'w':
+	neuronid = int(plt.gca().get_title())
+	filename = "./figs/twopop/rewire/neuron%s"%(neuronid)
+	paperSize = [4, 3]
+        Print2Pdf(plt.gcf(),  filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])
+	fig.canvas.draw()
+
 def FollowNeurons(neuronsList, p, gamma, nPhis, mExt, mExtOne, rewireType, trList = [0], N = 10000, K = 1000, nPop = 2, T = 1000, IF_LEGEND = True):
         tc = [[] for x in xrange(len(trList))]
 	preferredOri = [[] for x in xrange(len(trList))]
@@ -77,14 +98,20 @@ def FollowNeurons(neuronsList, p, gamma, nPhis, mExt, mExtOne, rewireType, trLis
 	    tc[kk].append(tmp)
 	    preferredOri[kk].append(POofPopulation(tc[kk][0][:N], IF_IN_RANGE = True))
         # ipdb.set_trace()
+        fig, ax = plt.subplots()
 	plt.ion()
+	fig.canvas.mpl_connect('key_press_event', press)
 	for neuronIdx in neuronsList:
 	    for kk, trNo in enumerate(trList):
 		osi = OSI(tc[kk][0][neuronIdx, :], theta)
 		plt.plot(theta, tc[kk][0][neuronIdx, :], 's-', label = 'STP:%s OSI:%.4s PO:%.5s'%(trNo, osi, preferredOri[kk][0][neuronIdx]))
-		plt.title('neuron#%s'%(neuronIdx))
+		plt.gca().set_position([0.15, 0.15, .65, .65])
+		paperSize = [4, 3]
+                FixAxisLimits(plt.gcf())
+		plt.title('%s'%(neuronIdx))
 		plt.xlabel('Stimulus (deg)')
 		plt.ylabel(r'$m(\phi)$')
+		plt.show()
 	    if IF_LEGEND:
 		plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
 	    plt.waitforbuttonpress()
@@ -99,7 +126,7 @@ def FollowNeuron(neuronIdx, p, gamma, nPhis, mExt, mExtOne, rewireType, trList =
 	    preferredOri = POofPopulation(tc[:N], IF_IN_RANGE = True)
 	    osi = OSI(tc[neuronIdx, :], theta)
 	    plt.plot(theta, tc[neuronIdx, :], 's-', label = 'STP:%s OSI:%.4s PO:%.5s'%(trNo, osi, preferredOri[neuronIdx]))
-	plt.title('neuron#%s'%(neuronIdx))
+	plt.title('%s'%(neuronIdx))
 	plt.xlabel('Stimulus (deg)')
 	plt.ylabel(r'$m(\phi)$')
         if IF_LEGEND:
@@ -189,7 +216,8 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, 
     _, ymax = plt.ylim()
     plt.gca().set_yticks([0, np.ceil(ymax)])    
     # plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
-    plt.title(r'$m_0^{(0)} = %s, \,m_0^{(1)} = %s $'%(mExt, mExtOne))
+    # plt.title(r'$m_0^{(0)} = %s, \,m_0^{(1)} = %s $'%(mExt, mExtOne))
+    plt.title(r'$p = %s, \, \gamma = %s $'%(p, gamma))
     _, ymax = plt.ylim()
     plt.vlines(np.nanmean(osi), 0, ymax, lw = 1, color = color)
     print "mean OSI = ", np.nanmean(osi)
@@ -217,6 +245,11 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
     if IF_LEGEND:
 	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
 
+    print '--'*26
+    print 'pc change in mean OSI = ', 100 * (meanOSI[-1] - meanOSI[0]) / meanOSI[0]
+    print '--'*26
+
+
     plt.gca().set_position([0.15, 0.15, .65, .65])
     if nPop == 2:
 	# plt.savefig("./figs/twopop/compareOSI_.png")
@@ -225,10 +258,17 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
 	# ipdb.set_trace()
 	filename = filename + "p%sg%s"%(p, gamma)
         Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])
-    print '--'*26
-    print 'pc change in mean OSI = ', 100 * (meanOSI[-1] - meanOSI[0]) / meanOSI[0]
-    print '--'*26
+
+    plt.figure()
+    plt.plot(meanOSI, 'k*-')
+    plt.xlabel('rewiring step')
+    plt.ylabel(r'$\langle OSI \rangle$')
+    plt.gca().set_position([0.25, 0.25, .65, .65])
+    plt.xlim([0, 9])
+    filename = filename + "p%sg%s"%(p, gamma)
+    Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_mean_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0)    
     
+    print meanOSI
     
 
     

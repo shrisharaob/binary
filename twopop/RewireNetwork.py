@@ -66,7 +66,16 @@ def GenerateFixedInDegreeMat(cprob, K, NE, NI):
         # cprob[i, preNeurons] = 1.0
     print cprob
     return cprob
-            
+
+def BuildFullMatrix(idxVec, nPostNeurons, sparseConVec, NE):
+    conmat = np.zeros((NE, NE))
+    for i in range(NE):
+	postEofi = sparseConVec[idxVec[i] : idxVec[i] + nPostNeurons[i]]
+	postEofi = postEofi[postEofi < NE]
+	for j in postEofi:
+	    conmat[i, j] = 1
+    return np.asarray(conmat, dtype = np.int32)
+
 def Convert2InDegree(idxVec, nPostNeurons, sparseConVec):
     N = len(nPostNeurons)
     nPreNeurons = np.zeros((N, ))
@@ -183,13 +192,15 @@ def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 1
 
     rootFolder = ''
     baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
+
     if nPop == 1:
     	baseFldr = baseFldr + 'onepop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
 	if gamma >= .1 or gamma == 0:
 	    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
 	else:
-	    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)	        
+	    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)
+    print baseFldr	    
     return baseFldr
 		
 		
@@ -253,6 +264,53 @@ def GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis = 8, trNo = 0, N = 100
     prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
     return prefferedOri
 
+def LoadSparseMat(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop):
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
+
+    NE = N
+    NI = N
+
+    requires = ['CONTIGUOUS', 'ALIGNED']
+    # # convec = np.require(convec, np.int32, requires)
+    # nPostNeurons = np.zeros((NE + NI, ))
+    # idxvec = np.zeros((NE + NI, ))
+    # idxvec = np.require(idxvec, np.int32, requires)
+    # nPostNeurons = np.require(nPostNeurons, np.int32, requires);
+    # READ
+    fpIdxVec = open(baseFldr + 'idxVec.dat', 'rb')
+    idxvec = np.fromfile(fpIdxVec, dtype = np.int32)
+    fpIdxVec.close()
+    fpNpostNeurons = open(baseFldr + 'nPostNeurons.dat', 'rb')
+    nPostNeurons = np.fromfile(fpNpostNeurons, dtype = np.int32)
+    fpNpostNeurons.close()
+    sparseVec = np.zeros((nPostNeurons.sum(), ))
+    sparseVec = np.require(sparseVec, np.int32, requires)
+    fpsparsevec = open(baseFldr + 'sparseConVec.dat', 'rb')
+    sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
+    fpsparsevec.close()
+
+
+    
+    # requires = ['CONTIGUOUS', 'ALIGNED']
+    # # convec = np.require(convec, np.int32, requires)
+    # nPostNeurons = np.zeros((NE + NI, ))
+    # idxvec = np.zeros((NE + NI, ))
+    # idxvec = np.require(idxvec, np.int32, requires)
+    # nPostNeurons = np.require(nPostNeurons, np.int32, requires);
+    # # READ
+    # fpIdxVec = open(baseFldr + 'idxVec.dat', 'rb')
+    # idxvec = np.fromfile(fpIdxVec, dtype = np.int32)
+    # fpIdxVec.close()
+    # fpNpostNeurons = open(baseFldr + 'nPostNeurons.dat', 'rb')
+    # nPostNeurons = np.fromfile(fpNpostNeurons, dtype = np.int32)
+    # fpNpostNeurons.close()
+    # sparseVec = np.zeros((nPostNeurons.sum(), ))
+    # sparseVec = np.require(sparseVec, np.int32, requires)
+    # fpsparsevec = open(baseFldr + 'sparseConVec.dat', 'rb')
+    # sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
+    # fpsparsevec.close()
+    return idxvec, nPostNeurons, sparseVec
+
 if __name__ == '__main__':
     # NetworkType : {'uni', 'ori'}, 'uni' is for standard random network, 'ori' is to rewire depending on the distance in ori space
     [trNo, rewireType, p, gamma, mExt, mExtOne, nPhis, K, NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 'rand', 0, 0, .075, .075, 8, 1000, 10000, 10000,  2, 1000])
@@ -267,6 +325,7 @@ if __name__ == '__main__':
     gamma = float(gamma)
     nPop = int(nPop)
     nPhis = int(nPhis)
+    T = int(T)
 
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
 
@@ -281,22 +340,26 @@ if __name__ == '__main__':
     # convec = np.require(convec, np.int32, requires)
     nPostNeurons = np.zeros((NE + NI, ))
     idxvec = np.zeros((NE + NI, ))
-    sparseVec = np.zeros((nPostNeurons.sum(), ))
-    
-    sparseVec = np.require(sparseVec, np.int32, requires)
     idxvec = np.require(idxvec, np.int32, requires)
     nPostNeurons = np.require(nPostNeurons, np.int32, requires);
-
     # READ
-    fpsparsevec = open(baseFldr + 'sparseConVec.dat', 'rb')
-    sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
-    fpsparsevec.close()
     fpIdxVec = open(baseFldr + 'idxVec.dat', 'rb')
     idxvec = np.fromfile(fpIdxVec, dtype = np.int32)
     fpIdxVec.close()
     fpNpostNeurons = open(baseFldr + 'nPostNeurons.dat', 'rb')
     nPostNeurons = np.fromfile(fpNpostNeurons, dtype = np.int32)
-    fpNpostNeurons.close()    
+    fpNpostNeurons.close()
+    sparseVec = np.zeros((nPostNeurons.sum(), ))
+    sparseVec = np.require(sparseVec, np.int32, requires)
+    fpsparsevec = open(baseFldr + 'sparseConVec.dat', 'rb')
+    sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
+    fpsparsevec.close()
+
+    print 'nConnections = ', nPostNeurons.sum()
+    print 'sparsevec length = ', sparseVec.size
+
+
+    
     nPostE = nPostNeurons[:NE].sum()
     tmp = sparseVec[sparseVec < NE]
     print np.sort(tmp[:10])
@@ -314,7 +377,7 @@ if __name__ == '__main__':
     print np.sort(tmp[:10])
     print 'nConnections = ', nPostNeurons.sum()
     print 'sparsevec length = ', sparseVec.size
-
+    # raise SystemExit
     trNo += 1 # connectivity written to another folder
     if not IF_TEST:
 	baseFldrNew = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)

@@ -96,6 +96,10 @@ def RewireProbFunc(po0, po1, FuncType = 'cos'):
 	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1]))
     elif FuncType == 'exp':
 	z = 1.0
+	if po0 >= np.pi / 2.0:
+	    po0 -= np.pi
+	ifpo1 >= np.pi / 2.0:
+	    po1 -= np.pi
 	out = z * np.exp(-z * np.abs(po0 - po1))
     return out
 

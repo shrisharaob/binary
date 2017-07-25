@@ -277,6 +277,13 @@ void GenConMat() {
   unsigned long long int nConnections = 0;
   cout << "generating conmat" << endl;
   unsigned int *conMat = new unsigned int [(unsigned long int)N_NEURONS * N_NEURONS];
+
+  for (unsigned long int i = 0; i < NE; i++)  {
+    for (unsigned long int j = 0; j < NE; j++)  {
+      conMat[i + N_NEURONS * j] = 0;
+    }
+  }
+  
   for (unsigned long int i = 0; i < N_NEURONS; i++)  {
     for (unsigned long int j = 0; j < N_NEURONS; j++)  {
       // i --> j
@@ -307,7 +314,37 @@ void GenConMat() {
     }
   }
 
+
+  
   cout << "done" << endl;
+
+
+  for (unsigned long int i = 0; i < NE; i++)  {
+    for (unsigned long int j = 0; j < NE; j++)  {
+      if((conMat[i + N_NEURONS * j] < 0) || (conMat[i + N_NEURONS * j] > 1)) {
+  	  printf("%lu %lu !!!!!!! oh la la !!!!\n", i, j);
+  	}
+    }
+  }
+
+  
+  unsigned long int nElementsWritten;
+  FILE *fpcmat;
+  fpcmat = fopen("cmat.dat", "wb");
+  nElementsWritten = fwrite(conMat, sizeof(unsigned int), N_NEURONS * N_NEURONS, fpcmat);
+  fclose(fpcmat);
+
+  for (unsigned long int i = 0; i < NE; i++)  {
+    printf("\n");    
+    for (unsigned long int j = 0; j < NE; j++)  {
+      printf("%u ", conMat[i + N_NEURONS * j]);
+      // printf("%lu: %u\n", i + N_NEURONS * j, conMat[i + N_NEURONS * j]);
+    }
+  }
+  printf("\n\n");
+
+
+  
   cout << "computing sparse rep" << endl;    
   sparseConVec = new unsigned int[nConnections];
   GenSparseMat(conMat, N_NEURONS, N_NEURONS, sparseConVec, idxVec, nPostNeurons);
@@ -321,7 +358,7 @@ void GenConMat() {
   delete [] conMat;
   // write to file
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
-  unsigned long int nElementsWritten;
+
   printf("done\n#connections = %llu\n", nConnections);
   printf("writing to file ... "); fflush(stdout);
   fpSparseConVec = fopen("sparseConVec.dat", "wb");
@@ -337,6 +374,12 @@ void GenConMat() {
   fwrite(nPostNeurons, sizeof(*nPostNeurons), N_NEURONS, fpNpostNeurons);
   fclose(fpNpostNeurons);
   printf("done\n");
+
+
+  for (unsigned long int i = 0; i < 10; i++)  {
+      printf("%u ", sparseConVec[i]);
+  }
+  exit(1);  
 }
 
 void VectorSum(vector<double> &a, vector<double> &b) { 
@@ -437,7 +480,6 @@ void LoadSparseConMat() {
   fclose(fpSparseConVec);
   fclose(fpIdxVec);
 }
-
 
 void LoadFFSparseConMat() {
   FILE *fpSparseConVecFF, *fpIdxVecFF, *fpNpostNeuronsFF;
