@@ -9,6 +9,7 @@
 *.eps
 *.png
 *.npy
+*.npz
 *.pyc
 *.sh
 *.pdf
@@ -18,6 +19,7 @@
 *.tex
 *.el
 *.odp
+
 
 sed*
 vm
