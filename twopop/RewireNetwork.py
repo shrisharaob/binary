@@ -3,7 +3,7 @@
 basefolder = "/homecentral/srao/Documents/code/mypybox"
 import numpy as np
 import code, sys, os
-#import ipdb
+import ipdb
 import pylab as plt
 sys.path.append(basefolder)
 import Keyboard as kb
@@ -99,14 +99,13 @@ def Convert2OutDegree(preNeurons, nPostNeurons):
 	    sparseConVec[kk].append(i)
     return np.asarray(np.hstack(sparseConVec), dtype = np.int32)
 
-
 def RewireProbFunc(po0, po1, funcType = 'cos'):
     out = 0
     # if funcType == 'cos':
     # 	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1)))
     if funcType == 'exp':
     	z = 1.0
-    	out = z * np.exp(-z * np.abs(po0 - po1))
+    	out = 0.5 * (1 - np.cos(2.0 * (po0 - po1)))
     else:
 	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1)))
     return out
@@ -114,7 +113,6 @@ def RewireProbFunc(po0, po1, funcType = 'cos'):
 def GetNLinks(neuronIdx, po, nLinks2Break, iPreNeurons):
     # returns n links that are far in the orientaion space
     po0 = po[neuronIdx]
-    
     maxIters = iPreNeurons.size
     iterCount = 0
     z = 1.0
@@ -135,7 +133,7 @@ def GetNLinks(neuronIdx, po, nLinks2Break, iPreNeurons):
     #ipdb.set_trace()
     return np.array(linksRemovedIdx)
 	
-def RewireSqrtK(preNeurons, recModulation, po, K, NE, rewireType):
+def RewireSqrtK(preNeurons, recModulation, po, K, NE, rewireType, stepNo):
     N = NE #len(preNeurons)
     recModulation = 1
     print 'nPre befor = ', len(np.hstack(preNeurons))
@@ -146,7 +144,8 @@ def RewireSqrtK(preNeurons, recModulation, po, K, NE, rewireType):
 	iPreNeuronsI = iPreNeurons[iPreNeurons >= N]
 	iPreNeurons = iPreNeurons[iPreNeurons < N]
 	iK = len(iPreNeurons)
-	nLinks2Break = int(np.sqrt(float(iK)))
+	nLinks2Break = int(np.sqrt(float(iK) / float(stepNo)))
+	# ipdb.set_trace()
 	if rewireType == 'rand':
 	    links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))
 	if rewireType == 'exp':
@@ -182,17 +181,13 @@ def RewireSqrtK(preNeurons, recModulation, po, K, NE, rewireType):
     print 'nPre after = ', len(np.hstack(preNeurons))    
     return preNeurons
 
-
-
 def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2):
     if rewireType == 'rand':
 	tag = ''
     if rewireType == 'exp':
 	tag = '1'
-
     rootFolder = ''
     baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
-
     if nPop == 1:
     	baseFldr = baseFldr + 'onepop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     if nPop == 2:
@@ -203,17 +198,13 @@ def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 1
     print baseFldr	    
     return baseFldr
 		
-		
 def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, rewireType = 'rand'):
-
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
     if IF_VERBOSE:
     	print baseFldr
-
     filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
     print filename
     return np.loadtxt(baseFldr + filename)
-
 
 def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
     NE = N
@@ -237,7 +228,6 @@ def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10
 	    print 'file not found!'
 	    raise SystemExit
     return tc
-
 
 def GetPhase(firingRate, atTheta, IF_IN_RANGE = False):
     out = np.nan
@@ -266,10 +256,8 @@ def GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis = 8, trNo = 0, N = 100
 
 def LoadSparseMat(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop):
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
-
     NE = N
     NI = N
-
     requires = ['CONTIGUOUS', 'ALIGNED']
     # # convec = np.require(convec, np.int32, requires)
     # nPostNeurons = np.zeros((NE + NI, ))
@@ -288,9 +276,6 @@ def LoadSparseMat(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop):
     fpsparsevec = open(baseFldr + 'sparseConVec.dat', 'rb')
     sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
     fpsparsevec.close()
-
-
-    
     # requires = ['CONTIGUOUS', 'ALIGNED']
     # # convec = np.require(convec, np.int32, requires)
     # nPostNeurons = np.zeros((NE + NI, ))
@@ -311,6 +296,72 @@ def LoadSparseMat(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop):
     # fpsparsevec.close()
     return idxvec, nPostNeurons, sparseVec
 
+def ConnectionDistr(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N = 10000, K = 1000, nPop = 2, T = 1000):
+    po = GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True)
+    idxvec, nPostNeurons, sparseVec = LoadSparseMat(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
+    preNeurons = Convert2InDegree(idxvec, nPostNeurons, sparseVec)
+    z = np.empty((N, ))
+    z[:] = np.nan
+    for i in range(N):
+	tmp = 0
+	Ki = 0
+	preNeuronsTmp = np.asarray(preNeurons[i], dtype = np.int)
+	preNeuronsTmp = preNeuronsTmp[preNeuronsTmp < N]
+	# ipdb.set_trace()
+	for k in preNeuronsTmp:
+	    poi = po[i]
+	    pok = po[k]
+	    if (~np.isnan(poi)) and  (~np.isnan(pok)):
+		Ki += 1
+		tmp += np.exp(2j * (poi - pok))
+	z[i] = np.abs(tmp) / float(Ki)
+    return z
+
+def CompareConDistr(trList, p = 0, gamma = 0, mExt = 0.075, mExtOne = 0.075, rewireType = 'rand', nPhis = 8, N = 10000, K = 1000, nPop = 2, T = 1000):
+    plt.figure()
+    plt.ion()
+    # out = []
+    for trNo in trList:
+	z = ConnectionDistr(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T)
+	# out.append(z)
+	plt.hist(z, 50, normed = True, histtype = 'step', label = 'STP: %s'%(trNo))
+	plt.show()
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+    plt.ylabel('Density')
+    plt.xlabel(r"$\langle \exp (\phi^{po}_i - \phi^{po}_j) \rangle_j$")
+    plt.savefig('./figs/conDistr_p%sg%s.png'%(int(p * 100), int(gamma * 100)))
+
+
+
+def GetPODiff(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N = 10000, K = 1000, nPop = 2, T = 1000):
+    po = GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True)
+    idxvec, nPostNeurons, sparseVec = LoadSparseMat(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
+    preNeurons = Convert2InDegree(idxvec, nPostNeurons, sparseVec)
+    out = []
+    for i in range(N):
+	preNeuronsTmp = np.asarray(preNeurons[i], dtype = np.int)
+	preNeuronsTmp = preNeuronsTmp[preNeuronsTmp < N]
+	for k in preNeuronsTmp:
+	    # out.append(np.abs(po[i] - po[k]))
+	    out.append(np.abs(po[k]))	    
+    return np.asarray(out, dtype = np.float)
+
+def CompareDPOvsDist(trList, p = 0, gamma = 0, mExt = 0.075, mExtOne = 0.075, rewireType = 'rand', nPhis = 8, N = 10000, K = 1000, nPop = 2, T = 1000):
+    plt.figure()
+    plt.ion()
+    for trNo in trList:
+	z = GetPODiff(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T)
+	plt.hist(z, 50, normed = True, histtype = 'step', label = 'STP: %s'%(trNo))
+	plt.show()
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+    plt.ylabel('Density')
+    plt.xlabel(r"$\langle \phi^{po}_i - \phi^{po}_j \rangle$")
+    plt.savefig('./figs/DeltaPO_vs_conDistr_p%sg%s.png'%(int(p * 100), int(gamma * 100)))
+
+
+
+    
+  
 if __name__ == '__main__':
     # NetworkType : {'uni', 'ori'}, 'uni' is for standard random network, 'ori' is to rewire depending on the distance in ori space
     [trNo, rewireType, p, gamma, mExt, mExtOne, nPhis, K, NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 'rand', 0, 0, .075, .075, 8, 1000, 10000, 10000,  2, 1000])
@@ -326,16 +377,13 @@ if __name__ == '__main__':
     nPop = int(nPop)
     nPhis = int(nPhis)
     T = int(T)
-
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
-
     IF_TEST = False
     if IF_TEST:
 	baseFldr = './'
 	NE = 500
 	NI = 500
 	K = 50
-
     requires = ['CONTIGUOUS', 'ALIGNED']
     # convec = np.require(convec, np.int32, requires)
     nPostNeurons = np.zeros((NE + NI, ))
@@ -354,7 +402,6 @@ if __name__ == '__main__':
     fpsparsevec = open(baseFldr + 'sparseConVec.dat', 'rb')
     sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
     fpsparsevec.close()
-
     print 'nConnections = ', nPostNeurons.sum()
     print 'sparsevec length = ', sparseVec.size
 
@@ -370,7 +417,7 @@ if __name__ == '__main__':
     else:
 	po = GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True)
     preNeurons = Convert2InDegree(idxvec, nPostNeurons, sparseVec)
-    rewiredPreNeurons = RewireSqrtK(preNeurons, p, po, K, NE, rewireType)
+    rewiredPreNeurons = RewireSqrtK(preNeurons, p, po, K, NE, rewireType, trNo + 1)
     sparseConVec = Convert2OutDegree(rewiredPreNeurons, nPostNeurons)
     sparseVec = np.require(sparseConVec, np.int32, requires)
     tmp = sparseVec[sparseVec < NE]

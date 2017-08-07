@@ -1,10 +1,10 @@
 //#include <string>
 //#include <cstring>
 
-#define NE 10
-#define NI 10
-#define NFF 10
-#define K 5
+#define NE 10000
+#define NI 10000
+#define NFF 10000
+#define K 1000
 #define SQRT_K (sqrt((double)K))
 #define THRESHOLD_E 1.0
 #define THRESHOLD_I 1.0
@@ -33,6 +33,7 @@
 #define IF_GEN_MAT_DEFAULT 0
 #define IF_SAVE_SPKS 0
 #define IF_STEP_PHI0 0
+#define IF_SAVE_INPUT 1
 
 #define N_SEGMENTS 2
 

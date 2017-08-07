@@ -329,19 +329,19 @@ void GenConMat() {
 
   
   unsigned long int nElementsWritten;
-  FILE *fpcmat;
-  fpcmat = fopen("cmat.dat", "wb");
-  nElementsWritten = fwrite(conMat, sizeof(unsigned int), N_NEURONS * N_NEURONS, fpcmat);
-  fclose(fpcmat);
+  // FILE *fpcmat;
+  // fpcmat = fopen("cmat.dat", "wb");
+  // nElementsWritten = fwrite(conMat, sizeof(unsigned int), N_NEURONS * N_NEURONS, fpcmat);
+  // fclose(fpcmat);
 
-  for (unsigned long int i = 0; i < NE; i++)  {
-    printf("\n");    
-    for (unsigned long int j = 0; j < NE; j++)  {
-      printf("%u ", conMat[i + N_NEURONS * j]);
-      // printf("%lu: %u\n", i + N_NEURONS * j, conMat[i + N_NEURONS * j]);
-    }
-  }
-  printf("\n\n");
+  // for (unsigned long int i = 0; i < NE; i++)  {
+  //   printf("\n");    
+  //   for (unsigned long int j = 0; j < NE; j++)  {
+  //     printf("%u ", conMat[i + N_NEURONS * j]);
+  //     // printf("%lu: %u\n", i + N_NEURONS * j, conMat[i + N_NEURONS * j]);
+  //   }
+  // }
+  // printf("\n\n");
 
 
   
@@ -376,10 +376,10 @@ void GenConMat() {
   printf("done\n");
 
 
-  for (unsigned long int i = 0; i < 10; i++)  {
-      printf("%u ", sparseConVec[i]);
-  }
-  exit(1);  
+  // for (unsigned long int i = 0; i < 10; i++)  {
+  //     printf("%u ", sparseConVec[i]);
+  // }
+  // exit(1);  
 }
 
 void VectorSum(vector<double> &a, vector<double> &b) { 
@@ -527,7 +527,8 @@ void RunSim() {
   vector<unsigned long int> spkNeuronIdx;
   vector<double> firingRates(N_NEURONS);
   vector<double> firingRatesFF(NFF);  
-  vector<double> frLast(N_NEURONS);  
+  vector<double> frLast(N_NEURONS);
+  vector<double> totalInput(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
   vector<double> firingRatesChk(N_NEURONS);
   vector<double> firingRatesChkTMP(N_NEURONS);
@@ -725,6 +726,7 @@ void RunSim() {
    VectorSumFF(firingRatesFF, spinsFF);   
    if(i >= nLastSteps) {
      VectorSum(frLast, spins);
+     VectorSum(totalInput, netInputVec);     
    }
 
    //   Store Chunks 
@@ -756,7 +758,8 @@ void RunSim() {
     
   VectorDivide(firingRates, nSteps);
   VectorDivideFF(firingRatesFF, nSteps);  
-  VectorDivide(frLast, (nSteps - nLastSteps));  
+  VectorDivide(frLast, (nSteps - nLastSteps));
+  VectorDivide(totalInput, (nSteps - nLastSteps));    
   fclose(fpInstRates);
   fclose(fpInstM1);
     
@@ -774,6 +777,16 @@ void RunSim() {
   }
   fclose(fpRates);
 
+  if(IF_SAVE_INPUT) {
+    txtFileName = "meaninput_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";  
+    FILE *fpInputs = fopen(txtFileName.c_str(), "w");
+    for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+      fprintf(fpInputs, "%f\n", totalInput[ii]);
+    }
+    fclose(fpInputs);
+  }
+
+  
   if(IF_SAVE_SPKS) {
       txtFileName = "spktimes_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
       FILE *fpSpks = fopen(txtFileName.c_str(), "w");
@@ -787,6 +800,7 @@ void RunSim() {
   spkTimes.clear();
   spkNeuronIdx.clear();
   firingRates.clear();
+  totalInput.clear();
   netInputVec.clear();
   firingRatesChk.clear();
   firingRatesAtT.clear();  
