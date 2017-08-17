@@ -27,11 +27,11 @@ import GetPO
 # sys.excepthook = info
 
 
-from IPython import embed
-def excepthook(type, value, traceback):
-    embed()
+# from IPython import embed
+# def excepthook(type, value, traceback):
+#     embed()
 
-sys.excepthook = excepthook
+# sys.excepthook = excepthook
 
 # def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False):
 #     FixAxisLimits(figHdl)
@@ -203,11 +203,11 @@ def RewireSqrtK(preNeurons, po, K, NE, rewireType, stepNo, kappa, nmax = 10):
 	iK = len(iPreNeurons)
 	# ipdb.set_trace()
 	if rewireType == 'rand':
-            nLinks2Break = int(kappa * np.sqrt(float(iK)) / float(stepNo))	    
+            nLinks2Break = int(kappa * np.sqrt(float(iK)) / float(stepNo))
 	    links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))
 	if rewireType == 'decay':
-	    nLinks2Break = int(np.sqrt(kappa * float(iK) / float(nmax)))	    
-	    links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))
+	    nLinks2Break = int(kappa * np.sqrt(float(iK)) / float(nmax))
+	    links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))	    
 	if rewireType == 'exp':
 	    links2Break = GetNLinks(i, po, nLinks2Break, iPreNeurons)
 	maxIters = nLinks2Break * 50
@@ -550,6 +550,47 @@ def AngleDiff(v1, v2, IF_IN_DEGREES = False):
 	out = out * 180 / np.pi
     return out
 
+def PODiffAfterRewire(kappa, rewireType, trNo, trialOffset=0, p = 0, gamma = 0, mExt = 0.075, mExtOne = 0.075, N = 10000, K = 1000, nPop = 2, nPhis = 8, T = 1000):
+    # GET PO DIFF BETWEEN PRE AND POST OF THE REWIRED CONNECTIONS BEFORE AND AFTER REWIRING
+    
+    po = GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True, kappa = kappa) * 180 / np.pi
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    trNo += trialOffset
+    poNew = GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo+1, N, K, nPop, T, IF_IN_RANGE = True, kappa = kappa) * 180 / np.pi    
+    linksRemoved = np.load(baseFldr + 'linksRemoved.npy')
+    newLinks = np.load(baseFldr + 'newLinks.npy')
+    poDiffBefore = []
+    poDiffAfter = []
+    poDiffPost = []    
+    for i in range(N):
+	poDiffBefore.append(AngleDiff(po[i], po[linksRemoved[i]], True))
+	poDiffAfter.append(AngleDiff(po[i], po[newLinks[i]], True))
+	poDiffPost.append(AngleDiff(poNew[i], poNew[newLinks[i]], True))
+
+    podiffBfr = np.hstack(poDiffBefore)
+    podiffAftr = np.hstack(poDiffAfter)
+    podiffPost = np.hstack(poDiffPost)
+
+    podiffBfr = podiffBfr[~np.isnan(podiffBfr)]
+    podiffAftr = podiffAftr[~np.isnan(podiffAftr)]
+    podiffPost = podiffPost[~np.isnan(podiffPost)]
+
+    # ipdb.set_trace()
+    
+    plt.hist(podiffBfr, 100, normed = 1, histtype = 'step', label = 'bfr rewiring')
+    plt.hist(podiffAftr, 100, normed = 1, histtype = 'step',  label = 'pre')
+    plt.hist(podiffPost, 100, normed = 1, histtype = 'step',  label = 'post')
+    
+    plt.gca().legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+    plt.xlabel(r'$\Delta \mathrm{PO (deg)}$')
+    plt.ylabel('Density')
+    plt.title('Rewired connections')
+    filepath = './figs/DeltaPOCirc_bfr_ND_Aftr_p%sg%s_trNo%s'%(int(p * 100), int(gamma * 100), trNo) + rewireType
+    
+    ProcessFigure(plt.gcf(), filepath, True)
+    
+    return podiffBfr, podiffAftr
+
 def CompareConDistr(trList, kappa = 1, p = 0, gamma = 0, mExt = 0.075, mExtOne = 0.075, rewireType = 'rand', nPhis = 8, N = 10000, K = 1000, nPop = 2, T = 1000):
  #   fg0, ax0 = plt.subplots()
   #  fg1, ax1 = plt.subplots()
@@ -611,8 +652,7 @@ def CompareDPOvsDist(trList, kappa = 1, p = 0, gamma = 0, mExt = 0.075, mExtOne 
     plt.savefig('./figs/DeltaPO_vs_conDistr_p%sg%s.png'%(int(p * 100), int(gamma * 100)))
   
 if __name__ == '__main__':
-    # NetworkType : {'uni', 'ori'}, 'uni' is for standard random network, 'ori' is to rewire depending on the distance in ori space
-    [trNo, kappa, K, rewireType, p, gamma, mExt, mExtOne, nPhis,NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 1, 500, 'rand', 0, 0, .075, .075, 8, 10000, 10000,  2, 1000])
+    [trialOffset, trNo, kappa, K, rewireType, p, gamma, mExt, mExtOne, nPhis,NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [100, 0, 1, 500, 'rand', 0, 0, .075, .075, 8, 10000, 10000,  2, 1000])
     NE = int(NE)
     NI = int(NI)
     N = NE
@@ -626,6 +666,9 @@ if __name__ == '__main__':
     nPop = int(nPop)
     nPhis = int(nPhis)
     T = int(T)
+    trialOffset = int(trialOffset)
+    if trNo != 0:
+	trNo += trialOffset    
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
     IF_TEST = False
     if IF_TEST:
@@ -656,6 +699,7 @@ if __name__ == '__main__':
     nPostE = nPostNeurons[:NE].sum()
     tmp = sparseVec[sparseVec < NE]
     print np.sort(tmp[:10])
+
     # REWIRE
     if IF_TEST:
 	po = np.linspace(0, np.pi, 1000)
@@ -671,15 +715,20 @@ if __name__ == '__main__':
     print 'sparsevec length = ', sparseVec.size
     # raise SystemExit
 
+
+
     np.save(baseFldr + 'newLinks', newLinks)
     np.save(baseFldr + 'linksRemoved', linksRemoved)
-    
+
+    if trNo == 0:
+	trNo += trialOffset    
+
     trNo += 1 # connectivity written to another folder
     if not IF_TEST:
 	baseFldrNew = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
     else:
 	raise SystemExit
-    
+    ipdb.set_trace()    
     os.system('mkdir -p ' + baseFldrNew)
     os.system('cp ' + baseFldr + '*.out ' + baseFldrNew)
     os.system('cp ' + baseFldr + '*FF.dat ' + baseFldrNew)

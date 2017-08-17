@@ -16,45 +16,76 @@ from DefaultArgs import DefaultArgs
 from reportfig import ReportFig
 from Print2Pdf import Print2Pdf
 import GetPO
-
-
+sys.path.append('/homecentral/srao/Documents/code/binary/c/twopop')
+import RewireNetwork as rw
 rootFolder = ''
 
-def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2):
-    # ipdb.set_trace()
+def GetBaseFolderOld(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, kappa = 1):
     if rewireType == 'rand':
 	tag = ''
     if rewireType == 'exp':
 	tag = '1'
-
     rootFolder = ''
     baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
     if nPop == 1:
     	baseFldr = baseFldr + 'onepop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-    # ipdb.set_trace()	
     if nPop == 2:
-        if T < 1000:
-	    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), trNo)
-        else:
-	    if gamma >= .1 or gamma == 0:
-		baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
-	    else:
-		baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)
-	    
+	if gamma >= .1 or gamma == 0:
+	    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+	else:
+	    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/p%sgamma/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(T*1e-3), trNo)
+    print baseFldr	    
     return baseFldr
 
-def LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
+def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, kappa = 1):
     # ipdb.set_trace()
-    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
+    if kappa == -1:
+	baseFldr = GetBaseFolderOld(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    else:
+	if rewireType == 'rand':
+	    tag = ''
+	if rewireType == 'exp':
+	    tag = '1'
+	if rewireType == 'decay':
+	    tag = '2'
+	    
+	rootFolder = ''
+	baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
+	if nPop == 1:
+	    baseFldr = baseFldr + 'onepop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/kappa%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(kappa * 10), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+	# ipdb.set_trace()	
+	if nPop == 2:
+	    if T < 1000:
+		baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/kappa%s/p%sgamma%s/T/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(kappa * 10), int(p * 10), int(gamma * 10), trNo)
+	    else:
+		if gamma >= .1 or gamma == 0:
+		    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/kappa%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(kappa * 10), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+		else:
+		    baseFldr = baseFldr + 'twopop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/kappa%s/p%sgamma/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(kappa * 10), int(p * 10), int(T*1e-3), trNo)
+    return baseFldr
+
+def LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
+    # ipdb.set_trace()
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
     if IF_VERBOSE:
     	print baseFldr
     filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
     print filename
     return np.loadtxt(baseFldr + filename)
 
-def LoadInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
+def LoadFFInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
     # ipdb.set_trace()
-    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop)
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    if IF_VERBOSE:
+    	print baseFldr
+    filename = 'meanFFinput_theta%.6f_tr%s_last.txt'%(phi, trNo)
+    print filename
+    # ipdb.set_trace()
+    return np.loadtxt(baseFldr + filename)
+
+def LoadNetInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
+    # ipdb.set_trace()
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
     if IF_VERBOSE:
     	print baseFldr
     filename = 'meaninput_theta%.6f_tr%s_last.txt'%(phi, trNo)
@@ -62,7 +93,61 @@ def LoadInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 
     # ipdb.set_trace()
     return np.loadtxt(baseFldr + filename)
 
-def GetInputTuningCurves(p, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
+def CircularCorrCoeff(x, y):
+    # x and y must be in radians
+    n = x.size
+    nX = x.size
+    nY = y.size
+    if nX != nY:
+    	n = np.max([nX, nY])
+    if(nX != n):
+    	x = np.ones((n, )) * x
+    if(nY != n):
+    	y = np.ones((n, )) * y
+
+    numerator = 0
+    for i in range(n - 1):
+	for j in range(i + 1, n):
+	    numerator += np.sin(2.0 * (x[i] - x[j])) * np.sin(2.0 * (y[i] - y[j]))
+    denom1 = 0
+    denom2 = 0
+    for i in range(n - 1):
+	for j in range(i + 1, n):
+	    denom1 += np.sin(2.0 * (x[i] - x[j]))**2
+	    denom2 += np.sin(2.0 * (y[i] - y[j]))**2
+    denom = np.sqrt(denom1 * denom2)
+    return numerator / denom
+    
+def GetInputTuningCurves(p, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1, inputType = 'net'):
+    NE = N
+    NI = N
+    tc = np.zeros((NE + NI, nPhis))
+    #tc = np.zeros((NE, nPhis))    
+    tc[:] = np.nan
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    if inputType == 'net':
+	LoadFunc = LoadNetInput
+    elif inputType == 'FF':
+	LoadFunc = LoadFFInput
+    # ipdb.set_trace()
+    for i, iPhi in enumerate(phis):
+	print i, iPhi
+	try:
+	    if i == 0:
+		print 'loading from fldr: ',	    
+		fr = LoadFunc(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = True, kappa = kappa)
+	    else:
+		fr = LoadFunc(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = False, kappa = kappa)
+	    if(len(fr) == 1):
+		if(np.isnan(fr)):
+		    print 'file not found!'
+	    tc[:, i] = fr
+	except IOError:
+	    print 'file not found!'
+	    raise SystemExit
+    return tc
+
+def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
@@ -73,68 +158,152 @@ def GetInputTuningCurves(p, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, r
 	try:
 	    if i == 0:
 		print 'loading from fldr: ',	    
-		fr = LoadInput(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = True)
-
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = True, kappa = kappa)
 	    else:
-		fr = LoadInput(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = False)
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = False, kappa = kappa)
 	    if(len(fr) == 1):
 		if(np.isnan(fr)):
 		    print 'file not found!'
 	    tc[:, i] = fr
 	except IOError:
 	    print 'file not found!'
-	    raise SystemExit
+	    # raise SystemExit
     return tc
 
-def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
-    NE = N
-    NI = N
-    tc = np.zeros((NE + NI, nPhis))
-    tc[:] = np.nan
-    phis = np.linspace(0, 180, nPhis, endpoint = False)
-    for i, iPhi in enumerate(phis):
-	print i, iPhi
-	try:
-	    if i == 0:
-		print 'loading from fldr: ',	    
-		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = True)
-
-	    else:
-		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = False)
-	    if(len(fr) == 1):
-		if(np.isnan(fr)):
-		    print 'file not found!'
-	    tc[:, i] = fr
-	except IOError:
-	    print 'file not found!'
-	    raise SystemExit
-    return tc
-
-
-def PlotInOutTuningCurve(nNeurons, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
-    tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T)
-    tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T)
+def PlotInOutTuningCurve(nNeurons, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1):
+    tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+    tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
     neuronIdx = np.random.choice(xrange(N), nNeurons)
     theta = np.linspace(0, 180, nPhis, endpoint = False)
-    plt.figure()
-    plt.ion()
+    poIn = POofPopulation(tcIn, theta, IF_IN_RANGE = True) * np.pi / 180
+    poOut = POofPopulation(tcOut, theta, IF_IN_RANGE = True) * np.pi / 180
+    # plt.figure()
+    # plt.plot(poIn[:N], poOut[:N], 'k.')
+    # plt.show()
     # ipdb.set_trace()
+    # plt.plot(np.cos(2.0 * (poIn[:N] - poOut[:N])))
+    print '-' * 10
+    print 'avg = ', CircularCorrCoeff(poIn[:N], poOut[:N])
+    print '-' * 10
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    plt.ion()
+    
     for i in neuronIdx:
-	plt.plot(theta, tcIn[i, :], 'g.-', label = r'$u(\phi)$')
-	plt.plot(theta, tcOut[i, :], 'ko-', markerfacecolor = 'None', label = r'$m(\phi)$')
-        plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
-	plt.title('neuron#%s'%(i))
-	plt.xlabel(r'$\phi$')
-	plt.waitforbuttonpress()
-	plt.clf()
+	ax1.plot(theta, tcIn[i, :], 'g.-', label = '')
+	ax2.plot(theta, tcOut[i, :], 'ko-', markerfacecolor = 'None', label = r'')
+	ax1.set_ylabel(r'$u(\phi)$', fontsize = 16)
+	ax1.tick_params('y', colors='g')
+	ax2.set_ylabel(r'$m(\phi)$', fontsize = 16)
+	ymin1, ymax1 = ax1.get_ylim()
+        ymin2, ymax2 = ax2.get_ylim()
+	ymin = np.min([ymin1, ymin2])
+	ymax = np.max([ymax1, ymax2])
+	ax1.vlines(poIn[i], ymin1, ymax1, color = 'g')
+	ax2.vlines(poOut[i], ymin2, ymax2, color = 'k')	
+        # plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 10})
+	ax1.set_title('neuron#%s'%(i))
+	ax1.set_xlabel(r'$\phi$')
+	fig.waitforbuttonpress()
+	ax1.clear()
+	ax2.clear()
 
-def FixAxisLimits(fig):
+def PlotInOutPOCorr(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_COMPUTE = True):
+    outE = []; outI = []
+    validTr = []
+    if IF_COMPUTE:
+	for trNo in range(nRewireSteps):
+	    try:
+		tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+		tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+		theta = np.linspace(0, 180, nPhis, endpoint = False)
+		poIn = POofPopulation(tcIn, theta, IF_IN_RANGE = True)
+		poOut = POofPopulation(tcOut, theta, IF_IN_RANGE = True)
+		print 'computing ccc... ',
+		sys.stdout.flush()
+		outE.append(CircularCorrCoeff(poIn[:N], poOut[:N])) #np.nanmean(np.cos(2.0 * (poIn[:N] - poOut[:N]))))
+		print 'done'
+		# outI.append(CircularCorrCoeff(poIn[:N], poOut[:N])) #np.nanmean(np.cos(2.0 * (poIn[N:] - poOut[N:]))))
+		validTr.append(trNo)
+	    except IOError:
+		print ''
+	ipdb.set_trace()
+	# np.save('InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa)), [validTr, outE]))
+	filename = './data/twopop/InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+        np.save(filename, [validTr, outE])
+	# plt.figure()
+	# plt.plot(validTr, outE, 'ko-')
+	# plt.xlabel('rewire step')
+	# plt.ylabel(r'$\langle \cos 2 [ \phi_{j}^{po} - \theta_{j, IN}^{po} ]   \rangle_j$')
+	# plt.plot(outI, 'ro-')
+	filepath = './figs/twopop/InOutCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
+	ProcessFigure(plt.gcf(), filepath, True)
+
+# sr.ComputeInOutPOCorrParallelAux(1, 0, 0, 8, .075, .075, 'rand', 10000, 1000, 2, 1000, 30)
+def ComputeInOutPOCorrParallelAux(kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, trNo):
+    out = np.nan
+    try:
+	tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa, 'net')
+	tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+	theta = np.linspace(0, 180, nPhis, endpoint = False)
+	poIn = POofPopulation(tcIn, theta, IF_IN_RANGE = True) * np.pi / 180
+	poOut = POofPopulation(tcOut, theta, IF_IN_RANGE = True) * np.pi / 180
+	print 'computing ccc... ', trNo
+	sys.stdout.flush()
+	# plt.plot(poIn[:N], poOut[:N], '.')
+	# plt.show()
+	# ipdb.set_trace()
+	out = CircularCorrCoeff(poIn[:N], poOut[:N])
+	print 'done', trNo
+    except IOError:
+	print ''
+	return out
+    return out
+    
+def PlotInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_COMPUTE = True):
+    outE = []; outI = []
+    validTr = []
+    filename = './data/twopop/InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if IF_COMPUTE:
+        pool = Pool(nRewireSteps)	
+        func = partial(ComputeInOutPOCorrParallelAux, kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T)
+	outE = pool.map(func, range(nRewireSteps))
+	# ipdb.set_trace()
+        np.save(filename, [validTr, outE])
+	pool.close()
+    else:
+	filename += '.npy'
+	outE = np.asarray(np.load(filename)[1], dtype = float)
+	# ipdb.set_trace()	
+	validTr =  np.arange(nRewireSteps)
+	validTr = validTr[~np.isnan(outE)]
+	plt.figure()
+	plt.plot(validTr, outE, 'ko-')
+	plt.xlabel('rewire step')
+	# plt.ylabel(r'$\langle \cos 2 [ \phi_{j}^{po} - \theta_{j, IN}^{po} ]   \rangle_j$')
+	plt.ylabel('CCC')
+	plt.plot(outI, 'ro-')
+	filepath = './figs/twopop/InOutCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
+	ProcessFigure(plt.gcf(), filepath, True)
+
+def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'pdf'):
+    FixAxisLimits(figHdl)
+    axPosition = [0.25, 0.25, .65, .65]
+    paperSize = [4, 3]
+    FixAxisLimits(plt.gcf(), IF_XTICK_INT)
+    Print2Pdf(plt.gcf(), filepath, paperSize, figFormat=figFormat, labelFontsize = 12, tickFontsize=10, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = axPosition)
+    plt.show()
+
+def FixAxisLimits(fig, IF_XTICK_INT = False):
     ax = fig.axes[0]
     xmin, xmax = ax.get_xlim()
     ymin, ymax = ax.get_ylim()
     ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    ax.set_xticks([xmin, 0.5 *(xmin + xmax), xmax])
+    xticks = [xmin, 0.5 * (xmin + xmax), xmax]
+    if IF_XTICK_INT:
+	ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+    ax.set_xticks(xticks)
     ax.set_yticks([ymin, 0.5 *(ymin + ymax), ymax])
     plt.draw()
 
@@ -209,11 +378,18 @@ def POofPopulation(tc, theta = np.arange(0.0, 180.0, 22.5), IF_IN_RANGE = False)
         po[kNeuron] = GetPhase(tc[kNeuron, :], theta, IF_IN_RANGE)
     return po 
 
-def GetPOofPop(p, gamma, mExt, mExtOne, rewireType = 'rand', nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True):
+# def GetPOofPop(p, gamma, mExt, mExtOne, rewireType = 'rand', nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True):
+#     nNeurons = N
+#     thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
+#     # ipdb.set_trace()
+#     tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T)
+#     prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
+#     return prefferedOri
+
+def GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, kappa = 1):
     nNeurons = N
     thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
-    # ipdb.set_trace()
-    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T)
+    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
     prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
     return prefferedOri
 
@@ -242,12 +418,12 @@ def POofPopulation(tc, theta = np.arange(0.0, 180.0, 22.5), IF_IN_RANGE = False)
         po[kNeuron] = GetPhase(tc[kNeuron, :], theta, IF_IN_RANGE)
     return po
 
-def TrackPOofPop(trList, p, gamma, mExt, mExtOne, rewireType = 'rand', nPhis = 8, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True):
+def TrackPOofPop(trList, p, gamma, mExt, mExtOne, rewireType = 'rand', nPhis = 8, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, kappa = 1):
     po = []
     z = []
     plt.figure()
     for trNo in trList:
-	po.append(GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE))
+	po.append(GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE, kappa))
     for i in range(1, len(trList)):
 	z.append(np.nanmean(np.cos(2 * (po[i - 1][:N] - po[i][:N]))))
     plt.plot(z, 'k.-')
@@ -265,7 +441,7 @@ def TrackPOofPop(trList, p, gamma, mExt, mExtOne, rewireType = 'rand', nPhis = 8
     plt.show()
     return z    
 
-def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k'):
+def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k', kappa = 1):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
@@ -277,9 +453,9 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, 
 	try:
 	    if i == 0:
 		print 'loading from fldr: ',	    
-		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = True)
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = True, kappa = kappa)
 	    else:
-		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = False)
+		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = False, kappa = kappa)
 	    if(len(fr) == 1):
 		if(np.isnan(fr)):
 		    print 'file not found!'
@@ -287,6 +463,7 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, 
 	except IOError:
 	    print 'file not found!'
     osi = OSIOfPop(tc[:NE, :], phis)
+    osiI = OSIOfPop(tc[NE:, :], phis)
     print "K = ", K, ", osi simulation: ", np.nanmean(osi)
     # plt.xlabel(r"$\mathrm{OSI} \,\,\,\,  (m_{E, i}^{(1)})$")
     plt.xlabel('OSI', fontsize = 12)    
@@ -302,15 +479,99 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, 
     plt.title(r'$p = %s, \, \gamma = %s $'%(p, gamma))
     _, ymax = plt.ylim()
     plt.vlines(np.nanmean(osi), 0, ymax, lw = 1, color = color)
-    print "mean OSI = ", np.nanmean(osi)
-    # print "MEAN OSI = ", np.nanmean(osi)
-    return osi
+    print "mean OSI, E = ", np.nanmean(osi)
+    print "mean OSI, I= ", np.nanmean(osiI)
+    return osi, osiI
 
-def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = ''):
+def CompareMeanOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = '', neuronType = 'E'):
+    # colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(trList), endpoint = False)]
+    colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(KList), endpoint = False)]
+    meanOSI = []
+    meanOSI_I = []
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    validTrList = []
+    legendTxtTag = legendTxt
+    for mExtOne in mExtOneList:
+	for kk, K in enumerate(KList):
+	    legendTxt = ', K=%s'%(K) + legendTxtTag
+	    validTrList = []
+	    meanOSI = []
+	    meanOSI_I = []
+	    counter = 0
+	    for p in pList:
+		for gamma in gList:
+		    for trNo in trList:
+			try:
+			    print trNo
+                            tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+			    osi = OSIOfPop(tc[:N, :], phis)
+			    osiI = OSIOfPop(tc[N:, :], phis)
+			    meanOSI.append(np.nanmean(osi))
+			    meanOSI_I.append(np.nanmean(osiI))
+			    if ~np.isnan(meanOSI[counter]):
+				validTrList.append(trNo)
+			    clrCntr += 1
+			    counter += 1
+			except IOError:
+			    print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
+	    # ipdb.set_trace()
+	    validTrList = np.asarray(validTrList, dtype = int)
+	    meanOSI = np.array(meanOSI)
+	    meanOSI_I = np.array(meanOSI_I)
+	    pcolor = color
+	    if color == '':
+	    	pcolor = colors[kk]
+	    if neuronType == 'E':
+		plt.plot(validTrList, meanOSI[validTrList], 'o-', color = pcolor, label = r'$\kappa=%s$'%(kappa) + legendTxt, markeredgecolor = pcolor)
+	    else:
+		plt.plot(validTrList, meanOSI_I[validTrList], 'o-', color = pcolor, label = r'$\kappa=%s$'%(kappa) + legendTxt, markeredgecolor = pcolor)
+
+	    
+ 
+    print '--'*26
+    osiLast = meanOSI[-1]
+    osilastCnt = -1
+    osiLastI = meanOSI_I[-1]
+    while np.isnan(osiLast):
+	osilastCnt -= 1
+	print osilastCnt
+	osiLast = meanOSI[osilastCnt]	
+	osiLastI = meanOSI_I[osilastCnt]
+    print 'pc change in mean OSI = ', 100 * (osiLast - meanOSI[0]) / meanOSI[0]
+    print '--'*26
+    plt.gca().set_position([0.15, 0.15, .65, .65])
+    if IF_NEW_FIG:
+	plt.figure()
+#    ipdb.set_trace()
+    # if neuronType == 'E':
+    # 	plt.plot(validTrList, meanOSI, '*-', color = color, label = r'$\kappa=%s$'%(kappa) + legendTxt)
+    # 	plt.title('E')
+    # else:
+    # 	plt.plot(validTrList, meanOSI_I, '*-', color = color, label = r'$\kappa=%s$'%(kappa) + legendTxt)
+    # 	plt.title('I')
+    plt.ylim(0, 0.30)
+    plt.xlim(0, 30)
+    plt.xlabel('rewiring step')
+    plt.ylabel(r'$\langle OSI \rangle$')
+    plt.gca().set_position([0.25, 0.25, .65, .65])
+    filename = filename + "p%sg%sk%s_K%s_"%(p, gamma, kappa, K) + neuronType
+    filepath = "./figs/twopop/compareOSI_mean_"+filename
+    paperSize = [4, 3]
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+    ipdb.set_trace()
+    ProcessFigure(plt.gcf(), filepath, IF_SAVE = 1, IF_XTICK_INT = True, figFormat = 'pdf')
+    
+    #Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_mean_"+filename,  paperSize, figFormat='pdf', labelFontsize = 10, tickFontsize=8, titleSize = 10.0)
+    plt.show()
+    print meanOSI
+
+
+def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1):
     if IF_NEW_FIG:
 	plt.figure()
     colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(trList), endpoint = False)]
     meanOSI = []
+    meanOSI_I = []
     for mExtOne in mExtOneList:
 	for trNo in trList:
 	    for p in pList:
@@ -318,22 +579,26 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
 		    for K in KList:
 			try:
 			    print trNo
-			    tmposi = PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T, K=K)
+			    tmposi, tmposiI = PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T, K=K, kappa = kappa)
 			    meanOSI.append(np.nanmean(tmposi))
+			    meanOSI_I.append(np.nanmean(tmposiI))
 			    clrCntr += 1
 			except IOError:
 			    print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
     # plt.gca().legend(bbox_to_anchor = (1.1, 1.5))
     if IF_LEGEND:
-	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+	plt.legend(loc = 2, frameon = False, numpoints = 1, prop = {'size': 8})
     print '--'*26
     osiLast = meanOSI[-1]
     osilastCnt = -1
+    osiLastI = meanOSI[-1]
     while np.isnan(osiLast):
 	osilastCnt -= 1
 	print osilastCnt
-	osiLast = meanOSI[osilastCnt]
+	osiLast = meanOSI[osilastCnt]	
+	osiLastI = meanOSI_I[osilastCnt]
     print 'pc change in mean OSI = ', 100 * (osiLast - meanOSI[0]) / meanOSI[0]
+    # print 'pc change in mean OSI, I = ', 100 * (osiLastI - meanOSI_I[0]) / meanOSI_I[0]
     print '--'*26
     plt.gca().set_position([0.15, 0.15, .65, .65])
     if nPop == 2:
@@ -353,3 +618,177 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
     Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_mean_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0)
     plt.show()
     print meanOSI
+
+def MeanRateVsRewireStep(kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, mExtOne = .075, trList = range(30), rewireType = 'rand', N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = ''):
+    if IF_NEW_FIG:
+	plt.figure()
+#    colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(trList), endpoint = False)]
+    meanRateE = []; meanRateI = []
+    for trNo in trList:
+	print trNo
+	try:
+	    print trNo
+	    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+	    meanRateE.append(tc[:N].mean())
+	    meanRateI.append(tc[N:].mean())
+	except IOError:
+	    print ''
+    plt.plot(trList, meanRateE, 'k.-')
+    plt.plot(trList, meanRateI, 'r.-')
+    plt.xlabel('rewire step')
+    plt.ylabel(r'$\left[ \langle m_i(\phi) \rangle_i \right]_{\phi}$')
+    ProcessFigure(plt.gcf(), './figs/twopop/meanrate_vs_rewire_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa)), True)
+
+    # for mExtOne in mExtOneList:
+    # 	    for p in pList:
+    # 		for gamma in gList:
+    # 		    for K in KList:
+
+def ComputeFFInOutPOCorrParallelAux(kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, NFF, JE0, JI0, IF_PLOT, trNo):
+    out = np.nan
+    try:
+	theta = np.linspace(0, 180, nPhis, endpoint = False)
+	uFF = rw.ComputeFFInput(nPhis, p, gamma, kappa, mExt, mExtOne, trNo, N, K, nPop, NFF, JE0, JI0, 0.2, rewireType, T) #nPhis, p, gamma, kappa, mExt, mExtOne, trNo, nPop, NFF, JE0, JI0, cFF, rewireType, T)
+	# tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa, 'FF')
+	# ipdb.set_trace()
+        # ipdb.set_trace()	
+        poFF = POofPopulation(uFF, theta, IF_IN_RANGE = True) * np.pi / 180
+	tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+	poOut = POofPopulation(tcOut, theta, IF_IN_RANGE = True) * np.pi / 180
+	if IF_PLOT:
+	    plt.plot(poFF[:N], poOut[:N], '.')
+	    plt.show()
+	    ipdb.set_trace()
+	print 'computing ccc... ', trNo
+	sys.stdout.flush()
+	out = CircularCorrCoeff(poFF[:N], poOut[:N])
+	print 'done', trNo, 'CCC=', out
+    except IOError:
+	print ''
+	return out
+    return out
+
+def PlotFFInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_COMPUTE = True, JE0 = 2.0, JI0 = 1.0, NFF = 10000):
+    outE = []; outI = []
+    validTr = []
+    filename = './data/twopop/FFInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if IF_COMPUTE:
+        pool = Pool(nRewireSteps)	
+        func = partial(ComputeFFInOutPOCorrParallelAux, kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, NFF, JE0, JI0, False)
+	outE = pool.map(func, range(nRewireSteps))
+        np.save(filename, [validTr, outE])
+	pool.close()
+    else:
+	filename += '.npy'
+	outE = np.asarray(np.load(filename)[1], dtype = float)
+	validTr =  np.arange(nRewireSteps)
+	validTr = validTr[~np.isnan(outE)]
+	plt.figure()
+	plt.plot(validTr, outE, 'ko-')
+	plt.xlabel('rewire step')
+	plt.title('FF PO vs Out PO')
+	# plt.ylabel(r'$\langle \cos 2 [ \phi_{j}^{po} - \theta_{j, IN}^{po} ]   \rangle_j$')
+	plt.ylabel('CCC')
+	plt.plot(outI, 'ro-')
+	filepath = './figs/twopop/FFInOutPOCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
+	ProcessFigure(plt.gcf(), filepath, True)
+
+def ComputePOCorrs(kappa, nRewireSteps):
+    cccNet = PlotInOutPOCorrParallel(nRewireSteps, kappa=kappa)
+    cccFF = PlotFFInOutPOCorrParallel(nRewireSteps, IF_COMPUTE = 1, kappa=kappa)
+    cccRec = PlotRecInOutPOCorrParallel(nRewireSteps, IF_COMPUTE = 1, kappa=kappa)
+    
+def PlotInOutPOCorrCmpnts(nRewireSteps, color = 'k', kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, JE0 = 2.0, JI0 = 1.0, NFF = 10000, IF_NEW_FIG = True, startIdx = 0):
+    outE = []; outI = []
+    validTr = []
+    filename = './data/twopop/FFInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    filename += '.npy'
+    outE = np.asarray(np.load(filename)[1], dtype = float)
+    outE = outE #[:nRewireSteps]
+    validTr =  np.arange(nRewireSteps, dtype = int)
+    validTr = validTr[~np.isnan(outE)]
+    if IF_NEW_FIG:
+	plt.figure()
+    plt.plot(validTr, outE, 'o-', label = r'$\mathrm{FF}, \kappa=%s$'%(kappa), markersize = 2, color=color, markeredgecolor=color)
+    plt.xlabel('rewire step')
+    plt.ylabel('CCC')
+    plt.plot(outI, 'ro-')
+    filename = './data/twopop/RecInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    filename += '.npy'
+    recCurPOCorr = np.asarray(np.load(filename)[1], dtype = float)
+    plt.plot(recCurPOCorr, 'k*-', label = r'$\mathrm{rec}, \kappa=%s$'%(kappa), markersize = 2, color=color, markeredgecolor=color)
+    filename = './data/twopop/InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    filename += '.npy'
+    netCurPOCorr = np.asarray(np.load(filename)[1], dtype = float)
+    validTr =  np.arange(nRewireSteps)
+    validTr = validTr[~np.isnan(netCurPOCorr[:nRewireSteps])]
+    plt.plot(netCurPOCorr, 'ks-', label =  r'$\mathrm{net}, \kappa=%s$'%(kappa), markersize = 2, color=color, markeredgecolor=color)    
+    plt.legend(loc = 0, frameon = False, numpoints = 1, ncol = 2, prop = {'size': 8})    
+    filepath = './figs/twopop/FF_nd_InOutPOCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
+    plt.gca().set_xticks([0, 15, 30])
+    ProcessFigure(plt.gcf(), filepath, True, True)
+
+def PlotRecInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_COMPUTE = True, JE0 = 2.0, JI0 = 1.0, NFF = 10000):
+    outE = []; outI = []
+    validTr = []
+    filename = './data/twopop/RecInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if IF_COMPUTE:
+        pool = Pool(nRewireSteps)	
+        func = partial(ComputeRecInOutPOCorrParallelAux, kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, NFF, JE0, JI0, False)
+	outE = pool.map(func, range(nRewireSteps))
+        np.save(filename, [validTr, outE])
+	pool.close()
+    else:
+	filename += '.npy'
+	outE = np.asarray(np.load(filename)[1], dtype = float)
+	validTr =  np.arange(nRewireSteps)
+	validTr = validTr[~np.isnan(outE)]
+	plt.figure()
+	plt.plot(validTr, outE, 'ko-')
+	plt.xlabel('rewire step')
+	plt.ylabel('CCC')
+	plt.plot(outI, 'ro-')
+	filepath = './figs/twopop/Rec_FF_nd_Net_InOutPOCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
+	ProcessFigure(plt.gcf(), filepath, True)
+
+def ComputeRecInOutPOCorrParallelAux(kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, NFF, JE0, JI0, IF_PLOT, trNo):
+    out = np.nan
+    try:
+	theta = np.linspace(0, 180, nPhis, endpoint = False)
+	uFF = rw.ComputeFFInput(nPhis, p, gamma, kappa, mExt, mExtOne, trNo, N, K, nPop, NFF, JE0, JI0, 0.2, rewireType, T) #nPhis, p, gamma, kappa, mExt, mExtOne, trNo, nPop, NFF, JE0, JI0, cFF, rewireType, T)
+	tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+	# ipdb.set_trace()
+	uRec = tcIn - uFF
+        # ipdb.set_trace()	
+        poRec = POofPopulation(uRec, theta, IF_IN_RANGE = True) * np.pi / 180
+	tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+	poOut = POofPopulation(tcOut, theta, IF_IN_RANGE = True) * np.pi / 180
+	if IF_PLOT:
+	    plt.plot(poFF[:N], poOut[:N], '.')
+	    plt.show()
+	    ipdb.set_trace()
+	print 'computing ccc... ', trNo
+	sys.stdout.flush()
+	out = CircularCorrCoeff(poRec[:N], poOut[:N])
+	print 'done', trNo, 'CCC=', out
+    except IOError:
+	print ''
+	return out
+    return out
+
+def LocalPOCorrFunc(po, idx, nNeighbours, N):
+    neighbourIdx = np.mod(np.arange(idx - nNeighbours, idx + nNeighbours + 1), N)
+    # ipdb.set_trace()
+    # return np.nanmean(CircularCorrCoeff(po[idx],  po[neighbourIdx[neighbourIdx != idx]]))
+    return np.nanmean(np.cos(2 * (po[idx] - po[neighbourIdx[neighbourIdx != idx]])))
+    
+def LocalPOCorr(kappa=1, p=0, gamma=0, nPhis=8, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, trNo=0, nNeighbours = 100):
+    theta = np.linspace(0, 180, nPhis, endpoint = False)
+    tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+    poOut = POofPopulation(tcOut, theta, IF_IN_RANGE = True) * np.pi / 180
+    poOut = poOut[:N]
+    localCorr = []
+    [localCorr.append(LocalPOCorrFunc(poOut, idx, nNeighbours, N)) for idx in xrange(N)]
+    return np.asarray(localCorr)
+    
+    
