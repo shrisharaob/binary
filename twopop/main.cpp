@@ -471,7 +471,6 @@ void LoadSparseConMat() {
   dummy = fread(sparseConVec, sizeof(*sparseConVec), nConnections, fpSparseConVec);
   if(dummy != nConnections) {
     printf("sparseConvec read error ? \n");
-
   }
   printf("#sparse cons = %lu \n\n", dummy);    
   printf("sparse vector read\n");  
@@ -479,6 +478,16 @@ void LoadSparseConMat() {
   printf("#idx vector read\n");    
   fclose(fpSparseConVec);
   fclose(fpIdxVec);
+}
+
+void LoadRewiredCon(unsigned long nElements) {
+  unsigned long nElementsRead = 0;
+  FILE *fpRewired;
+  fpRewired = fopen("newPostNeurons.dat", "rb");
+  nElementsRead = fread(IS_REWIRED_LINK, sizeof(*IS_REWIRED_LINK), nElements, fpRewired);
+  if(nElements != nElementsRead) {
+    printf("rewired read error ? \n");
+  }
 }
 
 void LoadFFSparseConMat() {
@@ -679,8 +688,14 @@ void RunSim() {
 	  unsigned int kk = sparseConVec[tmpIdx + cntr];
 	  cntr += 1;
 	  if(updateNeuronIdx < NE)  {
+	    unsigned int IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx + cntr - 1];
 	    if(kk < NE) {
-	      netInputVec[kk] += JEE_K;
+	      if(IS_STRENGTHENED) {
+		netInputVec[kk] += (rewiredEEWeight * JEE_K);
+	      }
+	      else {
+		netInputVec[kk] += JEE_K;
+	      }
 	    }
 	    else {
 	      netInputVec[kk] += JIE_K;
@@ -707,8 +722,14 @@ void RunSim() {
 	  unsigned int kk = sparseConVec[tmpIdx + cntr];
 	  cntr += 1;
 	  if(updateNeuronIdx < NE)  {
+	    unsigned int IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx + cntr - 1];
 	    if(kk < NE) {
-	      netInputVec[kk] -= JEE_K;
+	      if(IS_STRENGTHENED) {
+		netInputVec[kk] -= (rewiredEEWeight * JEE_K);
+	      }
+	      else {
+		netInputVec[kk] -= JEE_K;
+	      }
 	    }
 	    else {
 	      netInputVec[kk] -= JIE_K;
@@ -887,7 +908,13 @@ int main(int argc, char *argv[]) {
   if(argc > 6) {
     trialNumber = atof(argv[6]); // parameter gamma
   }
+  unsigned int IF_LoadRewiredCon = 0;
+  if(argc > 7) {
+    rewiredEEWeight = atof(argv[7]); // parameter strengthened weight prefactor
+    IF_LoadRewiredCon = 1;
+  }
 
+  
   tStop = T_STOP;
 
   cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulationEE << " m0 = " << m0_ext << " m0_One = " << m1_ext << endl;
@@ -923,6 +950,20 @@ int main(int argc, char *argv[]) {
     LoadFFSparseConMat();
     printf("loading Sparse matrix\n");  
     LoadSparseConMat();
+
+    unsigned long nEE_IEConnections = 0;
+    for(unsigned i = 0; i < NE; i++) {
+      nEE_IEConnections += nPostNeurons[i];
+    }
+    IS_REWIRED_LINK = new unsigned int[nEE_IEConnections];
+    if(IF_LoadRewiredCon) {
+      LoadRewiredCon(nEE_IEConnections);
+    }
+    else {
+      for(unsigned long i = 0; i < nEE_IEConnections; i++) {
+	IS_REWIRED_LINK[i] = 0;
+      }
+    }
   }
 
   
@@ -942,5 +983,6 @@ int main(int argc, char *argv[]) {
   delete [] nPostNeuronsFF;
   delete [] idxVecFF;
   delete [] sparseConVecFF;
+  delete [] IS_REWIRED_LINK;
   return 0; //EXIT_SUCCESS;
 }

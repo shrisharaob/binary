@@ -4,7 +4,7 @@
 #define NE 10000
 #define NI 10000
 #define NFF 10000
-#define K 1000
+#define K 500
 #define SQRT_K (sqrt((double)K))
 #define THRESHOLD_E 1.0
 #define THRESHOLD_I 1.0
@@ -37,11 +37,13 @@
 
 #define N_SEGMENTS 2
 
+
+double rewiredEEWeight;
 double m0, tStop, ffModulation;
 double recModulationEE, recModulationEI, recModulationIE;
 double *conMat, *conMatFF;
 int trialNumber;
-unsigned int *nPostNeurons, *sparseConVec, *idxVec;
+unsigned int *nPostNeurons, *sparseConVec, *idxVec, *IS_REWIRED_LINK;
 unsigned int *nPostNeuronsFF, *sparseConVecFF, *idxVecFF;
 
 int IF_GEN_MAT;
