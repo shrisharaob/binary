@@ -6,15 +6,15 @@ import code, sys, os
 import ipdb
 import pylab as plt
 sys.path.append(basefolder)
-import Keyboard as kb
+# import Keyboard as kb
 from multiprocessing import Pool
 from functools import partial 
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 sys.path.append(basefolder + "/nda/spkStats")
 sys.path.append(basefolder + "/utils")
 from DefaultArgs import DefaultArgs
-from reportfig import ReportFig
-from Print2Pdf import Print2Pdf
+# from reportfig import ReportFig
+# from Print2Pdf import Print2Pdf
 import GetPO
 
 
@@ -651,12 +651,12 @@ if __name__ == '__main__':
     nPhis = int(nPhis)
     T = int(T)
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
-    IF_TEST =1 ## False
+    IF_TEST = False
     if IF_TEST:
 	baseFldr = './'
-	NE = 10 
-	NI = 10
-	K = 2
+	NE = 5000
+	NI = 5000
+	K = 500
     requires = ['CONTIGUOUS', 'ALIGNED']
     # convec = np.require(convec, np.int32, requires)
     nPostNeurons = np.zeros((NE + NI, ))

@@ -189,14 +189,14 @@ void GenSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, u
   //   }
   // }
   
-  FILE *fp2 = NULL;
-  fp2 = fopen("prob.csv", "w");
-  for(i = 0; i < NE; i++) {
-    // printf("%llu:\n", i); //    %f\n", i, shiftedVec[i] / (double)NE);    
-    //fprintf(fp, "%f\n", shiftedVec[i] / (double)NE);
-    fprintf(fp2, "%f\n", ConProb(0.0, (double)i * M_PI / (double)NE, NE, recModulationEE));
-  }
-  fclose(fp2);
+  // FILE *fp2 = NULL;
+  // fp2 = fopen("prob.csv", "w");
+  // for(i = 0; i < NE; i++) {
+  //   // printf("%llu:\n", i); //    %f\n", i, shiftedVec[i] / (double)NE);    
+  //   //fprintf(fp, "%f\n", shiftedVec[i] / (double)NE);
+  //   fprintf(fp2, "%f\n", ConProb(0.0, (double)i * M_PI / (double)NE, NE, recModulationEE));
+  // }
+  // fclose(fp2);
   // shiftedVecBuff.clear();
   // shiftedVec.clear();
 }
@@ -231,6 +231,9 @@ void GenFFConMat() {
   sparseConVecFF = new unsigned int[nConnections];
   GenSparseMat(conMatFF, NFF, N_NEURONS, sparseConVecFF, idxVecFF, nPostNeuronsFF);
   cout << "done" << endl;
+
+
+  
   FILE *ffp;
   ffp = fopen("kcount_ff.csv", "w");
   for(unsigned int lll = 0; lll < NFF; lll++) {
@@ -239,6 +242,8 @@ void GenFFConMat() {
   fclose(ffp);
   delete [] conMatFF;
 
+ 
+  
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
   unsigned long int nElementsWritten;
   printf("done\n#connections = %llu\n", nConnections);
@@ -257,6 +262,8 @@ void GenFFConMat() {
   fclose(fpNpostNeurons);
   printf("done\n");
 
+
+
   //-----------------------------------------
   // printf("testing sparsevecff read\n");
   // unsigned long int dummy;
@@ -267,6 +274,7 @@ void GenFFConMat() {
   //   printf("sparseConvec read error ? %lu %llu \n", dummy, nConnections);
   // fclose(fpSparseConVecFF);
   // }
+  
 }
     
 void GenConMat() {
