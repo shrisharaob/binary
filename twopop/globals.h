@@ -1,10 +1,10 @@
 //#include <string>
 //#include <cstring>
 
-#define NE 10000
-#define NI 10000
-#define NFF 10000
-#define K 500
+#define NE 10
+#define NI 10
+#define NFF 10
+#define K 2
 #define SQRT_K (sqrt((double)K))
 #define THRESHOLD_E 1.0
 #define THRESHOLD_I 1.0
@@ -37,7 +37,7 @@
 
 #define N_SEGMENTS 2
 
-
+unsigned int IF_LOADREWIREDCON = 0;
 double rewiredEEWeight;
 double m0, tStop, ffModulation;
 double recModulationEE, recModulationEI, recModulationIE;

@@ -688,10 +688,14 @@ void RunSim() {
 	  unsigned int kk = sparseConVec[tmpIdx + cntr];
 	  cntr += 1;
 	  if(updateNeuronIdx < NE)  {
-	    unsigned int IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx + cntr - 1];
+	    unsigned int IS_STRENGTHENED = 0;
+	    if(IF_LOADREWIREDCON) {
+	      IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx + cntr - 1];
+	    }
 	    if(kk < NE) {
 	      if(IS_STRENGTHENED) {
 		netInputVec[kk] += (rewiredEEWeight * JEE_K);
+		printf("rewired synapse!\n");
 	      }
 	      else {
 		netInputVec[kk] += JEE_K;
@@ -722,7 +726,10 @@ void RunSim() {
 	  unsigned int kk = sparseConVec[tmpIdx + cntr];
 	  cntr += 1;
 	  if(updateNeuronIdx < NE)  {
-	    unsigned int IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx + cntr - 1];
+	    unsigned int IS_STRENGTHENED = 0;
+	    if(IF_LOADREWIREDCON) {
+	      IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx + cntr - 1];
+	    }
 	    if(kk < NE) {
 	      if(IS_STRENGTHENED) {
 		netInputVec[kk] -= (rewiredEEWeight * JEE_K);
@@ -908,10 +915,10 @@ int main(int argc, char *argv[]) {
   if(argc > 6) {
     trialNumber = atof(argv[6]); // parameter gamma
   }
-  unsigned int IF_LoadRewiredCon = 0;
+
   if(argc > 7) {
     rewiredEEWeight = atof(argv[7]); // parameter strengthened weight prefactor
-    IF_LoadRewiredCon = 1;
+    IF_LOADREWIREDCON = 1;
   }
 
   
@@ -956,7 +963,7 @@ int main(int argc, char *argv[]) {
       nEE_IEConnections += nPostNeurons[i];
     }
     IS_REWIRED_LINK = new unsigned int[nEE_IEConnections];
-    if(IF_LoadRewiredCon) {
+    if(IF_LOADREWIREDCON) {
       LoadRewiredCon(nEE_IEConnections);
     }
     else {

@@ -651,7 +651,7 @@ if __name__ == '__main__':
     nPhis = int(nPhis)
     T = int(T)
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
-    IF_TEST = False
+    IF_TEST =1 ## False
     if IF_TEST:
 	baseFldr = './'
 	NE = 10 
@@ -689,8 +689,12 @@ if __name__ == '__main__':
     preNeurons = Convert2InDegree(idxvec, nPostNeurons, sparseVec)
     # print preNeurons[9]
     # ipdb.set_trace()
+
     rewiredPreNeurons, linksRemoved, newLinks, newLinksPost  = RewireSqrtK(preNeurons, po, K, NE, rewireType, trNo + 1, kappa)
+
+    
     sparseConVec, newPostNeurons = Convert2OutDegree(rewiredPreNeurons, nPostNeurons, idxvec, newLinksPost, NE)
+    # sparseConVec, newPostNeurons = Convert2OutDegree(preNeurons, nPostNeurons, idxvec, newLinksPost, NE)    
     # ipdb.set_trace()        
     sparseVec = np.require(sparseConVec, np.int32, requires)
     tmp = sparseVec[sparseVec < NE]
