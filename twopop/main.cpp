@@ -493,9 +493,11 @@ void LoadRewiredCon(unsigned long nElements) {
   FILE *fpRewired;
   fpRewired = fopen("newPostNeurons.dat", "rb");
   nElementsRead = fread(IS_REWIRED_LINK, sizeof(*IS_REWIRED_LINK), nElements, fpRewired);
+  printf("reading new post neurons\n");
   if(nElements != nElementsRead) {
     printf("rewired read error ? \n");
   }
+  printf("done\n");
 }
 
 void LoadFFSparseConMat() {
@@ -703,7 +705,7 @@ void RunSim() {
 	    if(kk < NE) {
 	      if(IS_STRENGTHENED) {
 		netInputVec[kk] += (rewiredEEWeight * JEE_K);
-		printf("rewired synapse!\n");
+		// printf("rewired synapse!\n");
 	      }
 	      else {
 		netInputVec[kk] += JEE_K;
@@ -952,7 +954,7 @@ int main(int argc, char *argv[]) {
 
 
 
-  if(trialNumber == 0) {
+  if(trialNumber == 0 && phi_ext == 0) {
     clock_t timeStartCM = clock(); 
     GenFFConMat();    
     GenConMat();

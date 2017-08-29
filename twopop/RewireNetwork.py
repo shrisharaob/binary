@@ -131,7 +131,7 @@ def Convert2InDegree(idxVec, nPostNeurons, sparseConVec):
     Ninput = len(nPostNeurons)
     Noutput = np.max(sparseConVec) + 1
     preNeurons = [[] for x in xrange(Noutput)]
-    # ipdb.set_trace()
+
     for i in range(Ninput):
 	iPostNeurons = sparseConVec[idxVec[i] : idxVec[i] + nPostNeurons[i]]
 	for j, iPost in enumerate(iPostNeurons):
@@ -212,9 +212,13 @@ def RewireSqrtK(preNeurons, po, K, NE, rewireType, stepNo, kappa, nmax = 10):
 	iK = len(iPreNeurons)
 	# ipdb.set_trace()
 	if rewireType == 'rand':
-            nLinks2Break = int(kappa * np.sqrt(float(iK)) / float(stepNo))	    
+            # nLinks2Break = int(kappa * np.sqrt(float(iK)) / float(stepNo))
+            nLinks2Break = int(kappa * np.sqrt(float(iK)))
 	    links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))
 	    # print links2Break
+	if rewireType == 'twosteps':
+            nLinks2Break = int(kappa * np.sqrt(float(iK)) * 0.5)
+	    links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))
 	if rewireType == 'decay':
 	    nLinks2Break = int(kappa * np.sqrt(float(iK)) / float(nmax))
 	    links2Break = np.sort(np.random.choice(range(iK), nLinks2Break, replace = False))
@@ -296,6 +300,8 @@ def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 1
 	    tag = '1'
 	if rewireType == 'decay':
 	    tag = '2'
+	if rewireType == 'twosteps':
+	    tag = '3'	    
 	rootFolder = ''
 	baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
 	if nPop == 1:
@@ -603,7 +609,7 @@ def CompareConDistr(trList, kappa = 1, p = 0, gamma = 0, mExt = 0.075, mExtOne =
     # ProcessFigure(fg0, filepath, True)
     # filepath = './figs/conDistr_vs_deltaPOs_p%sg%s'%(int(p * 100), int(gamma * 100))
     # ProcessFigure(fg1, filepath, True)
-    filepath = './figs/conDistr_DeltaPOCirc_p%sg%s_'%(int(p * 100), int(gamma * 100)) + rewireType
+    filepath = './figs/conDistr_DeltaPOCirc_p%sg%s_k%s'%(int(p * 100), int(gamma * 100), int(10*kappa)) + rewireType
     ProcessFigure(fg2, filepath, True)
     ipdb.set_trace()
 
@@ -636,7 +642,7 @@ def CompareDPOvsDist(trList, kappa = 1, p = 0, gamma = 0, mExt = 0.075, mExtOne 
   
 if __name__ == '__main__':
     # NetworkType : {'uni', 'ori'}, 'uni' is for standard random network, 'ori' is to rewire depending on the distance in ori space
-    [trNo, kappa, K, rewireType, p, gamma, mExt, mExtOne, nPhis,NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 1, 500, 'rand', 0, 0, .075, .075, 8, 10000, 10000,  2, 1000])
+    [trNo, kappa, K, rewireType, p, gamma, mExt, mExtOne, nPhis,NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 1, 1000, 'rand', 0, 0, .075, .075, 8, 10000, 10000,  2, 1000])
     NE = int(NE)
     NI = int(NI)
     N = NE
@@ -673,10 +679,12 @@ if __name__ == '__main__':
     sparseVec = np.zeros((nPostNeurons.sum(), ))
     sparseVec = np.require(sparseVec, np.int32, requires)
     fpsparsevec = open(baseFldr + 'sparseConVec.dat', 'rb')
-    sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
+    # sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)
+    sparseVec = np.fromfile(fpsparsevec, dtype = np.int32)    
     fpsparsevec.close()
     print 'nConnections = ', nPostNeurons.sum()
     print 'sparsevec length = ', sparseVec.size
+    # ipdb.set_trace()    
     nPostE = nPostNeurons[:NE].sum()
     tmp = sparseVec[sparseVec < NE]
     print np.sort(tmp[:10])

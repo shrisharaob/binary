@@ -48,7 +48,8 @@ def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 1
 	    tag = '1'
 	if rewireType == 'decay':
 	    tag = '2'
-	    
+	if rewireType == 'twosteps':
+	    tag = '3'	    
 	rootFolder = ''
 	baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
 	if nPop == 1:
@@ -263,7 +264,11 @@ def ComputeInOutPOCorrParallelAux(kappa, p, gamma, nPhis, mExt, mExtOne, rewireT
 def PlotInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_COMPUTE = True):
     outE = []; outI = []
     validTr = []
-    filename = './data/twopop/InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if rewireType == 'rand':
+	filename = './data/twopop/InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    else:
+	filename = './data/twopop/InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa)) + '_'  + rewireType 
+	
     if IF_COMPUTE:
         pool = Pool(nRewireSteps)	
         func = partial(ComputeInOutPOCorrParallelAux, kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T)
@@ -283,15 +288,13 @@ def PlotInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8
 	# plt.ylabel(r'$\langle \cos 2 [ \phi_{j}^{po} - \theta_{j, IN}^{po} ]   \rangle_j$')
 	plt.ylabel('CCC')
 	plt.plot(outI, 'ro-')
-	filepath = './figs/twopop/InOutCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
+	filepath = './figs/twopop/InOutCorr_p%sg%s'%(int(100 * p), int(10 * gamma)) + '_' + rewireType
 	ProcessFigure(plt.gcf(), filepath, True)
 
-def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'pdf'):
+def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'eps', paperSize = [4, 3], titleSize = 10, axPosition = [0.25, 0.25, .65, .65], tickFontsize = 10, labelFontsize = 12):
     FixAxisLimits(figHdl)
-    axPosition = [0.25, 0.25, .65, .65]
-    paperSize = [4, 3]
     FixAxisLimits(plt.gcf(), IF_XTICK_INT)
-    Print2Pdf(plt.gcf(), filepath, paperSize, figFormat=figFormat, labelFontsize = 12, tickFontsize=10, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = axPosition)
+    Print2Pdf(plt.gcf(), filepath, paperSize, figFormat=figFormat, labelFontsize = labelFontsize, tickFontsize=tickFontsize, titleSize = titleSize, IF_ADJUST_POSITION = True, axPosition = axPosition)
     plt.show()
 
 def FixAxisLimits(fig, IF_XTICK_INT = False):
@@ -299,9 +302,12 @@ def FixAxisLimits(fig, IF_XTICK_INT = False):
     xmin, xmax = ax.get_xlim()
     ymin, ymax = ax.get_ylim()
     ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    xticks = [xmin, 0.5 * (xmin + xmax), xmax]
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
+    xmiddle = 0.5 * (xmin + xmax)
+    xticks = [xmin, xmiddle, xmax]
     if IF_XTICK_INT:
+	if xmiddle != int(xmiddle):
+	    xticks = [xmin, xmax]
 	ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
     ax.set_xticks(xticks)
     ax.set_yticks([ymin, 0.5 *(ymin + ymax), ymax])
@@ -441,7 +447,7 @@ def TrackPOofPop(trList, p, gamma, mExt, mExtOne, rewireType = 'rand', nPhis = 8
     plt.show()
     return z    
 
-def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k', kappa = 1):
+def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k', kappa = 1, legendTxt = ''):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
@@ -468,7 +474,7 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, 
     # plt.xlabel(r"$\mathrm{OSI} \,\,\,\,  (m_{E, i}^{(1)})$")
     plt.xlabel('OSI', fontsize = 12)    
     plt.ylabel('Density', fontsize = 12)
-    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$STP: %s$'%(trNo, ), color = color, lw = 1)    
+    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$STP: %s$'%(trNo, ) + legendTxt, color = color, lw = 1)    
     # plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\,\gamma = %s$'%(p, gamma, ), color = color, lw = 1)
     plt.xlim(0, 1)
     plt.gca().set_xticks([0, 0.5, 1])
@@ -491,6 +497,8 @@ def CompareMeanOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireTyp
     phis = np.linspace(0, 180, nPhis, endpoint = False)
     validTrList = []
     legendTxtTag = legendTxt
+    if IF_NEW_FIG:
+	plt.figure()
     for mExtOne in mExtOneList:
 	for kk, K in enumerate(KList):
 	    legendTxt = ', K=%s'%(K) + legendTxtTag
@@ -540,36 +548,42 @@ def CompareMeanOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireTyp
     print 'pc change in mean OSI = ', 100 * (osiLast - meanOSI[0]) / meanOSI[0]
     print '--'*26
     plt.gca().set_position([0.15, 0.15, .65, .65])
-    if IF_NEW_FIG:
-	plt.figure()
-#    ipdb.set_trace()
+    # ipdb.set_trace()
     # if neuronType == 'E':
     # 	plt.plot(validTrList, meanOSI, '*-', color = color, label = r'$\kappa=%s$'%(kappa) + legendTxt)
     # 	plt.title('E')
     # else:
     # 	plt.plot(validTrList, meanOSI_I, '*-', color = color, label = r'$\kappa=%s$'%(kappa) + legendTxt)
     # 	plt.title('I')
-    plt.ylim(0, 0.30)
-    plt.xlim(0, 30)
+    plt.ylim(0, .5)
+    xmax = len(trList) - 1
+    # if np.mod(xmax, 2) != 0:
+    # 	xmax += 1
+    plt.xlim(0, xmax)
     plt.xlabel('rewiring step')
     plt.ylabel(r'$\langle OSI \rangle$')
     plt.gca().set_position([0.25, 0.25, .65, .65])
     filename = filename + "p%sg%sk%s_K%s_"%(p, gamma, kappa, K) + neuronType
-    filepath = "./figs/twopop/compareOSI_mean_"+filename
+    filepath = "./figs/twopop/compareOSI_mean_"+ rewireType + '_' +  filename 
     paperSize = [4, 3]
     plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
-    ipdb.set_trace()
-    ProcessFigure(plt.gcf(), filepath, IF_SAVE = 1, IF_XTICK_INT = True, figFormat = 'pdf')
+    plt.grid('on')
+#    ipdb.set_trace()
+    print 'saving as: ', filepath
+    ProcessFigure(plt.gcf(), filepath, IF_SAVE = 1, IF_XTICK_INT = True, figFormat = 'eps')
     
     #Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_mean_"+filename,  paperSize, figFormat='pdf', labelFontsize = 10, tickFontsize=8, titleSize = 10.0)
     plt.show()
     print meanOSI
 
 
-def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1):
+def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = ''):
     if IF_NEW_FIG:
 	plt.figure()
-    colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(trList), endpoint = False)]
+    if color == '':
+	colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(trList), endpoint = False)]
+    else:
+	pcolor = color
     meanOSI = []
     meanOSI_I = []
     for mExtOne in mExtOneList:
@@ -579,7 +593,10 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
 		    for K in KList:
 			try:
 			    print trNo
-			    tmposi, tmposiI = PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T, K=K, kappa = kappa)
+			    if color == '':
+				tmposi, tmposiI = PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T, K=K, kappa = kappa, legendTxt = legendTxt)
+			    else:
+				tmposi, tmposiI = PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = trNo, IF_NEW_FIG = False, color = pcolor, T=T, K=K, kappa = kappa, legendTxt = legendTxt)
 			    meanOSI.append(np.nanmean(tmposi))
 			    meanOSI_I.append(np.nanmean(tmposiI))
 			    clrCntr += 1
@@ -587,7 +604,7 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
 			    print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
     # plt.gca().legend(bbox_to_anchor = (1.1, 1.5))
     if IF_LEGEND:
-	plt.legend(loc = 2, frameon = False, numpoints = 1, prop = {'size': 8})
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
     print '--'*26
     osiLast = meanOSI[-1]
     osilastCnt = -1
@@ -606,8 +623,8 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
 	# plt.savefig("./figs/twopop/compareOSI_"+filename + '.png')
 	paperSize = [4, 3]
 	# ipdb.set_trace()
-	filename = filename + "p%sg%s"%(p, gamma)
-        Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])
+	filename = filename + "p%sg%sk%s"%(p, gamma, kappa)
+        Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_" + rewireType + '_' + filename,  paperSize, figFormat='eps', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])
     plt.figure()
     plt.plot(trList, meanOSI, 'k*-')
     plt.xlabel('rewiring step')
@@ -615,11 +632,11 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
     plt.gca().set_position([0.25, 0.25, .65, .65])
     # plt.xlim([0, ])
     filename = filename + "p%sg%s"%(p, gamma)
-    Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_mean_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0)
+    Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_mean_"+ rewireType + '_' + filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0)
     plt.show()
     print meanOSI
 
-def MeanRateVsRewireStep(kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, mExtOne = .075, trList = range(30), rewireType = 'rand', N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = ''):
+def MeanRateVsRewireStep(kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, mExtOne = .075, trList = range(30), rewireType = 'rand', N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', paperSize = [1.6, 1.2], axPosition = [0.3, 0.3, .5, .5]):
     if IF_NEW_FIG:
 	plt.figure()
 #    colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(trList), endpoint = False)]
@@ -633,11 +650,20 @@ def MeanRateVsRewireStep(kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, m
 	    meanRateI.append(tc[N:].mean())
 	except IOError:
 	    print ''
-    plt.plot(trList, meanRateE, 'k.-')
-    plt.plot(trList, meanRateI, 'r.-')
+    plt.plot(trList, meanRateE, 'k.-', label = 'E')
+    plt.plot(trList, meanRateI, 'r.-', label = 'I')
+    plt.legend(loc = 0, frameon = False, numpoints = 1, ncol = 2, prop = {'size': 8})        
     plt.xlabel('rewire step')
-    plt.ylabel(r'$\left[ \langle m_i(\phi) \rangle_i \right]_{\phi}$')
-    ProcessFigure(plt.gcf(), './figs/twopop/meanrate_vs_rewire_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa)), True)
+    # plt.ylabel(r'$\left[ \langle m_i(\phi) \rangle_i \right]_{\phi}$')
+    plt.ylabel('mean rate')
+    plt.title(r'$\kappa = %s$'%(kappa))
+    plt.grid('on')
+    plt.ylim(0, .5)
+    plt.xlim(0, 6)
+    filename = './figs/twopop/meanrate_vs_rewire_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    ProcessFigure(plt.gcf(), filename, True, True, figFormat='eps', paperSize = paperSize, axPosition = axPosition, tickFontsize = 6, labelFontsize = 8)
+    print filename
+    ipdb.set_trace()
 
     # for mExtOne in mExtOneList:
     # 	    for p in pList:
@@ -671,7 +697,10 @@ def ComputeFFInOutPOCorrParallelAux(kappa, p, gamma, nPhis, mExt, mExtOne, rewir
 def PlotFFInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_COMPUTE = True, JE0 = 2.0, JI0 = 1.0, NFF = 10000):
     outE = []; outI = []
     validTr = []
-    filename = './data/twopop/FFInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if rewireType == 'rand':
+	filename = './data/twopop/FFInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    else:
+	filename = './data/twopop/FFInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa)) + '_' + rewireType
     if IF_COMPUTE:
         pool = Pool(nRewireSteps)	
         func = partial(ComputeFFInOutPOCorrParallelAux, kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, NFF, JE0, JI0, False)
@@ -690,48 +719,68 @@ def PlotFFInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis =
 	# plt.ylabel(r'$\langle \cos 2 [ \phi_{j}^{po} - \theta_{j, IN}^{po} ]   \rangle_j$')
 	plt.ylabel('CCC')
 	plt.plot(outI, 'ro-')
-	filepath = './figs/twopop/FFInOutPOCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
+	filepath = './figs/twopop/FFInOutPOCorr_p%sg%s'%(int(100 * p), int(10 * gamma)) + '_' + rewireType
 	ProcessFigure(plt.gcf(), filepath, True)
 
-def ComputePOCorrs(kappa, nRewireSteps):
-    cccNet = PlotInOutPOCorrParallel(nRewireSteps, kappa=kappa)
-    cccFF = PlotFFInOutPOCorrParallel(nRewireSteps, IF_COMPUTE = 1, kappa=kappa)
-    cccRec = PlotRecInOutPOCorrParallel(nRewireSteps, IF_COMPUTE = 1, kappa=kappa)
+def ComputePOCorrs(kappa, nRewireSteps, rewireType):
+    cccNet = PlotInOutPOCorrParallel(nRewireSteps, kappa=kappa, rewireType = rewireType)
+    cccFF = PlotFFInOutPOCorrParallel(nRewireSteps, IF_COMPUTE = 1, kappa=kappa, rewireType = rewireType)
+    cccRec = PlotRecInOutPOCorrParallel(nRewireSteps, IF_COMPUTE = 1, kappa=kappa, rewireType = rewireType)
     
 def PlotInOutPOCorrCmpnts(nRewireSteps, color = 'k', kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, JE0 = 2.0, JI0 = 1.0, NFF = 10000, IF_NEW_FIG = True, startIdx = 0):
     outE = []; outI = []
     validTr = []
-    filename = './data/twopop/FFInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if rewireType == 'rand':
+        filename = './data/twopop/FFInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if rewireType == 'twosteps':
+        filename = './data/twopop/FFInOutPOCorr_p%sg%sk%s_twosteps'%(int(100 * p), int(10 * gamma), int(10 * kappa))	
+    
     filename += '.npy'
     outE = np.asarray(np.load(filename)[1], dtype = float)
-    outE = outE #[:nRewireSteps]
+    outE = outE[:nRewireSteps]
     validTr =  np.arange(nRewireSteps, dtype = int)
     validTr = validTr[~np.isnan(outE)]
     if IF_NEW_FIG:
 	plt.figure()
-    plt.plot(validTr, outE, 'o-', label = r'$\mathrm{FF}, \kappa=%s$'%(kappa), markersize = 2, color=color, markeredgecolor=color)
+    plt.plot(validTr, outE, 'o-', label = r'$\mathrm{FF}, \kappa=%s$'%(kappa), markersize = 5, color=color, markeredgecolor=color)
     plt.xlabel('rewire step')
-    plt.ylabel('CCC')
+    plt.ylabel('Circ Corr Coeff')
     plt.plot(outI, 'ro-')
-    filename = './data/twopop/RecInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if rewireType == 'rand':
+	filename = './data/twopop/RecInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if rewireType == 'twosteps':
+	filename = './data/twopop/RecInOutPOCorr_p%sg%sk%s_twosteps'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+	
     filename += '.npy'
-    recCurPOCorr = np.asarray(np.load(filename)[1], dtype = float)
-    plt.plot(recCurPOCorr, 'k*-', label = r'$\mathrm{rec}, \kappa=%s$'%(kappa), markersize = 2, color=color, markeredgecolor=color)
-    filename = './data/twopop/InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    recCurPOCorr = np.asarray(np.load(filename)[1], dtype = float)[:nRewireSteps]
+    plt.plot(recCurPOCorr, 'k*-', label = r'$\mathrm{rec}, \kappa=%s$'%(kappa), markersize = 5, color=color, markeredgecolor=color)
+    if rewireType == 'rand':
+	filename = './data/twopop/InOutCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if rewireType == 'twosteps':
+	filename = './data/twopop/InOutCorr_p%sg%sk%s_twosteps'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+	
     filename += '.npy'
-    netCurPOCorr = np.asarray(np.load(filename)[1], dtype = float)
+    netCurPOCorr = np.asarray(np.load(filename)[1], dtype = float)[:nRewireSteps]
     validTr =  np.arange(nRewireSteps)
     validTr = validTr[~np.isnan(netCurPOCorr[:nRewireSteps])]
-    plt.plot(netCurPOCorr, 'ks-', label =  r'$\mathrm{net}, \kappa=%s$'%(kappa), markersize = 2, color=color, markeredgecolor=color)    
+    plt.plot(netCurPOCorr, 'ks-', label =  r'$\mathrm{net}, \kappa=%s$'%(kappa), markersize = 5, color=color, markeredgecolor=color)    
     plt.legend(loc = 0, frameon = False, numpoints = 1, ncol = 2, prop = {'size': 8})    
-    filepath = './figs/twopop/FF_nd_InOutPOCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
-    plt.gca().set_xticks([0, 15, 30])
+    filepath = './figs/twopop/FF_nd_InOutPOCorr_p%sg%sk%s_'%(int(100 * p), int(10 * gamma), int(10*kappa)) + rewireType
+    print 'saving figure as:', filepath
+    # plt.gca().set_xticks([0, 15, 30])
+    plt.ylim(0, 1)
+    plt.gca().set_yticks([0, 0.5, 1])
+    plt.title('CCC: PO out vs PO in components')
     ProcessFigure(plt.gcf(), filepath, True, True)
 
 def PlotRecInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_COMPUTE = True, JE0 = 2.0, JI0 = 1.0, NFF = 10000):
     outE = []; outI = []
     validTr = []
-    filename = './data/twopop/RecInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    if rewireType == 'rand':
+	filename = './data/twopop/RecInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa))
+    else:
+	filename = './data/twopop/RecInOutPOCorr_p%sg%sk%s'%(int(100 * p), int(10 * gamma), int(10 * kappa)) + '_' + rewireType
+
     if IF_COMPUTE:
         pool = Pool(nRewireSteps)	
         func = partial(ComputeRecInOutPOCorrParallelAux, kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, NFF, JE0, JI0, False)
@@ -748,7 +797,7 @@ def PlotRecInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis 
 	plt.xlabel('rewire step')
 	plt.ylabel('CCC')
 	plt.plot(outI, 'ro-')
-	filepath = './figs/twopop/Rec_FF_nd_Net_InOutPOCorr_p%sg%s'%(int(100 * p), int(10 * gamma))
+	filepath = './figs/twopop/Rec_FF_nd_Net_InOutPOCorr_p%sg%s'%(int(100 * p), int(10 * gamma)) + '_' + rewireType
 	ProcessFigure(plt.gcf(), filepath, True)
 
 def ComputeRecInOutPOCorrParallelAux(kappa, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, NFF, JE0, JI0, IF_PLOT, trNo):

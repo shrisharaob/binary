@@ -25,4 +25,4 @@ sed*
 vm
 spkTimes
 
-data/
+data/*
