@@ -142,28 +142,49 @@ def Convert2InDegree(idxVec, nPostNeurons, sparseConVec):
     print '#fromPre=', nConnections, ' ', '#fromFile=', nPostNeurons.sum()
     return preNeurons
 
-def Convert2OutDegree(preNeurons, nPostNeurons, idxvec, newLinksPost, NE):
-    # sparseConVec = np.zeros((nPostNeurons.sum(), ))
-    N = len(nPostNeurons) #np.max(sparseConVec) + 1    
+def Convert2OutDegree(preNeurons, nPostNeurons, newLinksPost, NE):
+    N = len(nPostNeurons) #must be total number of neurons
     sparseConVec = [[] for x in xrange(N)]
     rewiredConnections = [] #[[] for x in xrange(NE)]    
-    # rewiredConnections = [np.zeros((x, ), dtype=int).tolist() for x in nPostNeurons]
     count = 0
     newNPostNeurons = np.zeros((N, ))
-    ipdb.set_trace()	
     for i in range(N):
 	iPreNeurons = preNeurons[i]
 	for kk in iPreNeurons:
 	    sparseConVec[kk].append(i)
-        newNPostNeurons[i] = len(sparseConVec)
+    for i in range(N):
+        newNPostNeurons[i] = len(sparseConVec[i])
+    newIdxVec = np.zeros((N, 0))
+    newIdxVec[1:] = newNPostNeurons.cumsum()[:-1]
+    # ipdb.set_trace() 
     for i in range(NE):
 	pstNeurons = sparseConVec[i] #idxvec[i] : nPostNeurons[i] + idxvec[i]]
 	tmp = np.asarray(np.in1d(pstNeurons, newLinksPost[i]), dtype = int)
-	# ipdb.set_trace()
 	rewiredConnections.append(tmp.tolist())
-    return np.asarray(np.hstack(sparseConVec), dtype = np.int32), np.asarray(np.hstack(rewiredConnections), dtype = np.int32), newNPostNeurons
+    
+    return np.asarray(np.hstack(sparseConVec), dtype = np.int32), np.asarray(np.hstack(rewiredConnections), dtype = np.int32), newNPostNeurons, newIdxVec
 
-def RewireProbFunc(po0, po1, K, N, kappa, funcType = 'cos'):
+    
+# def Convert2OutDegree(preNeurons, nPostNeurons, idxvec, newLinksPost, NE):
+#     # sparseConVec = np.zeros((nPostNeurons.sum(), ))
+#     N = len(nPostNeurons) #np.max(sparseConVec) + 1    
+#     sparseConVec = [[] for x in xrange(N)]
+#     rewiredConnections = [] #[[] for x in xrange(NE)]    
+#     # rewiredConnections = [np.zeros((x, ), dtype=int).tolist() for x in nPostNeurons]
+#     count = 0
+#     for i in range(N):
+# 	iPreNeurons = preNeurons[i]
+# 	for kk in iPreNeurons:
+# 	    sparseConVec[kk].append(i)
+#     for i in range(NE):
+# 	pstNeurons = sparseConVec[i] #idxvec[i] : nPostNeurons[i] + idxvec[i]]
+# 	tmp = np.asarray(np.in1d(pstNeurons, newLinksPost[i]), dtype = int)
+# 	# ipdb.set_trace()
+# 	rewiredConnections.append(tmp.tolist())
+#     # ipdb.set_trace()	
+#     return np.asarray(np.hstack(sparseConVec), dtype = np.int32), np.asarray(np.hstack(rewiredConnections), dtype = np.int32)
+
+def RewireProbFunc(po0, po1, funcType = 'cos'):
     out = 0
     # if funcType == 'cos':
     # 	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1)))
@@ -171,7 +192,7 @@ def RewireProbFunc(po0, po1, K, N, kappa, funcType = 'cos'):
     	z = 1.0
     	out = 0.5 * (1 - np.cos(2.0 * (po0 - po1)))
     else:
-	out = (kappa * np.sqrt(K)) * (1 + np.cos(2 * (po0 - po1))) / float(N)
+	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1)))
     return out
 
 def GetNLinks(neuronIdx, po, nLinks2Break, iPreNeurons):
@@ -204,6 +225,7 @@ def RewireSqrtK2(preNeurons, po, K, NE, rewireType, stepNo, kappa, nmax = 10):
     linksRemoved = [[] for jjj in xrange(N)]
     newLinks = [[] for jjj in xrange(N)]
     newLinksPost = [[] for jjj in xrange(N)]   # in sparse vec representation
+    nConnectionsNew = 0
     for i in range(N):
 	iPreNeurons = preNeurons[i]	
 	iPreNeurons = np.array(iPreNeurons)
@@ -231,21 +253,42 @@ def RewireSqrtK2(preNeurons, po, K, NE, rewireType, stepNo, kappa, nmax = 10):
         iterCount = 0
         nUnique = np.unique(iPreNeurons)
 	linksRemoved[i] = iPreNeurons[links2Break]
-        iPreNeurons = np.setdiff1d(iPreNeurons,linksRemoved[i]) 
-	for iterCount, j in enumerate(links2Break):
-            prob = RewireProbFunc(po[i], po[randomPreNeuron[iterCount]], K, N, kappa, 'cos')
+        iPreNeurons = np.setdiff1d(iPreNeurons,linksRemoved[i])
+        iPreNeurons = iPreNeurons.tolist()
+        for iterCount, rndPreIdx in enumerate(randomPreNeuron):
+            prob = RewireProbFunc(po[i], po[rndPreIdx], K, N, kappa, 'cos')
             if prob >= np.random.rand():
-                newLink = randomPreNeuron[iterCount]
+                newLink = rndPreIdx
                 iPreNeurons.append(newLink)
                 newLinks[i].append(newLink)
-                newLinksPost[newLink].append(i)
-	preNeurons[i] = iPreNeurons.tolist()
+                newLinksPost[newLink].append(i)            
+        
+	# for iterCount, j in enumerate(links2Break):
+        #     prob = RewireProbFunc(po[i], po[randomPreNeuron[iterCount]], K, N, kappa, 'cos')
+        #     if prob >= np.random.rand():
+        #         newLink = randomPreNeuron[iterCount]
+        #         iPreNeurons.append(newLink)
+        #         newLinks[i].append(newLink)
+        #         newLinksPost[newLink].append(i)
+                
+	preNeurons[i] = iPreNeurons
 	preNeurons[i].extend(iPreNeuronsI.tolist())
 	preLenghtNew = len(preNeurons[i])
-	if(preLenghtOld != preLenghtNew):
-	    print 'dose not work for neuron#', i
-    print 'nPre after = ', len(np.hstack(preNeurons))    
+	# if(preLenghtOld != preLenghtNew):
+	#     print 'dose not work for neuron#', i
+    print 'nPre after = ', len(np.hstack(preNeurons))
     return preNeurons, linksRemoved, newLinks, newLinksPost
+
+def RewireProbFunc(po0, po1, K, N, kappa, funcType = 'cos'):
+    out = 0
+    # if funcType == 'cos':
+    # 	out = 0.5 * (1 + np.cos(2.0 * (po0 - po1)))
+    if funcType == 'exp':
+    	z = 1.0
+    	out = 0.5 * (1 - np.cos(2.0 * (po0 - po1)))
+    else:
+	out = (kappa * np.sqrt(K)) * (1 + np.cos(2 * (po0 - po1))) / float(N)
+    return out
     
 def RewireSqrtK(preNeurons, po, K, NE, rewireType, stepNo, kappa, nmax = 10):
     N = NE #len(preNeurons)
@@ -693,7 +736,7 @@ def CompareDPOvsDist(trList, kappa = 1, p = 0, gamma = 0, mExt = 0.075, mExtOne 
   
 if __name__ == '__main__':
     # NetworkType : {'uni', 'ori'}, 'uni' is for standard random network, 'ori' is to rewire depending on the distance in ori space
-    [trNo, kappa, K, rewireType, p, gamma, mExt, mExtOne, nPhis,NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 1, 1000, 'rand', 0, 0, .075, .075, 8, 10000, 10000,  2, 1000])
+    [trNo, writeToTrialFIle, kappa, K, rewireType, p, gamma, mExt, mExtOne, nPhis,NE, NI, nPop, T] = DefaultArgs(sys.argv[1:], [0, 1, 1, 1000, 'rand', 0, 0, .075, .075, 8, 10000, 10000,  2, 1000])
     NE = int(NE)
     NI = int(NI)
     N = NE
@@ -701,6 +744,7 @@ if __name__ == '__main__':
     p = float(p)
     kappa = float(kappa)
     trNo = int(trNo)
+    writeToTrialFIle = int(writeToTrialFIle)    
     mExt = float(mExt)
     mExtOne = float(mExtOne)
     gamma = float(gamma)
@@ -720,6 +764,7 @@ if __name__ == '__main__':
     idxvec = np.zeros((NE + NI, ))
     idxvec = np.require(idxvec, np.int32, requires)
     nPostNeurons = np.require(nPostNeurons, np.int32, requires)
+
     # READ
     fpIdxVec = open(baseFldr + 'idxVec.dat', 'rb')
     idxvec = np.fromfile(fpIdxVec, dtype = np.int32)
@@ -749,28 +794,33 @@ if __name__ == '__main__':
     # print preNeurons[9]
     # ipdb.set_trace()
 
-    rewiredPreNeurons, linksRemoved, newLinks, newLinksPost  = RewireSqrtK2(preNeurons, po, K, NE, rewireType, trNo + 1, kappa)
+    print 'rewiring ...'
 
+    rewiredPreNeurons, linksRemoved, newLinks, newLinksPost  = RewireSqrtK2(preNeurons, po, K, NE, rewireType, trNo + 1, kappa)
+    print 'rewire done'
     
-    sparseConVec, newPostNeurons, newNPostNeurons = Convert2OutDegree(rewiredPreNeurons, nPostNeurons, idxvec, newLinksPost, NE)
+    # sparseConVec, newPostNeurons = Convert2OutDegree(rewiredPreNeurons, nPostNeurons, idxvec, newLinksPost, NE)
+
+    sparseConVec, newPostNeurons, newNPostNeurons, newIdxVec = Convert2OutDegree(rewiredPreNeurons, nPostNeurons, newLinksPost, NE)
+    
     # sparseConVec, newPostNeurons = Convert2OutDegree(preNeurons, nPostNeurons, idxvec, newLinksPost, NE)    
     # ipdb.set_trace()        
     sparseVec = np.require(sparseConVec, np.int32, requires)
     tmp = sparseVec[sparseVec < NE]
     print np.sort(tmp[:10])
+
     print 'old nConnections = ', nPostNeurons.sum()
     print 'new nConnections = ', newNPostNeurons.sum()
     print 'old sparsevec length = ', sparseVec.size
-
-
+    
     # raise SystemExit
 
     np.save(baseFldr + 'newLinks', newLinks)
     np.save(baseFldr + 'linksRemoved', linksRemoved)
     
-    trNo += 1 # connectivity written to another folder
+    # connectivity written to another folder
     if not IF_TEST:
-	baseFldrNew = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+	baseFldrNew = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, writeToTrialFIle, T, N, K, nPop, kappa)
     else:
 	raise SystemExit
     
@@ -783,7 +833,6 @@ if __name__ == '__main__':
     print 'saving files to: ', baseFldrNew
     print '--'*20
     print '# new connctions', newPostNeurons.sum(), '# EI_IE cons=', nPostNeurons[:NE].sum()
-    
     fpNewPost = open(baseFldrNew + 'newPostNeurons.dat', 'wb')
     newPostNeurons = np.require(newPostNeurons, np.int32, requires)    
     newPostNeurons.tofile(fpNewPost)
@@ -792,9 +841,12 @@ if __name__ == '__main__':
     sparseVec.tofile(fpsparsevec)
     fpsparsevec.close()
     fpIdxVec = open(baseFldrNew + 'idxVec.dat', 'wb')
-    idxvec.tofile(fpIdxVec)
+    newIdxVec = np.require(newIdxVec, np.int32, requires)
+    newIdxVec.tofile(fpIdxVec)
     fpIdxVec.close()
+    newNPostNeurons = np.require(newNPostNeurons, np.int32, requires)
     fpNpostNeurons = open(baseFldrNew + 'nPostNeurons.dat', 'wb')
     newNPostNeurons.tofile(fpNpostNeurons)
     fpNpostNeurons.close()    
-
+    #ipdb.set_trace()
+    

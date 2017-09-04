@@ -68,10 +68,10 @@ def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 1
 def LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
     # ipdb.set_trace()
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
     if IF_VERBOSE:
     	print baseFldr
-    filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
-    print filename
+	print filename
     return np.loadtxt(baseFldr + filename)
 
 def LoadFFInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
@@ -839,5 +839,86 @@ def LocalPOCorr(kappa=1, p=0, gamma=0, nPhis=8, mExt=0.075, mExtOne=0.075, rewir
     localCorr = []
     [localCorr.append(LocalPOCorrFunc(poOut, idx, nNeighbours, N)) for idx in xrange(N)]
     return np.asarray(localCorr)
+
+def LoadM1vsT(p = 0, gamma = 0, phi = 0, trNo = 0, mExt = 0.075, mExtOne = 0.075, K = 1000, NE = 10000, T = 1000, nPop = 2, rewireType = 'rand', IF_VERBOSE = True, kappa = 1):
+    N = NE
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    if IF_VERBOSE:
+    	print baseFldr
+    filename = 'MI1_inst_theta%.6f_tr%s.txt'%(phi, trNo)
+    return np.loadtxt(baseFldr + filename, delimiter = ';')
+
+
+def M1Component(x):
+    out = np.nan
+    if len(x) > 0:
+	dPhi = np.pi / len(x)
+	out = 2.0 * np.absolute(np.dot(x, np.exp(-2.0j * np.arange(len(x)) * dPhi))) / len(x)
+    return out
+
+def KappaVsM1AtPhi(kappaList, p=0, gamma=0, phi=0, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, trNo=0, IF_PO_SORTED = False, sortedIdx = []):
+    m1E = np.empty((len(kappaList, )))
+    validKappa = np.empty((len(kappaList, )))
+    m1E[:] = np.nan
+    validKappa[:] = np.nan                   
+    for kIdx, kappa in enumerate(kappaList):
+	try:
+            IF_VERBOSE = False
+            # if trNo == 0:
+            #     print 'loading from fldr: ',
+            #     IF_VERBOSE = True
+	    mr = LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, IF_VERBOSE = IF_VERBOSE, kappa = kappa)
+	    if not IF_PO_SORTED:
+		m1E[kIdx] = M1Component(mr[:N])
+	    else:
+		mre = mr[:N]
+		m1E[kIdx] = M1Component(mre[sortedIdx[kIdx]])
+	    validKappa[kIdx] = kappa
+	    # ipdb.set_trace()
+	    print 'o',
+	except IOError:
+	    print 'x', 
+	    #pass
+	    #print 'kappa: ', kappa, ' no files!'
+    sys.stdout.flush()	    
+    return validKappa, m1E
+
+def KappaVsM1AtTr(kappaList, p=0, gamma=0, nPhis = 8, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, trNo=0, IF_PO_SORTED = False):
+    thetas = np.linspace(0, 180, nPhis, endpoint = False)
+    m1E = np.zeros((nPhis, len(kappaList)))
+    vldKappa = np.empty((nPhis, len(kappaList)))
+    vldKappa[:] = np.nan
+    sortedIdx = []
+    if IF_PO_SORTED:
+	for kappa in kappaList:
+	    try:
+		po = GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis, trNo, N, K, nPop, T, IF_IN_RANGE = True, kappa = kappa) # returns only for E neurons
+		sortedIdx.append(np.argsort(po))
+	    except IOError:
+		pass
+    for i, phi in enumerate(thetas):
+	print 'phi =', phi
+	vldKappa[i, :], m1E[i, :] = KappaVsM1AtPhi(kappaList, p, gamma, phi, mExt, mExtOne, rewireType, N, K, nPop, T, trNo, IF_PO_SORTED = IF_PO_SORTED, sortedIdx = sortedIdx)
+    return np.nanmean(m1E, 0) #, vldKappa
+
+def KappaVsM1(kappaList, nTrials = 10, p=0, gamma=0, nPhis = 8, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, IF_PO_SORTED = False):
+    m1E = np.zeros((nTrials, len(kappaList)))
+    for trNo in range(1, nTrials):
+	print ''
+	print '--' * 27
+	print 'tr#: ', trNo
+	print '--' * 27
+        m1E[trNo, :] = KappaVsM1AtTr(kappaList, p, gamma, nPhis, mExt, mExtOne, rewireType, N, K, nPop, T, trNo, IF_PO_SORTED)
+    m1EvsKappa = np.nanmean(m1E, 0)
+    m1EvsKappaSEM = np.nanstd(m1E, 0) / np.sqrt(float(nTrials))
+
+    (_, caps, _) = plt.errorbar(kappaList, m1EvsKappa, fmt = 'o-', markersize = 3, yerr = m1EvsKappaSEM, lw = 0.8, elinewidth=0.8, label = r'$N = %s, K = %s$'%(N, K))
+    for cap in caps:
+        cap.set_markeredgewidth(0.8)
+    plt.xlabel(r'$\kappa$', fontsize = 20)
+    plt.ylabel(r'$m_E^{(1)}$', fontsize = 20)
+    plt.show()
+    return m1EvsKappa, m1EvsKappaSEM
+
     
-    
+        
