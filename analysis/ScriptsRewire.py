@@ -399,6 +399,15 @@ def GetPOofPop(p, gamma, mExt, mExtOne, rewireType, nPhis = 8, trNo = 0, N = 100
     prefferedOri = POofPopulation(tc[:N], IF_IN_RANGE = True) * np.pi / 180.0
     return prefferedOri
 
+def GetPOofPopAllNeurons(p, gamma, mExt, mExtOne, rewireType, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, kappa = 1):
+    nNeurons = N
+    thetas= np.linspace(0, np.pi, nNeurons, endpoint = False)
+    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+    print tc.shape
+    prefferedOri = POofPopulation(tc, IF_IN_RANGE = True) * np.pi / 180.0
+
+    return prefferedOri
+
 def OSI(firingRate, atTheta):
     out = np.nan
     zk = np.dot(firingRate, np.exp(2j * atTheta * np.pi / 180))

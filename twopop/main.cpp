@@ -277,7 +277,7 @@ void GenFFConMat() {
   
 }
     
-void GenConMat() {
+void GenConMat(int EE_CON_TYPE) {
   std::random_device rd;
   std::default_random_engine gen(rd());
   std::uniform_real_distribution<double> UniformRand(0.0, 1.0);
@@ -285,7 +285,19 @@ void GenConMat() {
   unsigned long long int nConnections = 0;
   cout << "generating conmat" << endl;
   unsigned int *conMat = new unsigned int [(unsigned long int)N_NEURONS * N_NEURONS];
-
+  ///////////////////////// READ POs  ///////////////////////////////////  
+  FILE *fpPOofNeurons;
+  fpPOofNeurons = fopen("poOfNeurons.dat", "rb");
+  double *poOfNeurons = new double [NE];
+  unsigned long int nPOsRead = 0;
+  nPOsRead = fread(poOfNeurons, sizeof(*poOfNeurons), NE, fpPOofNeurons);
+  fclose(fpPOofNeurons);
+  printf("POs :\n");
+  for (unsigned long int i = 0; i < 10; i++)  {
+    printf("%.4f ", poOfNeurons[i]);
+  }
+  printf("\n");
+  //////////////////////////////////////////////////////////////////////
   for (unsigned long int i = 0; i < NE; i++)  {
     for (unsigned long int j = 0; j < NE; j++)  {
       conMat[i + N_NEURONS * j] = 0;
@@ -295,12 +307,18 @@ void GenConMat() {
   for (unsigned long int i = 0; i < N_NEURONS; i++)  {
     for (unsigned long int j = 0; j < N_NEURONS; j++)  {
       // i --> j
+
       if(i < NE && j < NE) { //E-to-E
-	if(UniformRand(gen) <= ConProb(i * M_PI / (double)NE, j * M_PI / (double)NE, NE, recModulationEE)) {
+	double conProbEE = ConProb(i * M_PI / (double)NE, j * M_PI / (double)NE, NE, recModulationEE);
+        if(not EE_CON_TYPE) {
+	  conProbEE = (double)K * (1 + 16.0 * cos(2.0 * (poOfNeurons[i] - poOfNeurons[j])) / sqrt((double)K) ) / (double)NE;
+	}
+	if(UniformRand(gen) <= conProbEE) {
 	  conMat[i + N_NEURONS * j] = 1;
 	  nConnections += 1;
 	}
       }
+
       if(i < NE && j >= NE) { //E-to-I
 	if(UniformRand(gen) <= ConProb(i * M_PI / (double)NE, j * M_PI / (double)NI, NE, recModulationIE)) {
 	  conMat[i + N_NEURONS * j] = 1;
@@ -364,6 +382,7 @@ void GenConMat() {
   }
   fclose(ffp);
   delete [] conMat;
+  delete [] poOfNeurons;
   // write to file
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
 
@@ -956,8 +975,8 @@ int main(int argc, char *argv[]) {
 
   if(trialNumber == 0 && phi_ext == 0) {
     clock_t timeStartCM = clock(); 
-    GenFFConMat();    
-    GenConMat();
+    GenFFConMat();
+    GenConMat(1); // the argument was used for testing kappa, setting it to 1 will generate a matrix with recMod = p
     clock_t timeStopCM = clock();
     double elapsedTimeCM = (double)(timeStopCM - timeStartCM) / CLOCKS_PER_SEC;  
     cout << "\n connection gen, elapsed time= " << elapsedTimeCM << "s, or " << elapsedTimeCM / 60.0 << "min" << endl;
