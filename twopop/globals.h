@@ -29,7 +29,7 @@
 #define SQRT_KFF (sqrt((double)K * cFF))
 
 #define T_STOP 1000
-#define T_TRANSIENT (T_STOP * 0.5)
+#define T_TRANSIENT (T_STOP * 0.1)
 #define IF_GEN_MAT_DEFAULT 0
 #define IF_SAVE_SPKS 0
 #define IF_STEP_PHI0 0
@@ -37,13 +37,21 @@
 
 #define N_SEGMENTS 2
 
+
+#define IF_REWIRE 1
+
+
+//unsigned int IF_REWIRE = IF_REWIRE_DEFAULT
+  
 unsigned int IF_LOADREWIREDCON = 0;
 double rewiredEEWeight;
 double m0, tStop, ffModulation;
+double kappa;
 double recModulationEE, recModulationEI, recModulationIE;
-double *conMat, *conMatFF;
+/* double *conMat, *conMatFF; */
+unsigned int *conMat, *conMatFF;
 int trialNumber;
-unsigned int *nPostNeurons, *sparseConVec, *idxVec, *IS_REWIRED_LINK;
+unsigned int *nPostNeurons, *sparseConVec = NULL, *idxVec, *IS_REWIRED_LINK;
 unsigned int *nPostNeuronsFF, *sparseConVecFF, *idxVecFF;
 
 int IF_GEN_MAT;
