@@ -696,7 +696,6 @@ void GenConMat(int EE_CON_TYPE) {
   }
   // write to file
   FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
-
   printf("done\n#connections = %llu\n", nConnections);
   printf("writing to file ... "); fflush(stdout);
   fpSparseConVec = fopen("sparseConVec.dat", "wb");
@@ -712,8 +711,6 @@ void GenConMat(int EE_CON_TYPE) {
   fwrite(nPostNeurons, sizeof(*nPostNeurons), N_NEURONS, fpNpostNeurons);
   fclose(fpNpostNeurons);
   printf("done\n");
-
-
   // for (unsigned long int i = 0; i < 10; i++)  {
   //     printf("%u ", sparseConVec[i]);
   // }
@@ -1255,10 +1252,12 @@ int main(int argc, char *argv[]) {
     trialNumber = atof(argv[6]); // parameter gamma
   }
   if(argc > 7) {
-    rewiredEEWeight = 1; //atof(argv[7]); // parameter strengthened weight prefactor
-    //  IF_LOADREWIREDCON = 0;
     kappa = atof(argv[7]);
   }
+  // if(argc > 8) {
+  //   rewiredEEWeight = atof(argv[7]);
+  // }
+  
   
   // if(argc > 8) {
   //   IF_REWIRE_AT_PHI = (unsigned int)atoi(argv[7]);

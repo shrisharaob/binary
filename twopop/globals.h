@@ -43,7 +43,7 @@
 
 //unsigned int IF_REWIRE = IF_REWIRE_DEFAULT
   
-unsigned int IF_LOADREWIREDCON = 0;
+unsigned int IF_LOADREWIREDCON = 1;
 double rewiredEEWeight;
 double m0, tStop, ffModulation;
 double kappa;
