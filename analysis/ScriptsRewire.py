@@ -956,7 +956,7 @@ def KappaVsM1overM0(kappaList, nTrials = 10, p=0, gamma=0, nPhis = 8, mExt=0.075
     m1E[0, :] = np.nan
     m0E = np.zeros((nTrials + 2, len(kappaList)))
     m0E[0, :] = np.nan    
-    for trNo in [5]: #range(1, nTrials + 2): #$ trNo 0 is always the CONTROL 
+    for trNo in range(1, nTrials + 2): #$ trNo 0 is always the CONTROL 
 	print ''
 	print '--' * 27
 	print 'tr#: ', trNo
@@ -1053,6 +1053,6 @@ def CompareMeanOSIvsKappa(kappaList, mExtOne, p = 0, gamma = 0, nPhis = 8, mExt 
     paperSize = [4, 3]
     plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
     print 'saving as: ', filepath
-    ProcessFigure(plt.gcf(), filename, IF_SAVE = 1, IF_XTICK_INT = True, figFormat = 'eps')
+    ProcessFigure(plt.gcf(), filename, IF_SAVE = 1, IF_XTICK_INT = False, figFormat = 'eps')
     plt.show()
     print meanOSI
