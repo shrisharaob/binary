@@ -19,6 +19,7 @@ import GetPO
 sys.path.append('/homecentral/srao/Documents/code/binary/c/twopop')
 import RewireNetwork as rw
 rootFolder = ''
+#from pylatex import Document, Package, Section, Figure, NoEscape, SubFigure
 
 def GetBaseFolderOld(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, kappa = 1):
     if rewireType == 'rand':
@@ -148,12 +149,13 @@ def GetInputTuningCurves(p, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, r
 	    raise SystemExit
     return tc
 
-def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1):
+def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1, IF_SUCCESS = False):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
     tc[:] = np.nan
     phis = np.linspace(0, 180, nPhis, endpoint = False)
+    IF_FILE_LOADED = False
     for i, iPhi in enumerate(phis):
 	print i, iPhi
 	try:
@@ -166,10 +168,14 @@ def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10
 		if(np.isnan(fr)):
 		    print 'file not found!'
 	    tc[:, i] = fr
+            IF_FILE_LOADED = True
 	except IOError:
 	    print 'file not found!'
 	    # raise SystemExit
-    return tc
+    if IF_SUCCESS:
+        return tc, IF_FILE_LOADED
+    else:
+        return tc
 
 def PlotInOutTuningCurve(nNeurons, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1):
     tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
@@ -292,8 +298,8 @@ def PlotInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8
 	ProcessFigure(plt.gcf(), filepath, True)
 
 def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'eps', paperSize = [4, 3], titleSize = 10, axPosition = [0.25, 0.25, .65, .65], tickFontsize = 10, labelFontsize = 12, nDecimalsX = 2, nDecimalsY = 3):
-    FixAxisLimits(figHdl)
-    FixAxisLimits(plt.gcf(), IF_XTICK_INT, nDecimalsX, nDecimalsY)
+    # FixAxisLimits(figHdl)
+    # FixAxisLimits(plt.gcf(), IF_XTICK_INT, nDecimalsX, nDecimalsY)
     Print2Pdf(plt.gcf(), filepath, paperSize, figFormat=figFormat, labelFontsize = labelFontsize, tickFontsize=tickFontsize, titleSize = titleSize, IF_ADJUST_POSITION = True, axPosition = axPosition)
     plt.show()
 
@@ -419,6 +425,7 @@ def OSI(firingRate, atTheta):
 def OSIOfPop(firingRates, atThetas):
     # thetas in degrees
     nNeurons, nThetas = firingRates.shape
+    atThetas = np.linspace(0, 180, nThetas, endpoint = False)
     out = np.zeros((nNeurons, ))
     for i in range(nNeurons):
         out[i] = OSI(firingRates[i , :], atThetas)
@@ -870,6 +877,27 @@ def M1Component(x):
 	out = 2.0 * np.absolute(np.dot(x, np.exp(-2.0j * np.arange(len(x)) * dPhi))) / len(x)
     return out
 
+def M2Component(x):
+    out = np.nan
+    if len(x) > 0:
+	dPhi = np.pi / len(x)
+	out = 2.0 * np.absolute(np.dot(x, np.exp(-4.0j * np.arange(len(x)) * dPhi))) / len(x)
+    return out
+
+def PopM2Component(tc):
+    nNeurons, nPhis = tc.shape
+    outM2 = np.zeros((nNeurons, ))
+    for i in range(nNeurons):
+        outM2[i] = M2Component(tc[i, :])
+    return outM2
+
+def PopM1Component(tc):
+    nNeurons, nPhis = tc.shape
+    outM1 = np.zeros((nNeurons, ))
+    for i in range(nNeurons):
+        outM1[i] = M1Component(tc[i, :])
+    return outM1    
+
 def KappaVsM1AtPhi(kappaList, p=0, gamma=0, phi=0, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, trNo=0, IF_PO_SORTED = False, sortedIdx = [], minRate = 0):
     m1E = np.empty((len(kappaList, )))
     validKappa = np.empty((len(kappaList, )))
@@ -1056,3 +1084,205 @@ def CompareMeanOSIvsKappa(kappaList, mExtOne, p = 0, gamma = 0, nPhis = 8, mExt 
     ProcessFigure(plt.gcf(), filename, IF_SAVE = 1, IF_XTICK_INT = False, figFormat = 'eps')
     plt.show()
     print meanOSI
+
+def CumulativeDistr(x):
+    x.sort()
+    # F2 = np.array(range(N))/float(N)    
+    plt.step(np.concatenate([x, x[[-1]]]), np.arange(x.size+1) / float(x.size + 1))
+    # plt.plot(x, F2)
+
+def CompareMeanOSI(kappaList, nTrials = 10, mExtOne=0.075, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, rewireType = 'rand', N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', color = '', neuronType = 'E', markerType = 'o-'):
+
+    osiE = np.empty((len(kappaList), nTrials))
+    osiI = np.empty((len(kappaList), nTrials))
+    osiE[:] = np.nan
+    osiI[:] = np.nan
+    osiESEM = np.empty((len(kappaList), ))
+    osiISEM = np.empty((len(kappaList), ))
+    osiESEM[:] = np.nan
+    osiISEM[:] = np.nan
+    trList = range(100, 100 + nTrials)
+    trListOld = trList
+    for idx, kappa in enumerate(kappaList):
+        nValidTrials = 0
+	# if kappa == 0 and K == 2000:
+	#     trList = [0]
+	if kappa == 8 and K == 2000:
+	    trList = trListOld
+        for trIdx, trNo in enumerate(trList):
+
+            print 'trIdx', trIdx
+            tc, IF_FILE_LOADED = GetTuningCurves(0, 0, 8, 0.075, 0.075, 'rand', kappa=kappa, trNo = trNo, IF_SUCCESS = True, K=K)
+            tmp = OSIOfPop(tc, np.pi)
+            osiE[idx, trIdx] = np.nanmean(tmp[:N])
+            osiI[idx, trIdx] = np.nanmean(tmp[N:])
+            nValidTrials += IF_FILE_LOADED
+        osiESEM[idx] = np.nanstd(osiE[idx, :]) / np.sqrt(nValidTrials)
+        osiISEM[idx] = np.nanstd(osiI[idx, :]) / np.sqrt(nValidTrials)    
+
+    # plt.plot(osiE.mean(1), 'ko')
+    # plt.plot(osiI.mean(1), 'ro')    
+    # ipdb.set_trace()
+    # osiESEM = np.nanstd(osiE, 1) / np.sqrt(nValidTrials)
+    # osiISEM = np.nanstd(osiI, 1) / np.sqrt(nValidTrials)    
+
+    (_, caps, _) = plt.errorbar(range(len(kappaList)), osiE.mean(1), color = 'k', fmt = markerType, markersize = 4, yerr = osiESEM, lw = 0.8, elinewidth=0.8, label = 'E, ' + legendTxt, markeredgecolor = 'k')
+    for cap in caps:
+        cap.set_markeredgewidth(0.8)
+    (_, caps, _) = plt.errorbar(range(len(kappaList)), osiI.mean(1), color = 'r', fmt = markerType, markersize = 4, yerr = osiISEM, lw = 0.8, elinewidth=0.8, label = 'I, ' + legendTxt, markeredgecolor = 'r')
+    for cap in caps:
+        cap.set_markeredgewidth(0.8)
+ 
+    plt.xlabel(r'$\kappa$')
+    plt.ylabel(r'$\langle OSI \rangle$')
+    plt.legend(loc = 2, frameon = False, numpoints = 1, prop = {'size': 8})
+    plt.xlim(-.5, 1.5)
+    plt.xticks([0, 1])
+    plt.gca().set_xticklabels(kappaList)
+    plt.show()
+    
+def ComputeAllCCC(kappa, trNo, p=0, gamma=0, nPhis=8, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, NFF=10000, JE0 = 2.0, JI0 = 1.0, IF_COMPUTE = False):
+    out = np.nan
+    if IF_COMPUTE:
+	try:
+	    tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa, 'net')
+	    tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+	    theta = np.linspace(0, 180, nPhis, endpoint = False)
+	    poIn = POofPopulation(tcIn, theta, IF_IN_RANGE = True) * np.pi / 180
+	    poOut = POofPopulation(tcOut, theta, IF_IN_RANGE = True) * np.pi / 180
+	    ##################################################
+	    uFF = rw.ComputeFFInput(nPhis, p, gamma, kappa, mExt, mExtOne, trNo, N, K, nPop, NFF, JE0, JI0, 0.2, rewireType, T)
+	    poFF = POofPopulation(uFF, theta, IF_IN_RANGE = True) * np.pi / 180
+	    tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+	    poOut = POofPopulation(tcOut, theta, IF_IN_RANGE = True) * np.pi / 180
+	    print 'computing in-FF ccc... ', trNo
+	    sys.stdout.flush()
+	    out = CircularCorrCoeff(poFF[:N], poOut[:N])
+	    np.save('./data/NET_IN_FF_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), int(K)), out)                
+	    print 'done', trNo, 'CCC=', out
+	    ##################################################
+	    print 'computing in-out ccc... ', trNo
+	    sys.stdout.flush()
+	    outInOut = CircularCorrCoeff(poIn[:N], poOut[:N])
+	    np.save('./data/NET_IN_OUT_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), K), outInOut)        
+	    print 'done', trNo
+	    ##################################################
+	    uRec = tcIn - uFF
+	    poRec = POofPopulation(uRec, theta, IF_IN_RANGE = True) * np.pi / 180
+	    print 'computing rec-FF ccc... ', trNo
+	    sys.stdout.flush()
+	    out = CircularCorrCoeff(poRec[:N], poOut[:N])
+	    np.save('./data/REC_IN_FF_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), K), out)                        
+	    print 'done', trNo, 'CCC=', out
+	    ##################################################
+	except IOError:
+	    print ''
+	return out
+    else:
+	if K == 1000:
+	    kappa = 0; trNo = 0
+	    cccNET_FF_Cntr = np.load('./data/NET_IN_FF_CCC_kappa%s_tr%s_'%(int(kappa*10), int(trNo)) + '.npy')
+	    cccNET_OUT_Cntr = np.load('./data/NET_IN_OUT_CCC_kappa%s_tr%s_'%(int(kappa*10), int(trNo)) + '.npy')
+	    cccREC_FF_Cntr = np.load('./data/REC_IN_FF_CCC_kappa%s_tr%s_'%(int(kappa*10), int(trNo)) + '.npy')
+
+	    kappa = 8; trNo = 100
+	    cccNET_FF_k8 = np.load('./data/NET_IN_FF_CCC_kappa%s_tr%s_'%(int(kappa*10), int(trNo)) + '.npy')
+	    cccNET_OUT_k8 = np.load('./data/NET_IN_OUT_CCC_kappa%s_tr%s_'%(int(kappa*10), int(trNo)) + '.npy')
+	    cccREC_FF_k8 = np.load('./data/REC_IN_FF_CCC_kappa%s_tr%s_'%(int(kappa*10), int(trNo)) + '.npy')
+	else:
+	    ipdb.set_trace()
+	    kappa = 0; trNo = 0
+	    cccNET_FF_Cntr = np.load('./data/NET_IN_FF_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), K) + '.npy')
+	    cccNET_OUT_Cntr = np.load('./data/NET_IN_OUT_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), K) + '.npy')
+	    cccREC_FF_Cntr = np.load('./data/REC_IN_FF_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), K) + '.npy')
+
+	    kappa = 8; trNo = 100
+	    cccNET_FF_k8 = np.load('./data/NET_IN_FF_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), K) + '.npy')
+	    cccNET_OUT_k8 = np.load('./data/NET_IN_OUT_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), K) + '.npy')
+	    cccREC_FF_k8 = np.load('./data/REC_IN_FF_CCC_kappa%s_tr%s_K%s'%(int(kappa*10), int(trNo), K) + '.npy')
+	    
+	    
+
+        # ipdb.set_trace() 
+        xax = [1, 2]
+	plt.plot(xax, [cccNET_OUT_Cntr, cccNET_OUT_k8], 'go-', label = 'out-net')
+	plt.plot(xax, [cccNET_FF_Cntr, cccNET_FF_k8], 'ko-', label = 'out-FF')
+	plt.plot(xax, [cccREC_FF_Cntr, cccREC_FF_k8], 'co-', label = 'out-rec')
+
+	plt.xlabel(r'$\kappa$')
+	plt.ylabel('Circ Corr Coeff')
+	plt.ylim(0, 1)
+	plt.xlim(0.5, 2.5)
+	plt.xticks([1, 2])
+	plt.gca().set_xticklabels([0, 8])
+	plt.show()
+
+def PrintTuningBook(tcCntr, tcNew, nNeurons, fname, neuronType='E', NE = 10000, NI = 10000, nPhis = 8, color = 'k', kappaNew = 8):
+    doc = Document(fname)
+    doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
+    nFigsPerPage = 12
+    nPages = int(np.ceil(nNeurons / float(nFigsPerPage)))
+    plt.figure()
+    plt.ioff()
+    theta = np.linspace(0, 180, nPhis, endpoint = False)
+    doc = Document(fname)
+    doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
+    width = r'.3\linewidth'
+    osiCntr = OSIOfPop(tcCntr, np.pi)
+    osiNew = OSIOfPop(tcNew, np.pi)    
+    if neuronType == 'E':
+	rndNeurons = np.random.randint(0, NE, nNeurons)
+    else:
+	rndNeurons = np.random.randint(NE, NE + NI, nNeurons)	
+    for kk in range(nPages):
+	rndNeuronsx = rndNeurons[kk * nFigsPerPage: (kk + 1) * nFigsPerPage]
+	print kk * nFigsPerPage, (kk + 1) * nFigsPerPage
+	with doc.create(Figure(position='htbp')) as plot:
+	    for idx, i in enumerate(rndNeuronsx):
+                labelTxtCntrl = r'$\kappa = 0, \, \mathrm{OSI} = %.4s $'%(osiCntr[i])
+                labelTxtNew = r'$\kappa = %s, \, \mathrm{OSI} = %.4s $'%(kappaNew, osiNew[i])
+		plt.plot(np.concatenate((theta, [180])), np.concatenate((tcCntr[i, :], [tcCntr[i, 0]])), 'ko-', label = labelTxtCntrl)
+		plt.plot(np.concatenate((theta, [180])), np.concatenate((tcNew[i, :], [tcNew[i, 0]])), 'o-', color = color, label = labelTxtNew, markeredgecolor = color)
+		mainAxis = plt.gca()
+		mainAxis.set_title('neuron#%s'%(i), fontsize = 16)
+                plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 12})		
+		with doc.create(SubFigure(position='b', width=NoEscape(width))) as figure:
+		    figure.add_plot(width=NoEscape(r'\linewidth'), dpi = 300) #*args, **kwargs)
+		plt.clf()
+    
+    doc.generate_pdf(clean_tex=False)
+
+def PrintInputTuningBook(tcCntr, tcNew, nNeurons, fname, neuronType='E', NE = 10000, NI = 10000, nPhis = 8, color = 'k', kappaNew = 8):
+    doc = Document(fname)
+    doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
+    nFigsPerPage = 12
+    nPages = int(np.ceil(nNeurons / float(nFigsPerPage)))
+    plt.figure()
+    plt.ioff()
+    theta = np.linspace(0, 180, nPhis, endpoint = False)
+    doc = Document(fname)
+    doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
+    width = r'.3\linewidth'
+    osiCntr = OSIOfPop(tcCntr, np.pi)
+    osiNew = OSIOfPop(tcNew, np.pi)    
+    if neuronType == 'E':
+	rndNeurons = np.random.randint(0, NE, nNeurons)
+    else:
+	rndNeurons = np.random.randint(NE, NE + NI, nNeurons)	
+    for kk in range(nPages):
+	rndNeuronsx = rndNeurons[kk * nFigsPerPage: (kk + 1) * nFigsPerPage]
+	print kk * nFigsPerPage, (kk + 1) * nFigsPerPage
+	with doc.create(Figure(position='htbp')) as plot:
+	    for idx, i in enumerate(rndNeuronsx):
+                labelTxtCntrl = r'$\kappa = 0, \, \mathrm{OSI} = %.4s $'%(osiCntr[i])
+                labelTxtNew = r'$\kappa = %s, \, \mathrm{OSI} = %.4s $'%(kappaNew, osiNew[i])
+		plt.plot(np.concatenate((theta, [180])), np.concatenate((tcCntr[i, :], [tcCntr[i, 0]])), 'ko-', label = labelTxtCntrl)
+		plt.plot(np.concatenate((theta, [180])), np.concatenate((tcNew[i, :], [tcNew[i, 0]])), 'o-', color = color, label = labelTxtNew, markeredgecolor = color)
+		mainAxis = plt.gca()
+		mainAxis.set_title('neuron#%s'%(i), fontsize = 16)
+                plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 12})		
+		with doc.create(SubFigure(position='b', width=NoEscape(width))) as figure:
+		    figure.add_plot(width=NoEscape(r'\linewidth'), dpi = 300) #*args, **kwargs)
+		plt.clf()
+    doc.generate_pdf(clean_tex=False)
+

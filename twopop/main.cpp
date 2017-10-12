@@ -145,6 +145,48 @@ double FFTuningCurve(unsigned int i, double phiOft) {
   return out;
 }
 
+void GenRewiredSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, unsigned int* sparseVec, unsigned int* idxVec, unsigned int* nPostNeurons, unsigned int *IF_REWIRED_CON, unsigned int *IS_REWIRED_LINK) {
+  /* generate sparse representation
+     conVec       : input vector / flattened matrix 
+     sparseVec    : sparse vector
+     idxVec       : every element is the starting index in sparseVec for ith row in matrix conVec
+     nPostNeurons : number of non-zero elements in ith row 
+  */
+  printf("\n MAX Idx of conmat allowed = %u \n", rows * clms);
+  unsigned long long int i, j, counter = 0, nPost;
+  for(i = 0; i < rows; ++i) {
+    nPost = 0;
+    for(j = 0; j < clms; ++j) {
+      // printf("%llu %llu %llu %llu\n", i, j, i + clms * j, i + rows * j);
+      if(conVec[i + rows * j]) { /* i --> j  */
+        sparseVec[counter] = j;
+	if(IF_REWIRED_CON[i + rows * j] == 1) {
+	  IS_REWIRED_LINK[counter] = 1;
+	}
+        counter += 1;
+        nPost += 1;
+      }
+    }
+    nPostNeurons[i] = nPost;
+  }
+  idxVec[0] = 0;
+  for(i = 1; i < rows; ++i) {
+    idxVec[i] = idxVec[i-1] + nPostNeurons[i-1];
+  }
+
+ // printf("----------------------------------------\n");
+ // printf("------------ ORIGINAL MATRIX in sparse -----------\n");
+ // for(i = 0; i < rows; i++) {
+ //   for(j = 0; j < clms; j++) {
+ //     printf("%d ", (int)conVec[i + rows * j]);
+ //   }
+ //   printf("\n");
+ // }
+ // printf("----------------------------------------\n");
+ // printf("----------------------------------------\n"); 
+}
+
+
 void GenSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, unsigned int* sparseVec, unsigned int* idxVec, unsigned int* nPostNeurons ) {
   /* generate sparse representation
      conVec       : input vector / flattened matrix 
@@ -319,8 +361,12 @@ void AddConnections(unsigned int *conVec, double kappa) {
  std::uniform_real_distribution<double> UniformRand(0.0, 1.0);
  vector<unsigned long> nPost(N_NEURONS);
  // READ PO's
- FILE *fpPOofNeurons, *ffp;
+ FILE *fpPOofNeurons = NULL, *ffp;
  fpPOofNeurons = fopen("poOfNeurons.dat", "rb");
+ if(fpPOofNeurons == NULL) {
+   printf("\n Error: file poOfNeurons.dat not found! \n");
+   exit(1);
+ }
  double *poOfNeurons = new double [NE];
  unsigned long int nPOsRead = 0; 
  nPOsRead = fread(poOfNeurons, sizeof(*poOfNeurons), NE, fpPOofNeurons);
@@ -328,12 +374,14 @@ void AddConnections(unsigned int *conVec, double kappa) {
    printf("\n Error: All elements not written \n");
  }  
  fclose(fpPOofNeurons);
+ unsigned int *IF_REWIRED_CON = new unsigned int [(unsigned long int)N_NEURONS * N_NEURONS];
+ for(i = 0; i < N_NEURONS; ++i) {
+   for(j = 0; j < N_NEURONS; j++) {
+     IF_REWIRED_CON[i + N_NEURONS * j] = 0;
+   }
+ }
  // ADDING NEW CONNECTIONS
-
- // double denom = NE - K - kappa * sqrt(K);
-
-
-
+    // double denom = NE - K - kappa * sqrt(K);
     // unsigned int wrngcntrEE = 0, wrngcntrIE = 0, wrngcntrEI = 0, wrngcntrII = 0;
     // for (unsigned long int i = 0; i < N_NEURONS; i++)  {
     //   for (unsigned long int j = 0; j < N_NEURONS; j++)  {
@@ -346,10 +394,7 @@ void AddConnections(unsigned int *conVec, double kappa) {
     // 	}
     //   }
     // }
-    
     // printf("\n IN ADDCONFUNC BEFORE: \n oh la la! EE IE EI II= %u %u %u %u\n", wrngcntrEE, wrngcntrIE, wrngcntrEI, wrngcntrII);    
-
- 
     double denom = NE - K - kappa * sqrt(K);
     for(i = 0; i < NE; i++) {
       for(j = 0; j < NE; j++) {
@@ -358,15 +403,15 @@ void AddConnections(unsigned int *conVec, double kappa) {
 	// addProb = (double)K * (1 + kappa * cos(2.0 * (poOfNeurons[i] - poOfNeurons[j])) / sqrt((double)K) ) / (double)NE;
 
 	if(conVec[i + NE * j] == 0) {
-	  addProb = kappa * sqrt(K) * (1.0 + cos(2.0 * (poOfNeurons[i] - poOfNeurons[j]))) / denom;
+	  addProb = (kappa / rewiredEEWeight)* sqrt(K) * (1.0 + cos(2.0 * (poOfNeurons[i] - poOfNeurons[j]))) / denom;
 	  if(addProb > 1 || addProb < 0) { printf("IN AddConnections() add prob not in range!!!\n"); exit(1); }
 	  if(addProb >= UniformRand(gen)) {
 	    conVec[i + N_NEURONS * j]  = 1;
+	    IF_REWIRED_CON[i + N_NEURONS * j]  = 1;	    
 	  }
 	}
       }
     }
-
 
  // TESTING
     //  wrngcntrEE = 0; wrngcntrIE = 0; wrngcntrEI = 0; wrngcntrII = 0;
@@ -382,7 +427,6 @@ void AddConnections(unsigned int *conVec, double kappa) {
     //   }
     // }
     // printf("\n IN ADDCONFUNC AFTER: \n oh la la! EE IE EI II= %u %u %u %u\n", wrngcntrEE, wrngcntrIE, wrngcntrEI, wrngcntrII);    
-
  
  // COUNT AFTER ADDING CONNECTIONS
  for(i = 0; i < N_NEURONS; i++) {
@@ -406,10 +450,11 @@ void AddConnections(unsigned int *conVec, double kappa) {
  printf("#connections in rewired matrix = %llu\n", nConnections);
  cout << "computing sparse rep" << endl;
  sparseConVec = new unsigned int[nConnections];
- GenSparseMat(conVec, N_NEURONS, N_NEURONS, sparseConVec, idxVec, nPostNeurons);
+ IS_REWIRED_LINK = new unsigned int[nConnections];
+ GenRewiredSparseMat(conVec, N_NEURONS, N_NEURONS, sparseConVec, idxVec, nPostNeurons, IF_REWIRED_CON, IS_REWIRED_LINK);
  cout << "done" << endl;
  // WRITE TO FILE
- FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
+ FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons, *fpIsRewiredLink;
  printf("done\n #connections = %llu\n", nConnections);
  printf("writing to file ... "); fflush(stdout);
  // remove old dat symlink 
@@ -421,6 +466,16 @@ void AddConnections(unsigned int *conVec, double kappa) {
  if(nElementsWritten != nConnections) {
    printf("\n Error: All elements not written \n");
  }
+ 
+ printf("writing new cons to file ... "); fflush(stdout);
+ fpIsRewiredLink = fopen("newPostNeurons.dat", "wb");
+ nElementsWritten = 0;
+ nElementsWritten = fwrite(IS_REWIRED_LINK, sizeof(*IS_REWIRED_LINK), nConnections, fpIsRewiredLink);
+ fclose(fpIsRewiredLink);
+ if(nElementsWritten != nConnections) {
+   printf("\n Error: All elements not written \n");
+ }
+ 
  if(remove("idxVec.dat") != 0) { perror( "Error deleting sparseconvec.dat" ); }
  else { puts( "File successfully deleted" ); }
   fpIdxVec = fopen("idxVec.dat", "wb");
@@ -433,7 +488,6 @@ void AddConnections(unsigned int *conVec, double kappa) {
  fclose(fpNpostNeurons);
  printf("done\n");
  delete [] poOfNeurons;
-
  // vector<unsigned long> nPost(NE);
  for(i = 0; i < NE; i++) {
    nPost[i] = 0;
@@ -450,7 +504,9 @@ void AddConnections(unsigned int *conVec, double kappa) {
  for(unsigned int lll = 0; lll < NE; lll++) {
    fprintf(ffp22, "%lu\n", (unsigned long)nPost[lll]);
  }
- fclose(ffp22); 
+ fclose(ffp22);
+ delete [] IF_REWIRED_CON;
+
 }
 
 void RemoveConnections(unsigned int *conVec, double kappa) {
@@ -460,7 +516,6 @@ void RemoveConnections(unsigned int *conVec, double kappa) {
  std::random_device rd;
  std::default_random_engine gen(rd());
  std::uniform_real_distribution<double> UniformRand(0.0, 1.0);
-
  vector<unsigned long> nPost(NE);
  // COUNT BEFORE REMOVING CONNECTIONS
  for(i = 0; i < NE; i++) {
@@ -682,6 +737,10 @@ void GenConMat(int EE_CON_TYPE) {
   
   cout << "computing sparse rep" << endl;    
   sparseConVec = new unsigned int[nConnections];
+  IS_REWIRED_LINK = new unsigned int[nConnections];
+  for(unsigned long i = 0; i < nConnections; i++) {
+    IS_REWIRED_LINK[i] = 0;
+  }
   GenSparseMat(conMat, N_NEURONS, N_NEURONS, sparseConVec, idxVec, nPostNeurons);
   cout << "done" << endl;
   FILE *ffp;
@@ -883,40 +942,32 @@ void RunSim() {
   vector<double> ratesAtInterval(N_NEURONS);
   double popME1, popME1Phase;  // popMI1, popMI1Phase,
   double phiExtOld = phi_ext;
-
   std::string m1FileName;     
   m1FileName = "MI1_inst_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
   FILE *fpInstM1 = fopen(m1FileName.c_str(), "w");  
-  
   dt = (TAU_FF * TAU_E * TAU_I) / (NE * TAU_FF * TAU_I + NI * TAU_FF * TAU_E + NFF * TAU_E * TAU_I);
   nSteps = (unsigned long)((tStop / dt) + (T_TRANSIENT / dt));
   nInitialSteps = (T_TRANSIENT / dt);
   probUpdateFF = dt * (double)NFF / TAU_FF;  
   probUpdateE = dt * (double)NE / TAU_E;
   probUpdateI = dt * (double)NI / TAU_I;
-  
   // uExternalE = sqrt((double) K) * JE0 * m0;
   // uExternalI = sqrt((double) K) * JI0 * m0;
   // printf("%f\n", uExternalE);
   // printf("%f\n", uExternalI);
-
-
   if(IF_STEP_PHI0) {
     // used for computing m_E^1(t)
     intervalLen = (unsigned long)floor((nSteps - nInitialSteps) / 80.0);
   }
-  
   printf("dt = %f, #steps = %lu, T_STOP = %d\n", dt, nSteps, T_STOP);
   printf("prob updateFF = %f, prob update E = %f, prob update I = %f\n", probUpdateFF, probUpdateE, probUpdateI);
   nLastSteps = nSteps - (unsigned long int )((float)T_TRANSIENT / dt);
   printf("\n");
   ProgressBar(0.0, runningFre, runningFri, runningFrFF);
   FILE *fpInstRates = fopen("fr_inst.txt", "w");
-
   std::random_device rdFF;  
   std::default_random_engine generatorFF(rdFF());
   std::discrete_distribution<int> MultinomialDistr {probUpdateFF, probUpdateE, probUpdateI};
-
   int nPhisInSteps = 2;
   for(i = 0; i < nSteps; i++) {
     if(IF_STEP_PHI0) {
@@ -935,10 +986,8 @@ void RunSim() {
       fflush(fpInstRates);
       ProgressBar((float)i / nSteps, runningFre, runningFri, runningFrFF);    
     }
-
     uNet = 0.0;
     updatePop = MultinomialDistr(generatorFF);
-
     if(updatePop == 0) {
       updateNeuronIdx = RandFFNeuron();
       spinOldFF = spinsFF[updateNeuronIdx];
@@ -1254,15 +1303,17 @@ int main(int argc, char *argv[]) {
   if(argc > 7) {
     kappa = atof(argv[7]);
   }
-  // if(argc > 8) {
-  //   rewiredEEWeight = atof(argv[7]);
-  // }
-  
-  
-  // if(argc > 8) {
-  //   IF_REWIRE_AT_PHI = (unsigned int)atoi(argv[7]);
-  // }
-  
+  if(argc > 8) {
+    if(IF_REWIRE == 1) {
+      rewiredEEWeight = atof(argv[8]);
+    }
+    else {
+      rewiredEEWeight = 1;
+    }
+  }
+  if(argc > 9) {
+    IF_GEN_MAT = atoi(argv[9]);
+  }
   
   tStop = T_STOP;
 
@@ -1286,7 +1337,7 @@ int main(int argc, char *argv[]) {
   idxVecFF = new unsigned int[NFF];
 
   if(IF_REWIRE == 0) {
-    if(trialNumber == 0 && phi_ext == 0) {
+    if((trialNumber == 0 && phi_ext == 0) || IF_GEN_MAT) {
       clock_t timeStartCM = clock(); 
       GenFFConMat();
       GenConMat(1); // the argument was used for testing kappa, setting it to 1 will generate a matrix with recMod = p
@@ -1301,10 +1352,11 @@ int main(int argc, char *argv[]) {
       LoadSparseConMat();
       // GenConMat(0);
       unsigned long nEE_IEConnections = 0;
-      for(unsigned i = 0; i < NE; i++) {
+      for(unsigned i = 0; i < N_NEURONS; i++) {
 	nEE_IEConnections += nPostNeurons[i];
       }
       IS_REWIRED_LINK = new unsigned int[nEE_IEConnections];
+      IF_LOADREWIREDCON = 0;
       if(IF_LOADREWIREDCON) {
 	LoadRewiredCon(nEE_IEConnections);
       }
@@ -1324,11 +1376,12 @@ int main(int argc, char *argv[]) {
     printf("loading Sparse matrix\n");  
     LoadSparseConMat();
     unsigned long nEE_IEConnections = 0;
-    for(unsigned i = 0; i < NE; i++) {
+    for(unsigned i = 0; i < N_NEURONS; i++) {
       nEE_IEConnections += nPostNeurons[i];
     }
-    IS_REWIRED_LINK = new unsigned int[nEE_IEConnections];
-    if(IF_LOADREWIREDCON) {
+
+    IS_REWIRED_LINK = new unsigned int[nEE_IEConnections];    
+    if(IF_LOADREWIREDCON && phi_ext > 0) {
       LoadRewiredCon(nEE_IEConnections);
     }
     else {
@@ -1359,6 +1412,11 @@ int main(int argc, char *argv[]) {
       	delete [] sparseConVec;
       	sparseConVec = NULL;
       }
+      if(IS_REWIRED_LINK != NULL) {
+      	printf("\ndeleting old sparseConVec\n");
+      	delete [] IS_REWIRED_LINK;
+      	IS_REWIRED_LINK = NULL;
+      }      
       printf("\n adding connections... ");  fflush(stdout);    
       AddConnections(conMatCONSTRUCTED, kappa);  
       printf("done\n");
@@ -1400,6 +1458,5 @@ int main(int argc, char *argv[]) {
   delete [] idxVecFF;
   delete [] sparseConVecFF;
   delete [] IS_REWIRED_LINK;
-
   return 0; //EXIT_SUCCESS;
 }
