@@ -76,14 +76,36 @@ def LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 100
     return np.loadtxt(baseFldr + filename)
 
 def LoadFFInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
-    # ipdb.set_trace()
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
     if IF_VERBOSE:
     	print baseFldr
     filename = 'meanFFinput_theta%.6f_tr%s_last.txt'%(phi, trNo)
     print filename
-    # ipdb.set_trace()
     return np.loadtxt(baseFldr + filename)
+
+def LoadEEInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    if IF_VERBOSE:
+    	print baseFldr
+    filename = 'meaninput_E_theta%.6f_tr%s_last.txt'%(phi, trNo)
+    filenameOld = 'meaninput_EE_theta%.6f_tr%s_last.txt'%(phi, trNo)    
+    print filename
+    try:
+	return np.loadtxt(baseFldr + filename)
+    except IOError:
+	return np.loadtxt(baseFldr + filenameOld)
+
+def LoadEIInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    if IF_VERBOSE:
+    	print baseFldr
+    filename = 'meaninput_I_theta%.6f_tr%s_last.txt'%(phi, trNo)
+    filenameOld = 'meaninput_EI_theta%.6f_tr%s_last.txt'%(phi, trNo)        
+    print filename
+    try:
+	return np.loadtxt(baseFldr + filename)
+    except IOError:
+	return np.loadtxt(baseFldr + filenameOld)
 
 def LoadNetInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
     # ipdb.set_trace()
@@ -123,14 +145,21 @@ def CircularCorrCoeff(x, y):
 def GetInputTuningCurves(p, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1, inputType = 'net'):
     NE = N
     NI = N
-    tc = np.zeros((NE + NI, nPhis))
+
     #tc = np.zeros((NE, nPhis))    
-    tc[:] = np.nan
+    # 
     phis = np.linspace(0, 180, nPhis, endpoint = False)
     if inputType == 'net':
 	LoadFunc = LoadNetInput
     elif inputType == 'FF':
 	LoadFunc = LoadFFInput
+    elif inputType == 'EE':
+        # tc = np.zeros((NE, nPhis))	
+	LoadFunc = LoadEEInput
+    elif inputType == 'EI':
+        # tc = np.zeros((NE, nPhis))		
+	LoadFunc = LoadEIInput
+    
     # ipdb.set_trace()
     for i, iPhi in enumerate(phis):
 	print i, iPhi
@@ -143,10 +172,14 @@ def GetInputTuningCurves(p, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, r
 	    if(len(fr) == 1):
 		if(np.isnan(fr)):
 		    print 'file not found!'
+	    if i == 0:
+		tc = np.zeros((fr.size, nPhis))
+		tc[:] = np.nan
 	    tc[:, i] = fr
 	except IOError:
 	    print 'file not found!'
 	    raise SystemExit
+    # ipdb.set_trace()
     return tc
 
 def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1, IF_SUCCESS = False):
@@ -297,13 +330,13 @@ def PlotInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8
 	filepath = './figs/twopop/InOutCorr_p%sg%s'%(int(100 * p), int(10 * gamma)) + '_' + rewireType
 	ProcessFigure(plt.gcf(), filepath, True)
 
-def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'eps', paperSize = [4, 3], titleSize = 10, axPosition = [0.25, 0.25, .65, .65], tickFontsize = 10, labelFontsize = 12, nDecimalsX = 2, nDecimalsY = 3):
-    # FixAxisLimits(figHdl)
-    # FixAxisLimits(plt.gcf(), IF_XTICK_INT, nDecimalsX, nDecimalsY)
+def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'eps', paperSize = [4, 3], titleSize = 10, axPosition = [0.25, 0.25, .65, .65], tickFontsize = 10, labelFontsize = 12, nDecimalsX = 1, nDecimalsY = 1):
+    FixAxisLimits(figHdl)
+    FixAxisLimits(plt.gcf(), IF_XTICK_INT, nDecimalsX, nDecimalsY)
     Print2Pdf(plt.gcf(), filepath, paperSize, figFormat=figFormat, labelFontsize = labelFontsize, tickFontsize=tickFontsize, titleSize = titleSize, IF_ADJUST_POSITION = True, axPosition = axPosition)
     plt.show()
 
-def FixAxisLimits(fig, IF_XTICK_INT = False, nDecimalsX = 2, nDecimalsY = 3):
+def FixAxisLimits(fig, IF_XTICK_INT = False, nDecimalsX = 1, nDecimalsY = 1):
     ax = fig.axes[0]
     xmin, xmax = ax.get_xlim()
     ymin, ymax = ax.get_ylim()
@@ -1249,10 +1282,9 @@ def PrintTuningBook(tcCntr, tcNew, nNeurons, fname, neuronType='E', NE = 10000, 
 		with doc.create(SubFigure(position='b', width=NoEscape(width))) as figure:
 		    figure.add_plot(width=NoEscape(r'\linewidth'), dpi = 300) #*args, **kwargs)
 		plt.clf()
-    
     doc.generate_pdf(clean_tex=False)
 
-def PrintInputTuningBook(tcCntr, tcNew, nNeurons, fname, neuronType='E', NE = 10000, NI = 10000, nPhis = 8, color = 'k', kappaNew = 8):
+def PrintInputTuningBook(a, b, c, d, e, nNeurons, fname, neuronType='E', NE = 10000, NI = 10000, nPhis = 8, color = 'k', kappaNew = 8):
     doc = Document(fname)
     doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
     nFigsPerPage = 12
@@ -1263,8 +1295,9 @@ def PrintInputTuningBook(tcCntr, tcNew, nNeurons, fname, neuronType='E', NE = 10
     doc = Document(fname)
     doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
     width = r'.3\linewidth'
-    osiCntr = OSIOfPop(tcCntr, np.pi)
-    osiNew = OSIOfPop(tcNew, np.pi)    
+    osiCntr = OSIOfPop(a, np.pi)
+    osiNew = OSIOfPop(b, np.pi)
+    d = a[:NE, :] + b[:NE, :] + c[:NE, :]
     if neuronType == 'E':
 	rndNeurons = np.random.randint(0, NE, nNeurons)
     else:
@@ -1276,13 +1309,46 @@ def PrintInputTuningBook(tcCntr, tcNew, nNeurons, fname, neuronType='E', NE = 10
 	    for idx, i in enumerate(rndNeuronsx):
                 labelTxtCntrl = r'$\kappa = 0, \, \mathrm{OSI} = %.4s $'%(osiCntr[i])
                 labelTxtNew = r'$\kappa = %s, \, \mathrm{OSI} = %.4s $'%(kappaNew, osiNew[i])
-		plt.plot(np.concatenate((theta, [180])), np.concatenate((tcCntr[i, :], [tcCntr[i, 0]])), 'ko-', label = labelTxtCntrl)
-		plt.plot(np.concatenate((theta, [180])), np.concatenate((tcNew[i, :], [tcNew[i, 0]])), 'o-', color = color, label = labelTxtNew, markeredgecolor = color)
+		labelTxtA = r'$u_{EE}$'
+		labelTxtB = r'$abs(u_{EI})$'
+		labelTxtC = r'$u_{FF}$'
+		labelTxtD = r'$u_{net}$'
+		labelTxtE = r'$m(\phi)$'
+		# plt.plot(np.concatenate((theta, [180])), np.concatenate((a[i, :], [a[i, 0]])) / np.max(a[i, :]), 'ko-', label = labelTxtA)
+		# plt.plot(np.concatenate((theta, [180])), np.concatenate((b[i, :], [b[i, 0]])) / np.max(np.abs(b[i, :])), 'bo-', label = labelTxtB, markeredgecolor = 'b')
+		plt.plot(np.concatenate((theta, [180])), np.concatenate((b[i, :], [b[i, 0]])), 'bo-', label = labelTxtB, markeredgecolor = 'b')		
+		# plt.plot(np.concatenate((theta, [180])), np.concatenate((c[i, :], [c[i, 0]])) / np.abs(np.max(c[i, :])), 'go-', label = labelTxtC, markeredgecolor = 'g')
+		# plt.plot(np.concatenate((theta, [180])), np.abs(np.concatenate((d[i, :], [d[i, 0]]))) / np.max(np.abs(d[i, :])), 'co-', label = labelTxtD, markeredgecolor = 'c')
+		# plt.plot(np.concatenate((theta, [180])), np.concatenate((e[i, :], [e[i, 0]])) / np.max(e[i, :]), 'ro-', label = labelTxtE, markeredgecolor = 'r')
 		mainAxis = plt.gca()
 		mainAxis.set_title('neuron#%s'%(i), fontsize = 16)
+		# plt.ylim(, 1.05)
                 plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 12})		
 		with doc.create(SubFigure(position='b', width=NoEscape(width))) as figure:
 		    figure.add_plot(width=NoEscape(r'\linewidth'), dpi = 300) #*args, **kwargs)
 		plt.clf()
     doc.generate_pdf(clean_tex=False)
-
+    
+# def PlotMeanTc(tc, nPhis = 8, NE = 10000, labelTxt='', pcolor='k'):
+#     thetas = np.linspace(0, 180, nPhis, endpoint = 1)
+#     prefferedOri = np.argmax(tc, 1)
+#     tcmax = np.max(np.abs(tc), 1)
+#     tcmax.shape = NE, 1
+#     tcmax = np.tile(tcmax, (1, nPhis))
+#     tc = tc / tcmax
+#     cvMat = np.empty((NE, len(thetas)))
+#     for kNeuron in np.arange(NE):
+# 	cvMat[kNeuron, :] = np.roll(tc[kNeuron, :], -1 * prefferedOri[kNeuron])
+#     plt.ion()
+#     # plotId = np.max(tc, 1) > firingRateThresh
+#     # tmpId = np.arange(NE)
+#     # plotId = tmpId[plotId]
+#     # plotId = np.ones((NE, )) < 10
+#     tmpE = cvMat #[plotId[plotId < NE], :]
+#     meanE = np.nanmean(tmpE, 0)
+#     meanE = np.roll(meanE, 4)
+#     thetas = np.arange(-90, 90, 22.5)
+#     plt.plot(thetas, np.concatenate(meanE, 'o-', label=labelTxt, color = pcolor)
+#     # plt.xlabel(r'PO ($\deg$)', fontsize = 20)
+#     # plt.ylabel(r'Mean $$', fontsize = 20)
+    
