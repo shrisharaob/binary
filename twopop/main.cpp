@@ -936,6 +936,8 @@ void RunSim() {
   vector<double> totalInput(N_NEURONS);
   vector<double> FFInput(N_NEURONS);  
   vector<double> netInputVec(N_NEURONS);
+  vector<double> inputVecE(N_NEURONS); // recurrent E input u_E = u_net - u_FF - u_I
+  vector<double> inputVecI(N_NEURONS); // recurrent I input u_I = u_net - u_FF - u_E
   vector<double> firingRatesChk(N_NEURONS);
   vector<double> firingRatesChkTMP(N_NEURONS);
   vector<double> firingRatesAtT(N_NEURONS);  
@@ -971,7 +973,6 @@ void RunSim() {
   int nPhisInSteps = 2;
   for(i = 0; i < nSteps; i++) {
     if(IF_STEP_PHI0) {
-      
       if((i > 0) && i % (unsigned long)floor((nSteps - nInitialSteps) / (double)nPhisInSteps) == 0) {
 	// change stimulus after half time
 	phi_ext = phi_ext +  0.5 * M_PI / (double)nPhisInSteps;
@@ -1196,7 +1197,7 @@ void RunSim() {
      }
    }
   }
-    
+  // COMPUTE RATES: NORMALIZE BY TIME    
   VectorDivide(firingRates, nSteps);
   VectorDivideFF(firingRatesFF, nSteps);  
   VectorDivide(frLast, (nSteps - nLastSteps));
@@ -1204,25 +1205,75 @@ void RunSim() {
   // VectorDivide(FFInput, (nSteps - nLastSteps));    
   fclose(fpInstRates);
   fclose(fpInstM1);
-
+  // ESTIMATE FF INPUT
+  for(unsigned int lll = 0; lll < N_NEURONS; lll++) {
+    inputVecE[lll] = 0;
+    inputVecI[lll] = 0;
+    if(lll < NFF) { FFInput[lll] = 0; }
+  }  
   unsigned int tmpIdx1, cntr1, iidxx;
-
   for(iidxx = 0; iidxx < NFF; iidxx++) {
-      tmpIdx1 = idxVecFF[iidxx];
-      cntr1 = 0;      
-      while(cntr1 < nPostNeuronsFF[iidxx]) {
-	unsigned int kk = sparseConVecFF[tmpIdx1 + cntr1];
-	cntr1 += 1;
-	if(kk < NE) {
-	  FFInput[kk] += JE0_K * firingRatesFF[iidxx];
-	}
-	else {
-	  FFInput[kk] += JI0_K * firingRatesFF[iidxx];
-	}
+    tmpIdx1 = idxVecFF[iidxx];
+    cntr1 = 0;      
+    while(cntr1 < nPostNeuronsFF[iidxx]) {
+      unsigned int kk = sparseConVecFF[tmpIdx1 + cntr1];
+      cntr1 += 1;
+      if(kk < NE) {
+	FFInput[kk] += JE0_K * firingRatesFF[iidxx];
       }
+      else {
+	FFInput[kk] += JI0_K * firingRatesFF[iidxx];
+      }
+    }
   }
-
+  // ESTIMATE recurrent u_EE
+  for(iidxx = 0; iidxx < NE; iidxx++) { // if pre-neurons are E
+    tmpIdx1 = idxVec[iidxx];
+    cntr1 = 0;      
+    while(cntr1 < nPostNeurons[iidxx]) {
+      unsigned int kk = sparseConVec[tmpIdx1 + cntr1];
+      cntr1 += 1;
+      if(kk < NE) { // if post-neuron is E
+  	unsigned int IS_STRENGTHENED = 0;
+  	if(IF_LOADREWIREDCON) { IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx1 + cntr1 - 1]; }
+  	if(IS_STRENGTHENED) { inputVecE[kk] += JEE_K * rewiredEEWeight * firingRates[iidxx]; }
+  	else { inputVecE[kk] += JEE_K * firingRates[iidxx]; }
+      }
+      if(kk >= NE) { // if post-neuron is I 
+  	inputVecE[kk] += JIE_K * firingRates[iidxx];
+      }      
+    }
+  }
+  // ESTIMATE recurrent u_EI  
+  for(iidxx = NE; iidxx < N_NEURONS; iidxx++) { // if pre-neurons are I
+    tmpIdx1 = idxVec[iidxx];
+    cntr1 = 0;      
+    while(cntr1 < nPostNeurons[iidxx]) {
+      unsigned int kk = sparseConVec[tmpIdx1 + cntr1];
+      cntr1 += 1;
+      // if post-neuron is E
+      if(kk < NE) { inputVecI[kk] += JEI_K * firingRates[iidxx]; }
+      // if post-neuron is I       
+      if(kk >= NE) { inputVecI[kk] += JII_K * firingRates[iidxx]; }            
+    }
+  }
+  // // ESTIMATE 
+  // for(iidxx = 0; iidxx < NE; iidxx++) { // if pre-neurons are E
+  //   tmpIdx1 = idxVec[iidxx];
+  //   cntr1 = 0;      
+  //   while(cntr1 < nPostNeurons[iidxx]) {
+  //     unsigned int kk = sparseConVec[tmpIdx1 + cntr1];
+  //     cntr1 += 1;
+  //     if(kk < NE) { // if post-neuron is E
+  // 	unsigned int IS_STRENGTHENED = 0;
+  // 	if(IF_LOADREWIREDCON) { IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx1 + cntr1 - 1]; }
+  // 	if(IS_STRENGTHENED) { inputVecE[kk] += JEE_K * rewiredEEWeight * firingRates[iidxx]; }
+  // 	else { inputVecE[kk] += JEE_K * firingRates[iidxx]; }
+  //     }
+  //   }
+  // }
   
+  //
   std::string txtFileName = "meanrates_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";  
   FILE *fpRates = fopen(txtFileName.c_str(), "w");
   for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
@@ -1244,7 +1295,21 @@ void RunSim() {
       fprintf(fpInputs, "%f\n", totalInput[ii]);
     }
     fclose(fpInputs);
-    //
+    // save u_EE
+    txtFileName = "meaninput_E_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";  
+    fpInputs = fopen(txtFileName.c_str(), "w");
+    for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+      fprintf(fpInputs, "%f\n", inputVecE[ii]);
+    }
+    fclose(fpInputs);    
+    // SAVE u_EI
+    txtFileName = "meaninput_I_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";  
+    fpInputs = fopen(txtFileName.c_str(), "w");
+    for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+      fprintf(fpInputs, "%f\n", inputVecI[ii]);
+    }
+    fclose(fpInputs);    
+    // save FF
     txtFileName = "meanFFinput_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";  
     FILE *fpFFInputs = fopen(txtFileName.c_str(), "w");
     for(unsigned int ii = 0; ii < NE+NI; ii++) {

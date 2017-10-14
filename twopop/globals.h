@@ -55,7 +55,7 @@ int trialNumber;
 unsigned int *nPostNeurons, *sparseConVec = NULL, *idxVec, *IS_REWIRED_LINK;
 unsigned int *nPostNeuronsFF, *sparseConVecFF, *idxVecFF;
 
-unsigned int IF_GEN_MAT;
+unsigned int IF_GEN_MAT = 0;
 unsigned long long int nSteps;
 
 double phi_ext, m0_ext, m1_ext;
