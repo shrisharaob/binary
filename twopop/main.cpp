@@ -1286,7 +1286,7 @@ int main(int argc, char *argv[]) {
   idxVecFF = new unsigned int[NFF];
 
   if(IF_REWIRE == 0) {
-    if(trialNumber == 0 && phi_ext == 0) {
+    if((trialNumber == 0 && phi_ext == 0) || (IF_GEN_MAT && phi_ext == 0)) {
       clock_t timeStartCM = clock(); 
       GenFFConMat();
       GenConMat(1); // the argument was used for testing kappa, setting it to 1 will generate a matrix with recMod = p

@@ -38,12 +38,12 @@
 #define N_SEGMENTS 2
 
 
-#define IF_REWIRE 1
+#define IF_REWIRE 0
 
 
 //unsigned int IF_REWIRE = IF_REWIRE_DEFAULT
   
-unsigned int IF_LOADREWIREDCON = 1;
+unsigned int IF_LOADREWIREDCON = 0; // always set to zero
 double rewiredEEWeight;
 double m0, tStop, ffModulation;
 double kappa;
@@ -54,7 +54,7 @@ int trialNumber;
 unsigned int *nPostNeurons, *sparseConVec = NULL, *idxVec, *IS_REWIRED_LINK;
 unsigned int *nPostNeuronsFF, *sparseConVecFF, *idxVecFF;
 
-int IF_GEN_MAT;
+int IF_GEN_MAT = 1;
 unsigned long long int nSteps;
 
 double phi_ext, m0_ext, m1_ext;
