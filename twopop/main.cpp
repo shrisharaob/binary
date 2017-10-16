@@ -875,7 +875,9 @@ void RunSim() {
   vector<double> firingRatesFF(NFF);  
   vector<double> frLast(N_NEURONS);
   vector<double> totalInput(N_NEURONS);
-  vector<double> FFInput(N_NEURONS);  
+  vector<double> FFInput(N_NEURONS);
+  vector<double> inputVecE(N_NEURONS); // recurrent E input u_E = u_net - u_FF - u_I
+  vector<double> inputVecI(N_NEURONS); // recurrent I input u_I = u_net - u_FF - u_E
   vector<double> netInputVec(N_NEURONS);
   vector<double> firingRatesChk(N_NEURONS);
   vector<double> firingRatesChkTMP(N_NEURONS);
@@ -1158,6 +1160,13 @@ void RunSim() {
 
   unsigned int tmpIdx1, cntr1, iidxx;
 
+
+  // COMPUTE FF INPUT
+  for(unsigned int lll = 0; lll < N_NEURONS; lll++) {
+    inputVecE[lll] = 0;
+    inputVecI[lll] = 0;
+    if(lll < NFF) { FFInput[lll] = 0; }
+  }  
   for(iidxx = 0; iidxx < NFF; iidxx++) {
       tmpIdx1 = idxVecFF[iidxx];
       cntr1 = 0;      
@@ -1171,6 +1180,38 @@ void RunSim() {
 	  FFInput[kk] += JI0_K * firingRatesFF[iidxx];
 	}
       }
+  }
+  // ESTIMATE recurrent u_EE
+  for(iidxx = 0; iidxx < NE; iidxx++) { // if pre-neurons are E
+    tmpIdx1 = idxVec[iidxx];
+    cntr1 = 0;
+    while(cntr1 < nPostNeurons[iidxx]) {
+      unsigned int kk = sparseConVec[tmpIdx1 + cntr1];
+      cntr1 += 1;
+      if(kk < NE) { // if post-neuron is E
+        inputVecE[kk] += JEE_K * firingRates[iidxx];	
+	// unsigned int IS_STRENGTHENED = 0;
+	// if(IF_LOADREWIREDCON) { IS_STRENGTHENED = IS_REWIRED_LINK[tmpIdx1 + cntr1 - 1]; }
+	// if(IS_STRENGTHENED) { inputVecE[kk] += JEE_K * rewiredEEWeight * firingRates[iidxx]; }
+	// else { inputVecE[kk] += JEE_K * firingRates[iidxx]; }
+      }
+      if(kk >= NE) { // if post-neuron is I
+	inputVecE[kk] += JIE_K * firingRates[iidxx];
+      }
+    }
+  }
+  // ESTIMATE recurrent u_EI
+  for(iidxx = NE; iidxx < N_NEURONS; iidxx++) { // if pre-neurons are I
+    tmpIdx1 = idxVec[iidxx];
+    cntr1 = 0;
+    while(cntr1 < nPostNeurons[iidxx]) {
+      unsigned int kk = sparseConVec[tmpIdx1 + cntr1];
+      cntr1 += 1;
+      // if post-neuron is E
+      if(kk < NE) { inputVecI[kk] += JEI_K * firingRates[iidxx]; }
+      // if post-neuron is I
+      if(kk >= NE) { inputVecI[kk] += JII_K * firingRates[iidxx]; }
+    }
   }
 
   
@@ -1205,6 +1246,20 @@ void RunSim() {
     fclose(fpFFInputs);
   }
 
+  // save u_EE
+  txtFileName = "meaninput_E_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";
+  FILE *fpInputs = fopen(txtFileName.c_str(), "w");
+  for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+    fprintf(fpInputs, "%f\n", inputVecE[ii]);
+  }
+  fclose(fpInputs);
+  // SAVE u_EI
+  txtFileName = "meaninput_I_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";
+  fpInputs = fopen(txtFileName.c_str(), "w");
+  for(unsigned int ii = 0; ii < N_NEURONS; ii++) {
+    fprintf(fpInputs, "%f\n", inputVecI[ii]);
+  }
+  fclose(fpInputs);    
   
   if(IF_SAVE_SPKS) {
       txtFileName = "spktimes_theta" + std::to_string(phiExtOld * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + ".txt";
