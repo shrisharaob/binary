@@ -1352,3 +1352,45 @@ def PrintInputTuningBook(a, b, c, d, e, nNeurons, fname, neuronType='E', NE = 10
 #     # plt.xlabel(r'PO ($\deg$)', fontsize = 20)
 #     # plt.ylabel(r'Mean $$', fontsize = 20)
     
+
+def PlotUePO(idxvec, sparsevec, npost, tc, JEE = 1, JEI = -1.5, JIE = 1, JII = -1, NE = 10000, NI = 10000, nPhis = 8):
+    fr = tc.mean(1) # mean over angles
+    po = POofPopulation(tc, IF_IN_RANGE = 1)
+    nNeurons = idxvec.size
+    ue = np.zeros((nNeurons, nPhis))
+    for i in range(NE):
+	postOfi = npost[i]
+	for k in sparsevec[idxvec[i] : idxvec[i] + postOfi]:
+	    # for angle in range(nPhis):
+	    if k < NE:
+		ue[k, :] += JEE * tc[i, :]
+	    else:
+		ue[k, :] += JIE * tc[i, :]
+    plt.figure()
+    poe = POofPopulation(ue, IF_IN_RANGE=1)
+    plt.hist(poe[:NE], normed = 1, histtype = 'step')
+    plt.hist(poe[NE:], normed = 1, histtype = 'step')
+    return poe
+
+def PlotPrePODistr(idxvec, sparsevec, npost, tc, JEE = 1, JEI = -1.5, JIE = 1, JII = -1, NE = 10000, NI = 10000, nPhis = 8):
+    fr = tc.mean(1) # mean over angles
+    po = POofPopulation(tc, IF_IN_RANGE = 1)
+    # poTest = 180 * np.random.rand(NE)
+    # po = poTest
+    nNeurons = idxvec.size
+    ue = np.zeros((nNeurons, nPhis))
+    poOfPre = [[] for i in range(nNeurons)]
+    for i in range(NE):
+	postOfi = npost[i]
+	for k in sparsevec[idxvec[i] : idxvec[i] + postOfi]:
+	    poOfPre[k].append(po[i])
+
+    plt.figure()
+    plt.hist(np.hstack(poOfPre), normed = 1, histtype = 'step')
+    fre = fr[:NE]
+    frBiased = fre[po[:NE] > 120]
+    plt.figure()
+    plt.hist(fre, 23, normed = 1, histtype = 'step', label = 'full')
+    plt.hist(frBiased, 23, normed = 1, histtype = 'step', label = 'biased')
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 12})		
+    return poOfPre, fr, frBiased

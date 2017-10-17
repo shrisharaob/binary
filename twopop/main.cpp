@@ -122,6 +122,9 @@ double ConProb(double phiI, double phiJ, unsigned int N, double recModulationAB)
     cout << "connection probability not in range [0, 1]!" << endl;
     exit(1);
   }
+  ////////////////////////////////////////////////////
+   // out = ((double)K / (double)NE);
+  ////////////////////////////////////////////////////
   return out;
 }
 
@@ -641,7 +644,7 @@ void GenConMat(int EE_CON_TYPE) {
       if(i < NE && j < NE) { //E-to-E
 	double conProbEE = ConProb(i * M_PI / (double)NE, j * M_PI / (double)NE, NE, recModulationEE);
         if(not EE_CON_TYPE) {
-	  conProbEE = (double)K * (1 + 16.0 * cos(2.0 * (poOfNeurons[i] - poOfNeurons[j])) / sqrt((double)K) ) / (double)NE;
+	  conProbEE = (double)K * (1 + kappa * cos(2.0 * (poOfNeurons[i] - poOfNeurons[j])) / sqrt((double)K) ) / (double)NE;
 	}
 	if(UniformRand(gen) <= conProbEE) {
 	  conMat[i + N_NEURONS * j] = 1;

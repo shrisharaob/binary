@@ -25,7 +25,7 @@
 #define JII_K (JII / sqrt((double)K))
 #define N_NEURONS (NE + NI)
 
-#define cFF 0.2
+#define cFF 1
 #define SQRT_KFF (sqrt((double)K * cFF))
 
 #define T_STOP 1000
