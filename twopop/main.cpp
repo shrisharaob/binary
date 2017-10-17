@@ -122,6 +122,7 @@ double ConProb(double phiI, double phiJ, unsigned int N, double recModulationAB)
     cout << "connection probability not in range [0, 1]!" << endl;
     exit(1);
   }
+  // out =  ((double)K / (double)N);
   return out;
 }
 
