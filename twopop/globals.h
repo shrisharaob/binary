@@ -1,8 +1,8 @@
 //#include <string>
 //#include <cstring>
 
-#define NE 10000
-#define NI 10000
+#define NE 40000
+#define NI 40000
 #define NFF 10000
 #define K 1000
 #define SQRT_K (sqrt((double)K))
@@ -25,7 +25,7 @@
 #define JII_K (JII / sqrt((double)K))
 #define N_NEURONS (NE + NI)
 
-#define cFF 1
+#define cFF 0.2
 #define SQRT_KFF (sqrt((double)K * cFF))
 
 #define T_STOP 1000
