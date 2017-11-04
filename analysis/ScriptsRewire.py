@@ -5,6 +5,9 @@ import numpy as np
 import code, sys, os
 import ipdb
 import pylab as plt
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
 sys.path.append(basefolder)
 import Keyboard as kb
 from multiprocessing import Pool
@@ -1391,7 +1394,6 @@ def PlotPrePODistr(idxvec, sparsevec, npost, tc, JEE = 1, JEI = -1.5, JIE = 1, J
 	postOfi = npost[i]
 	for k in sparsevec[idxvec[i] : idxvec[i] + postOfi]:
 	    poOfPre[k].append(po[i])
-
     plt.figure()
     plt.hist(np.hstack(poOfPre), normed = 1, histtype = 'step')
     fre = fr[:NE]
@@ -1401,3 +1403,140 @@ def PlotPrePODistr(idxvec, sparsevec, npost, tc, JEE = 1, JEI = -1.5, JIE = 1, J
     plt.hist(frBiased, 23, normed = 1, histtype = 'step', label = 'biased')
     plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 12})		
     return poOfPre, fr, frBiased
+
+def PlotPODistrOfInput(N, K, trNo = 800, nPhis=8, kappa = 0, p = 0, gamma = 0, nPop = 2, rewireType = 'rand'):
+    if(nPop == 2):
+        ui = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='EI', N=N, K=K, trNo=trNo, nPhis=nPhis)
+        ue = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='EE', N=N, K=K, trNo=trNo, nPhis=nPhis)
+        poe = POofPopulation(ue, IF_IN_RANGE=1) * 180 / np.pi
+        poi = POofPopulation(-ui, IF_IN_RANGE=1) * 180 / np.pi
+        plt.figure()
+        plt.hist(poi[:N], histtype='step', normed=1, color='r')            
+        plt.hist(poe[:N], histtype='step', normed=1, color='k')
+        legendtxt = [r'$u^i_{EE}(\phi)$', r'-1 x $u^i_{EI}(\phi)$']
+        plt.title('N=%s, K = %s'%(N, K));
+        plt.xlabel('PO (deg)')
+        plt.legend(legendtxt, loc =8,  frameon = False, numpoints = 1, prop = {'size': 20}, markerscale=1, ncol=1)
+        filename = 'po_uE_N%s_K%s'%(N, K)
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = [1.5*4, 1.5*3], axPosition=[.21, .15, .7, .65], titleSize=14, nDecimalsY=3, figFormat='eps')
+        plt.figure()
+        plt.hist(poe[N:], histtype='step', normed=1, color='k')
+        plt.hist(poi[N:], histtype='step', normed=1, color='r')
+        legendtxt = [r'$u^i_{IE}(\phi)$', r'-1 x $u^i_{II}(\phi)$']
+        plt.title('N=%s, K = %s'%(N, K));
+        plt.xlabel('PO (deg)') 
+        legendtxt = [r'$u^i_{IE}(\phi)$', r'-1 x $u^i_{II}(\phi)$']   
+        plt.legend(legendtxt, loc =8,  frameon = False, numpoints = 1, prop = {'size': 20}, markerscale=1, ncol=1)    
+        filename = 'po_uI_N%s_K%s'%(N, K)
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = [1.5*4, 1.5*3], axPosition=[.21, .15, .7, .65], titleSize=14, nDecimalsY=3, figFormat='eps')
+    else:
+        ui = GetInputTuningCurves(p=p, gamma=gamma, kappa=0, inputType='EI', N=N, K=K, trNo=trNo, nPhis=nPhis)
+        poi = POofPopulation(-ui, IF_IN_RANGE=1) * 180 / np.pi
+        # plt.figure()
+        plt.hist(poi[:N], histtype='step', normed=1, label = 'N=%s, K = %s'%(N, K))            
+        plt.xlabel('PO (deg)') 
+        titleTxt =  r'-1 x $u^i_{II}(\phi)$'
+        plt.title(titleTxt);
+        plt.legend(loc =8,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)    
+        filename = 'po_onepop_uI_N%s_K%s'%(N, K)
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = [1.5*4, 1.5*3], axPosition=[.21, .15, .7, .65], titleSize=14, nDecimalsY=3, figFormat='eps')
+
+def CosFunc(x, a, b, c):
+    #    x and c are in degrees
+    x = x * np.pi / 180.0
+    c = c * np.pi / 180.0
+    return a + b * np.cos(2 * (x - c))
+
+def PltFitHistCos(counts, bins, color):
+    x = (bins[:-1] + bins[1:]) / 2.0
+    nBins = x.size
+    m0 = counts.mean()
+    m1 = M1Component(counts) 
+    phase = GetPhase(counts, x, IF_IN_RANGE = True)
+    xx = np.arange(0, 180, 180./100)
+    plt.plot(xx, CosFunc(xx, m0, m1, phase), '--', color = color)
+    return m0, m1, phase
+
+def PlotPODistrOfInputConducatance(ue, ui, N = 10000, K = 1000, trNo = 800, nPhis=8, kappa = 0, p = 0, gamma = 0, nPop = 2):
+    if(nPop == 2):
+        # ue = cc.GetTuningCurves('conductanceE_xi1.2_theta')
+        # ui = cc.GetTuningCurves('conductanceE_xi1.2_theta')
+        poe = POofPopulation(ue, IF_IN_RANGE=1)
+        poi = POofPopulation(ui, IF_IN_RANGE=1)
+        plt.figure()
+        nCountEI, binsEI, _  = plt.hist(poi[:N], histtype='step', normed=1, color='r')            
+        PltFitHistCos(nCountEI, binsEI, 'r')
+        nCountEE, binsEE, _  =plt.hist(poe[:N], histtype='step', normed=1, color='k')
+        PltFitHistCos(nCountEE, binsEE, 'k')
+        legendtxt = [r'$g^i_{EE}(\phi)$', r'$g^i_{EI}(\phi)$']
+        plt.title('N=%s, K = %s'%(N, K));
+        plt.xlabel('PO (deg)')
+        plt.legend(legendtxt, loc =8,  frameon = False, numpoints = 1, prop = {'size': 20}, markerscale=1, ncol=1)
+        filename = 'po_uE_N%s_K%s_conductance'%(N, K)
+        plt.ylim(0, plt.ylim()[1] + 0.002)
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = [1.5*4, 1.5*3], axPosition=[.21, .15, .7, .65], titleSize=14, nDecimalsX=3, figFormat='eps')
+        plt.figure()
+        nCountIE, binsIE, _  =plt.hist(poe[N:], histtype='step', normed=1, color='k')
+        PltFitHistCos(nCountIE, binsIE, 'k')
+        nCountII, binsII, _  =plt.hist(poi[N:], histtype='step', normed=1, color='r')
+        PltFitHistCos(nCountII, binsII, 'r')
+
+        legendtxt = [r'$g^i_{IE}(\phi)$', r'$g^i_{II}(\phi)$']
+        plt.title('N=%s, K = %s'%(N, K));
+        plt.xlabel('PO (deg)') 
+        legendtxt = [r'$g^i_{IE}(\phi)$', r'$g^i_{II}(\phi)$']   
+        plt.legend(legendtxt, loc =8,  frameon = False, numpoints = 1, prop = {'size': 20}, markerscale=1, ncol=1)    
+        filename = 'po_uI_N%s_K%s_conductance'%(N, K)
+        plt.ylim(0, plt.ylim()[1] + 0.002)
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = [1.5*4, 1.5*3], axPosition=[.21, .15, .7, .65], titleSize=14, nDecimalsX=3, figFormat='eps')
+
+def PlotInputOSIDistr(ue, ui, N, K, filetag = ''):
+    osiue = OSIOfPop(ue, 0)
+    if np.any(ui < 0):
+	ui = -ui
+    osiui = OSIOfPop(ui, 0)
+    osiE = osiue[:N]; osiE = osiE[~np.isnan(osiE)]
+    osiI = osiui[:N]; osiI = osiI[~np.isnan(osiI)]
+    print 'E', np.nanmean(osiE), np.nanmean(osiI)    
+    plt.hist(osiE, 26,  normed = 1, histtype = 'step', label= 'EE', color = 'k')
+    plt.hist(osiI, 25,  normed = 1, histtype = 'step', label= 'EI', color = 'r')
+    plt.vlines(np.nanmean(osiue[:N]), *plt.ylim(), color = 'k')
+    plt.vlines(np.nanmean(osiui[:N]), *plt.ylim(), color = 'r')
+    filename = 'osi_uE_N%s_K%s_conductance'%(N, K) + filetag
+    plt.xlabel('OSI')
+    plt.xlim(0, .03)
+    if np.nanmax(osiE) > 0.03:
+	plt.xlim(0, 1)
+    plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)    
+    plt.show()    
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.21, .15, .7, .65], titleSize=14, nDecimalsX=3, figFormat='eps')
+    # uI
+    plt.clf()
+    osiE = osiue[N:]; osiE = osiE[~np.isnan(osiE)]
+    osiI = osiui[N:]; osiI = osiI[~np.isnan(osiI)]    
+    plt.hist(osiE, 26,  normed = 1, histtype = 'step', label= 'IE', color = 'k')
+    print 'I', np.nanmean(osiE), np.nanmean(osiui[N:])
+    plt.hist(osiI,  25, normed = 1, histtype = 'step', label= 'II', color = 'r')
+    plt.vlines(np.nanmean(osiue[N:]), *plt.ylim(), color = 'k')
+    plt.vlines(np.nanmean(osiui[N:]), *plt.ylim(), color = 'r')
+    filename = 'osi_uI_N%s_K%s_conductance'%(N, K) + filetag 
+    plt.xlabel('OSI')
+    plt.xlim(0, .03)
+    if np.nanmax(osiE) > 0.03:
+	plt.xlim(0, 1)
+    plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)    
+    plt.show()    
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.21, .15, .7, .65], titleSize=14, nDecimalsX=3, figFormat='eps')
+    plt.clf()
+
+def GetUEorIMinMat(x):
+    #if x is ui then pass -ui
+    N, nAngles = x.shape
+    if np.any(x[:] < 0):
+        x = -x
+    xmin = np.min(x, 1)
+    xmin.shape = N, 1
+    z = np.tile(xmin, 8)
+    xmin = x - z
+    return xmin
+    

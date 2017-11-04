@@ -1,8 +1,8 @@
 //#include <string>
 //#include <cstring>
 
-#define NE 40000
-#define NI 40000
+#define NE 10000
+#define NI 10000
 #define NFF 10000
 #define K 1000
 #define SQRT_K (sqrt((double)K))
