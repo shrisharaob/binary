@@ -10,6 +10,7 @@
 #include <ctime>
 #include <string>
 #include <cstring>
+//#include <iterator>
 // #include <boost/filesystem>
 #include "globals.h"
 
@@ -258,6 +259,8 @@ void GenSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, u
   // shiftedVec.clear();
 }
 
+
+
 void GenFFConMat() {
   std::random_device rd;
   std::default_random_engine gen(rd());
@@ -354,6 +357,119 @@ void GenFFConMat() {
   //   printf("sparseConvec read error ? %lu %llu \n", dummy, nConnections);
   // fclose(fpSparseConVecFF);
   // }
+}
+
+void GenFixedFFConMat() {
+  std::random_device rd;
+  std::mt19937 g(rd());
+  // std::default_random_engine gen(rd());
+  // std::uniform_real_distribution<double> UniformRand(0.0, 1.0);
+  unsigned long long int nConnections = 0;
+  cout << "generating fixed K FF conmat" << endl;
+  unsigned int *conMatFF = new unsigned int [(unsigned long int)NFF * N_NEURONS];
+  std::vector<unsigned int> nFFVector(NE);
+  // std::vector<unsigned int> nEVector(NE);
+  // std::vector<unsigned int> nIVector(NI);
+  unsigned int KFF_E = (unsigned int)(cFF * K);
+  unsigned int KFF_I = (unsigned int)(cFF * K);
+  cout << "k_FF =" << KFF_E << endl;
+
+  for(unsigned long int i = 0; i < NFF; i++) {
+    for(unsigned long int j = 0; j < N_NEURONS; j++) {
+      conMatFF[i + NFF * j] = 0;
+    }
+  }
+
+  for(unsigned int j = 0; j < NFF; j++) {
+    nFFVector[j] = j;
+  }
+
+  // for(unsigned int j = 0; j < NI; j++) {
+  //   nIVector[j] = j + NE;
+  // }
+
+  // 0-to-E  
+  for (unsigned long int i = 0; i < NE; i++)  {
+    std::shuffle(nFFVector.begin(), nFFVector.end(), g);
+    for(unsigned int k = 0; k < KFF_E; k++) {       // i --> k
+      conMatFF[nFFVector[k] + NFF * i] = 1;
+      nConnections += 1;
+    }
+  }
+  // 0-to-I
+  for (unsigned long int i = NE; i < N_NEURONS; i++)  {  
+    std::shuffle(nFFVector.begin(), nFFVector.end(), g);    
+    for(unsigned int k = 0; k < KFF_I; k++) {       // i --> k
+      conMatFF[nFFVector[k] + NFF * i] = 1;      
+      nConnections += 1;
+    }
+  }
+  
+  cout << "done" << endl;
+  cout << "computing sparse rep" << endl;    
+  sparseConVecFF = new unsigned int[nConnections];
+  GenSparseMat(conMatFF, NFF, N_NEURONS, sparseConVecFF, idxVecFF, nPostNeuronsFF);
+  cout << "done" << endl;
+
+  FILE *ffp;
+  ffp = fopen("kcount_ff.csv", "w");
+  for(unsigned int lll = 0; lll < NFF; lll++) {
+    fprintf(ffp, "%u\n", nPostNeuronsFF[lll]);
+  }
+  fclose(ffp);
+
+ // printf("----------------------------------------\n");
+ // printf("------------ ORIGINAL FF MATRIX -----------\n");
+ // for(unsigned long int i = 0; i < NFF; i++) {
+ //   for(unsigned long int j = 0; j < N_NEURONS; j++) {
+ //     printf("%d ", (int)conMatFF[i + NFF * j]);
+ //   }
+ //   printf("\n");
+ // }
+ // printf("----------------------------------------\n");
+ // printf("----------------------------------------\n"); 
+
+
+  ffp = fopen("kff_indegree.csv", "w");
+  std::vector<unsigned int> kffInDegree(N_NEURONS);// number of FF inputs to E and I
+  // std::vector<unsigned int> kffInDegreeI(NI);  // number of FF inputs to I
+  for(unsigned int lll = 0; lll < NFF; lll++) {
+    for(unsigned int i = 0; i < N_NEURONS; i++) {
+      kffInDegree[i] += conMatFF[lll + NFF * i];
+    }
+  }
+  for(unsigned int lll = 0; lll < N_NEURONS; lll++) {
+      fprintf(ffp, "%u\n", kffInDegree[lll]);
+  }
+  fclose(ffp);
+
+  
+
+
+  
+  delete [] conMatFF;
+
+ 
+  
+  FILE *fpSparseConVec, *fpIdxVec, *fpNpostNeurons;
+  unsigned long int nElementsWritten;
+  printf("done\n#connections FF = %llu\n", nConnections);
+  printf("writing to file ... "); fflush(stdout);
+  fpSparseConVec = fopen("sparseConVecFF.dat", "wb");
+  nElementsWritten = fwrite(sparseConVecFF, sizeof(*sparseConVecFF), nConnections, fpSparseConVec);
+  fclose(fpSparseConVec);
+  if(nElementsWritten != nConnections) {
+    printf("\n Error: All elements not written \n");
+  }
+  fpIdxVec = fopen("idxVecFF.dat", "wb");
+  fwrite(idxVecFF, sizeof(*idxVecFF), NFF,  fpIdxVec);
+  fclose(fpIdxVec);
+  fpNpostNeurons = fopen("nPostNeuronsFF.dat", "wb");
+  fwrite(nPostNeuronsFF, sizeof(*nPostNeuronsFF), NFF, fpNpostNeurons);
+  fclose(fpNpostNeurons);
+  printf("done\n");
+  
+  
 }
 
 void AddConnections(unsigned int *conVec, double kappa) {
@@ -1406,8 +1522,13 @@ int main(int argc, char *argv[]) {
 
   if(IF_REWIRE == 0) {
     if((trialNumber == 0 && phi_ext == 0) || IF_GEN_MAT) {
-      clock_t timeStartCM = clock(); 
-      GenFFConMat();
+      clock_t timeStartCM = clock();
+      if(IF_FIXED_FF_K) {
+	GenFixedFFConMat();
+      }
+      else {
+	GenFFConMat();
+      }
       GenConMat(1); // the argument was used for testing kappa, setting it to 1 will generate a matrix with recMod = p
       clock_t timeStopCM = clock();
       double elapsedTimeCM = (double)(timeStopCM - timeStartCM) / CLOCKS_PER_SEC;  

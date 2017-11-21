@@ -3,7 +3,7 @@
 
 #define NE 10000
 #define NI 10000
-#define NFF 10000
+#define NFF 10000 
 #define K 1000
 #define SQRT_K (sqrt((double)K))
 #define THRESHOLD_E 1.0
@@ -28,7 +28,7 @@
 #define cFF 0.2
 #define SQRT_KFF (sqrt((double)K * cFF))
 
-#define T_STOP 1000
+#define T_STOP 4000
 #define T_TRANSIENT (T_STOP * 0.1)
 #define IF_GEN_MAT_DEFAULT 0
 #define IF_SAVE_SPKS 0
@@ -39,6 +39,7 @@
 
 
 #define IF_REWIRE 0
+#define IF_FIXED_FF_K 1
 
 
 //unsigned int IF_REWIRE = IF_REWIRE_DEFAULT
