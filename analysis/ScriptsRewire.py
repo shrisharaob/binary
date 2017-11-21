@@ -19,6 +19,7 @@ from DefaultArgs import DefaultArgs
 from reportfig import ReportFig
 from Print2Pdf import Print2Pdf
 import GetPO
+from scipy.optimize import curve_fit
 sys.path.append('/homecentral/srao/Documents/code/binary/c/twopop')
 import RewireNetwork as rw
 rootFolder = ''
@@ -76,14 +77,24 @@ def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 1
         baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     return baseFldr
 
-def LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
-    # ipdb.set_trace()
+def LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 0):
+    #ipdb.set_trace()
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
     filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
     if IF_VERBOSE:
     	print baseFldr
 	print filename
     return np.loadtxt(baseFldr + filename)
+
+def LoadFrChnk(chnk, phi, rewireType, p=0, gamma = 0, mExt = 0.075, mExtOne = 0.075, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 0):
+    # ipdb.set_trace()
+    baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    filename = 'meanrates_theta%.6f_tr%s_chnk%s.txt'%(phi, trNo, chnk)
+    if IF_VERBOSE:
+    	print baseFldr
+	print filename
+    return np.loadtxt(baseFldr + filename)
+    
 
 def LoadFFInput(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 1):
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
@@ -169,8 +180,8 @@ def GetInputTuningCurves(p, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, r
     elif inputType == 'EI':
         # tc = np.zeros((NE, nPhis))		
 	LoadFunc = LoadEIInput
-    
-    # ipdb.set_trace()
+    tc = np.zeros((nPop*N, nPhis))
+    tc[:] = np.nan
     for i, iPhi in enumerate(phis):
 	print i, iPhi
 	try:
@@ -188,11 +199,11 @@ def GetInputTuningCurves(p, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, r
 	    tc[:, i] = fr
 	except IOError:
 	    print 'file not found!'
-	    raise SystemExit
+	    # raise SystemExit
     # ipdb.set_trace()
     return tc
 
-def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1, IF_SUCCESS = False):
+def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 0, IF_SUCCESS = False):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
@@ -220,6 +231,36 @@ def GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10
     else:
         return tc
 
+def GetTuningCurvesChnk(chnk, rewireType, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, mExtOne = 0.075, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 0, IF_SUCCESS = False):
+    NE = N
+    NI = N
+    tc = np.zeros((NE + NI, nPhis))
+    tc[:] = np.nan
+    phis = np.linspace(0, 180, nPhis, endpoint = False)
+    IF_FILE_LOADED = False
+    for i, iPhi in enumerate(phis):
+	print i, iPhi
+	try:
+	    if i == 0:
+		print 'loading from fldr: ',
+		fr = LoadFrChnk(chnk, iPhi, rewireType, p, gamma, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = True, kappa = kappa)
+	    else:
+		fr = LoadFrChnk(chnk, iPhi, rewireType, p, gamma, mExt, mExtOne, trNo, T, NE, K, nPop, IF_VERBOSE = False, kappa = kappa)
+	    if(len(fr) == 1):
+		if(np.isnan(fr)):
+		    print 'file not found!'
+	    tc[:, i] = fr
+            IF_FILE_LOADED = True
+	except IOError:
+	    print 'file not found!'
+	    # raise SystemExit
+    if IF_SUCCESS:
+        return tc, IF_FILE_LOADED
+    else:
+        return tc
+
+
+        
 def PlotInOutTuningCurve(nNeurons, p = 0, gamma = 0, nPhis = 8, mExt = .075, mExtOne = .075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 1):
     tcIn = GetInputTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
     tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
@@ -1540,3 +1581,532 @@ def GetUEorIMinMat(x):
     xmin = x - z
     return xmin
     
+def ComparePOofInOut( rewireType, p = 0, gamma = 0, mExt = 0.075, mExtOne = 0.075, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 0, IF_LEGEND = False):
+    plt.figure()
+    ui = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='EI', N=N, K=K, trNo=trNo, nPhis=nPhis, T = T)
+    ue = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='EE', N=N, K=K, trNo=trNo, nPhis=nPhis, T = T)
+    poe = POofPopulation(ue, IF_IN_RANGE = True)
+    poi = POofPopulation(-ui, IF_IN_RANGE = True)
+    tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+    po = POofPopulation(tc, IF_IN_RANGE = True)
+
+    #
+    pdf, bins, _ = plt.hist(poe[:N], normed = 1)
+    pdfi, binsi, _ = plt.hist(poi[:N], normed = 1)
+    plt.clf()
+    binsE = (bins[:-1] + bins[1:]) / 2.0
+    binsI = (binsi[:-1] + binsi[1:]) / 2.0
+
+    #
+
+    theta = np.arange(0, 180.0, 180.0 / nPhis)
+    mEOftheta = tc[:N].mean(0)
+    mIOftheta = tc[N:].mean(0)
+    poOfME = GetPhase(mEOftheta, theta, IF_IN_RANGE=True)
+    poOfMI = GetPhase(mIOftheta, theta, IF_IN_RANGE=True)
+    poOfUEE = GetPhase(pdf, np.linspace(0, 180.0, pdf.size, endpoint = False), IF_IN_RANGE=True)
+    poOfUEI = GetPhase(pdfi, np.linspace(0, 180.0, pdf.size, endpoint = False), IF_IN_RANGE=True)    
+    plt.plot(binsE, pdf, 'k-', label  = r'$u_{EE}$')
+    plt.plot(binsI, pdfi, 'r-', label =  r'$u_{EI}$')
+    plt.vlines(poOfME, *plt.ylim(), lw = 2, color = 'k', linestyles='--', label = r'$PO(m_E)$')
+    plt.vlines(poOfMI, *plt.ylim(), lw = 2, color = 'r', linestyles='--', label = r'$PO(m_I)$')    
+    plt.vlines(poOfUEE, *plt.ylim(), lw = 2, color = 'k', label = r'$PO(u_{EE})$')
+    plt.vlines(poOfUEI, *plt.ylim(), lw = 2, color = 'r', label = r'$PO(u_{EI})$')
+    plt.title('realization #%s'%(trNo - 800 + 1))
+    if IF_LEGEND:
+        plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)
+    filename = 'ComparePOofInOut_N%s_K%s_tr%s_T%s'%(N, K, trNo, int(1e-3*T))
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.21, .15, .7, .65], titleSize=14, nDecimalsX=0, nDecimalsY=3, figFormat='eps')    
+    
+
+def ComparePOofInOutScatter( rewireType, p = 0, gamma = 0, mExt = 0.075, mExtOne = 0.075, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 0, IF_LEGEND = False):
+    plt.figure()
+    poUE = []
+    poUI = []
+    poME = []
+    poMI = []
+    for trNo in range(800, 811):
+        ui = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='EI', N=N, K=K, trNo=trNo, nPhis=nPhis, T = T)
+        ue = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='EE', N=N, K=K, trNo=trNo, nPhis=nPhis, T = T)
+        poe = POofPopulation(ue, IF_IN_RANGE = True)
+        poi = POofPopulation(-ui, IF_IN_RANGE = True)
+        tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+        po = POofPopulation(tc, IF_IN_RANGE = True)
+
+        #
+        pdf, bins, _ = plt.hist(poe[:N], normed = 1)
+        pdfi, binsi, _ = plt.hist(poi[:N], normed = 1)
+        plt.clf()
+        binsE = (bins[:-1] + bins[1:]) / 2.0
+        binsI = (binsi[:-1] + binsi[1:]) / 2.0
+
+        #
+
+        theta = np.arange(0, 180.0, 180.0 / nPhis)
+        mEOftheta = tc[:N].mean(0)
+        mIOftheta = tc[N:].mean(0)
+        poME.append(GetPhase(mEOftheta, theta, IF_IN_RANGE=True))
+        poMI.append(GetPhase(mIOftheta, theta, IF_IN_RANGE=True))
+        poUE.append(GetPhase(pdf, np.linspace(0, 180.0, pdf.size, endpoint = False), IF_IN_RANGE=True))
+        poUI.append(GetPhase(pdfi, np.linspace(0, 180.0, pdf.size, endpoint = False), IF_IN_RANGE=True))
+        
+    # if IF_LEGEND:
+    #     plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)
+
+    x = np.arange(0, 180, 180.0 / 100)
+    plt.plot(poME, poUE, 'ko')
+    plt.xlabel('Peak of ' + r'$m_E(\theta)$')
+    plt.ylabel('Peak of ' + r'$PO(u_{EE})$' + ' pdf')    
+    filename = 'Scatter_E_ComparePOofInOut_N%s_K%s_tr%s_T%s'%(N, K, trNo, int(1e-3*T))
+    plt.plot(x, x, 'k-')
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.22, .2, .66, .65], titleSize=14, nDecimalsX=0, nDecimalsY=0, figFormat='eps')
+    plt.figure()
+    plt.plot(poMI, poUI, 'ro')
+    plt.xlabel('Peak of ' + r'$m_I(\theta)$')
+    plt.ylabel('Peak of ' + r'$PO(u_{EI})$' + ' pdf')
+    plt.plot(x, x, 'k-')
+    filename = 'Scatter_I_ComparePOofInOut_N%s_K%s_tr%s_T%s'%(N, K, trNo, int(1e-3*T))
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.22, .2, .65, .65], titleSize=14, nDecimalsX=0, nDecimalsY=0, figFormat='eps')
+
+    
+def M1vsSimTimeChks(nChunks, rewireType, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, mExtOne = 0.075, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 0, IF_SUCCESS = False):
+    m1EofAvg = np.empty((nChunks, ))
+    m1IofAvg = np.empty((nChunks, ))
+    m1EofAvg[:] = np.nan; m1IofAvg[:] = np.nan;
+    M1Func = lambda x, theta: 2.0 * np.absolute(np.dot(x, np.exp(-2.0j * theta))) / len(x)
+    theta = np.arange(0, np.pi, np.pi / nPhis)
+    simT = np.linspace(0, 1, nChunks + 1, endpoint = False)
+    mEOld = np.zeros((nPhis, )); mIOld = np.zeros((nPhis, ))
+    m0EofrunAvg = np.zeros((nPhis, ))
+    m0IofrunAvg = np.zeros((nPhis, ))
+    for i in range(nChunks):
+        tc = GetTuningCurvesChnk(i, rewireType, p, gamma, nPhis, mExt, mExtOne, trNo, N, K, nPop, T, kappa, IF_SUCCESS)
+        if i == 0:
+            m0EofrunAvg = np.nanmean(tc[:N], 0)
+            m0IofrunAvg = np.nanmean(tc[N:], 0)
+        else:
+            m0EofrunAvg = 0.5 * (m0EofrunAvg + np.nanmean(tc[:N], 0))
+            m0IofrunAvg = 0.5 * (m0IofrunAvg + np.nanmean(tc[N:], 0))            
+        vidx = ~np.isnan(m0EofrunAvg)
+        m1EofAvg[i] = M1Func(m0EofrunAvg[vidx], theta[vidx])
+        m1IofAvg[i] = M1Func(m0IofrunAvg[vidx], theta[vidx])
+    xaxis = 1.0 / np.sqrt(simT[1:])
+    plt.plot(simT[:-1], m1EofAvg, 'ks-', label = 'E')
+    plt.plot(simT[:-1], m1IofAvg, 'rs-', label = 'I')
+    plt.xlabel(r'$\frac{1}{\sqrt{T}}$')
+    plt.ylabel('modulation')
+
+    
+def M1vsSimTime(rewireType, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, mExtOne = 0.075, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 0, IF_SUCCESS = False):
+    TList = [1000, 2000, 4000, 6000, 8000, 10000]
+    nSimTimes = len(TList)
+    nChunks = nSimTimes
+    m1EofAvg = np.empty((nChunks, ))
+    m1IofAvg = np.empty((nChunks, ))
+    m1EofAvg[:] = np.nan; m1IofAvg[:] = np.nan;
+    M1Func = lambda x, theta: 2.0 * np.absolute(np.dot(x, np.exp(-2.0j * theta))) / len(x)
+    theta = np.arange(0, np.pi, np.pi / nPhis)
+    simT = np.linspace(0, 1, nChunks + 1, endpoint = False)
+    mEOld = np.zeros((nPhis, )); mIOld = np.zeros((nPhis, ))
+    m0EofrunAvg = np.zeros((nPhis, ))
+    m0IofrunAvg = np.zeros((nPhis, ))
+    fitFuncLint = lambda x, m, c: m * x  + c
+    for i, T in enumerate(TList):
+        # tc = GetTuningCurvesChnk(i, rewireType, p, gamma, nPhis, mExt, mExtOne, trNo, N, K, nPop, T, kappa, IF_SUCCESS)
+        tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)        
+        if i == 0:
+            m0EofrunAvg = np.nanmean(tc[:N], 0)
+            m0IofrunAvg = np.nanmean(tc[N:], 0)
+        else:
+            m0EofrunAvg = 0.5 * (m0EofrunAvg + np.nanmean(tc[:N], 0))
+            m0IofrunAvg = 0.5 * (m0IofrunAvg + np.nanmean(tc[N:], 0))            
+        vidx = ~np.isnan(m0EofrunAvg)
+        m1EofAvg[i] = M1Func(m0EofrunAvg[vidx], theta[vidx])
+        m1IofAvg[i] = M1Func(m0IofrunAvg[vidx], theta[vidx])
+
+    x = 1.0 / np.sqrt(np.array(TList))
+    plt.plot(x, m1EofAvg, 'ks-', label = r'$m_E^{(1)}$')
+    plt.plot(x, m1IofAvg, 'rs-', label = r'$m_I^{(1)}$')
+    slope0 = 1; intercept0 = 0.1
+    fitParams, fitError = curve_fit(fitFuncLint, x, m1EofAvg, p0 = [slope0, intercept0])
+    xx = np.linspace(0, x[0], 100)
+    print 'E:', fitParams
+    plt.plot(xx, fitFuncLint(xx, *fitParams), 'k--')
+    fitParams, fitError = curve_fit(fitFuncLint, x, m1IofAvg, p0 = [slope0, intercept0]) 
+    print 'I:', fitParams    
+    plt.plot(xx, fitFuncLint(xx, *fitParams), 'r--')
+
+
+    # plt.plot(np.sqrt(np.array(TList)), m1EofAvg, 'ks-', label = 'E')
+    # plt.plot(np.sqrt(np.array(TList)), m1IofAvg, 'rs-', label = 'I')
+
+    plt.xlabel(r'$\frac{1}{\sqrt{T}}$')
+    plt.ylabel(r'$\mathrm{modulation\, of\,  } \left\langle m_i  \right\rangle_i (\theta)$', fontsize = 16)
+    # plt.ylim(0, plt.ylim()[1])
+    plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)        
+    filename = 'avgActM1_vs_T_N%s_K%s_tr%s'%(N, K, trNo)
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.29, .26, .65, .65], titleSize=14, nDecimalsX=3, nDecimalsY=4, figFormat='eps', labelFontsize = 16)
+
+
+def M1ofUEvsSimTime(rewireType, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, mExtOne = 0.075, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 0, IF_SUCCESS = False):
+    TList = [1000, 2000, 4000, 6000, 8000, 10000]
+    nSimTimes = len(TList)
+    nChunks = nSimTimes
+    m1EofAvg = np.empty((nChunks, ))
+    m1IofAvg = np.empty((nChunks, ))
+    m1EofAvg[:] = np.nan; m1IofAvg[:] = np.nan;
+    M1Func = lambda x, theta: 2.0 * np.absolute(np.dot(x, np.exp(-2.0j * theta))) / len(x)
+    theta = np.arange(0, np.pi, np.pi / nPhis)
+    simT = np.linspace(0, 1, nChunks + 1, endpoint = False)
+    mEOld = np.zeros((nPhis, )); mIOld = np.zeros((nPhis, ))
+    m0EofrunAvg = np.zeros((nPhis, ))
+    m0IofrunAvg = np.zeros((nPhis, ))
+    fitFuncLint = lambda x, m, c: m * x  + c
+
+    m1ofFF = []
+    m1ofUE = []
+
+    cosFunc = lambda theta, m0, m1, phase: m0 + m1 * np.cos(2*(theta + phase))
+    for i, T in enumerate(TList):
+        try:
+            uff = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='FF', N=N, K=K, trNo=trNo, nPhis=nPhis, T = T)
+            ue = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='EE', N=N, K=K, trNo=trNo, nPhis=nPhis, T = T)
+            poff = POofPopulation(uff, IF_IN_RANGE = True)            
+            poe = POofPopulation(ue, IF_IN_RANGE = True)
+            try:
+                pdf, bins, _ = plt.hist(poe[:N], normed = 1, histtype = 'step')
+                pdfFF, binsFF, _ = plt.hist(poff[:N], normed = 1, histtype = 'step')
+                
+                # plt.hist(poff[:N], normed = 1)                
+                fitParams, fitError = curve_fit(cosFunc, bins[:-1]*np.pi / 180, pdf, p0 = [.01, .001, np.pi / 2.0])                
+                m1ofUE.append(fitParams[1])
+                fitParams, fitError = curve_fit(cosFunc, binsFF[:-1]*np.pi / 180, pdfFF, p0 = [.01, .001, np.pi / 2.0])
+                m1ofFF.append(fitParams[1])
+                
+                PltFitHistCos(pdfFF, binsFF, 'r')
+                xx = np.linspace(0, np.pi, 100)
+                plt.plot(xx * 180.0 / np.pi, cosFunc(xx, *fitParams), 'c--')
+                print 'fit:', fitParams
+                print 'est:', pdfFF.mean(), M1Component(pdfFF)
+                # plt.title('%s'%(T))
+                plt.ylim(0, .009)
+                # plt.waitforbuttonpress()
+                plt.clf()
+            except AttributeError:
+                m1ofUE.append(np.nan); m1ofFF.append(np.nan)
+        except IOError:
+            m1ofUE.append(np.nan); m1ofFF.append(np.nan)
+    x = 1.0 / np.sqrt(np.array(TList))
+    plt.plot(x, m1ofUE, 'ks-', label = 'EE')
+    plt.plot(x, m1ofFF, 'gs-', label = 'FF')
+    slope0 = 1; intercept0 = 0.1
+    fitParams, fitError = curve_fit(fitFuncLint, x, m1ofUE, p0 = [slope0, intercept0])
+    xx = np.linspace(0, x[0], 100)
+    print ' E:', fitParams
+    plt.plot(xx, fitFuncLint(xx, *fitParams), 'k--')
+    fitParams, fitError = curve_fit(fitFuncLint, x, m1ofFF, p0 = [slope0, intercept0]) 
+    print 'FF:', fitParams    
+    plt.plot(xx, fitFuncLint(xx, *fitParams), 'g--')
+    plt.xlabel(r'$\frac{1}{\sqrt{T}}$')
+    # plt.ylabel(r'$\mathrm{modulation\, of\,  } \left\langle m_i  \right\rangle_i (\theta)$', fontsize = 16)
+    plt.ylabel(r'modulation of PO distr', fontsize = 10)
+    plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)    
+    # plt.ylim(0, plt.ylim()[1])
+    
+    filename = 'POdistr_M1_vs_T_N%s_K%s_tr%s'%(N, K, trNo)
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.26, .26, .65, .65], titleSize=14, nDecimalsX=3, nDecimalsY=4, figFormat='eps', labelFontsize = 12)    
+
+    
+
+def M1vsKoverN(rewireType, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, mExtOne = 0.075, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, kappa = 0, IF_SUCCESS = False):
+    # KList = np.array([500, 1000, 2000, 3000, 4000])
+    # KList = np.array([500])
+    NList = np.array([5000, 10000, 20000, 30000, 40000])
+    # NList = np.array([40000])    
+    # KList = np.array([2000])
+    # KoverNList = KList / float(N)
+    m1ofFF = []
+    m1ofUE = []
+    # for i, K in enumerate(KList):
+    for i, N in enumerate(NList):        
+        try:
+            tc = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+            uff = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='FF', N=N, K=K, trNo=trNo, nPhis=nPhis, T = T)
+
+            ue = GetInputTuningCurves(p=p, gamma=gamma, rewireType = rewireType, kappa=0, inputType='EE', N=N, K=K, trNo=trNo, nPhis=nPhis, T = T)
+            poff = POofPopulation(uff, IF_IN_RANGE = True)            
+            poe = POofPopulation(ue, IF_IN_RANGE = True)
+            try:
+                pdf, bins, _ = plt.hist(poe[:N], normed = 1)
+                pdfFF, binsFF, _ = plt.hist(poff[:N], normed = 1)
+                m1ofFF.append(M1Component(pdfFF))
+                m1ofUE.append(M1Component(pdf))
+                # plt.waitforbuttonpress()
+                plt.clf()
+            except AttributeError:
+                m1ofUE.append(np.nan); m1ofFF.append(np.nan)
+        except IOError:
+            m1ofUE.append(np.nan); m1ofFF.append(np.nan)
+    print m1ofUE
+    x = 1.0 / np.sqrt(NList)
+    plt.plot(x, m1ofFF, 'ko--', label = 'FF')
+    plt.plot(x, m1ofUE, 'ks-', label = 'EE')
+    # plt.plot(KoverNList, m1ofFF, 'ko--', label = 'FF')
+    # plt.plot(KoverNList, m1ofUE, 'ks-', label = 'EE')
+    plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)
+    plt.xlabel(r'$\frac{1}{\sqrt{N}}$')    
+    plt.ylabel('modulation of PO distr')
+    filename = 'POdistr_M1_vs_N_T%s_K%s_tr%s'%(int(T*1e-3), K, trNo)
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.26, .26, .65, .65], titleSize=14, nDecimalsX=3, nDecimalsY=4, figFormat='eps', labelFontsize = 12)    
+
+
+def RandomSum(tce, filetag, IF_PLOT, K):
+    nNeurons, nPhis = tce.shape
+    osi = OSIOfPop(tce, 0)
+    m0 = tce.mean();
+    m1 = 2.0 * np.nanmean(osi) * m0
+    theta = np.arange(0, np.pi, np.pi / 8.0)
+    tcControl = lambda neuronIdx : m0 + m1 * np.cos(2.0 * (theta - neuronIdx * np.pi / nNeurons))
+    rndInputsCntrl = np.zeros((nNeurons, nPhis))    
+    rndInputs = np.zeros((nNeurons, nPhis))
+    neuronIdx = range(nNeurons)
+    m1ofControl = []; m1ofRandSum = []
+    m1ofPOdistrControl = []; m1ofPOdistrRandSum = []
+    # ipdb.set_trace()
+    for i in range(nNeurons):
+        rndPreNeurons = np.random.choice(neuronIdx, K, replace = False)
+        for k in rndPreNeurons:
+            rndInputsCntrl[i, :] += tcControl(k)
+        rndInputs[i, :] += np.sum(tce[rndPreNeurons, :], 0)
+    poCntrl = POofPopulation(rndInputsCntrl, IF_IN_RANGE = 1)
+    po = POofPopulation(rndInputs, IF_IN_RANGE = 1)
+    # ipdb.set_trace()    
+    try:
+        plt.ioff()
+        pdfFF, binsFF, _ = plt.hist(po, normed = 1)
+        pdf, bins, _ = plt.hist(poCntrl, normed = 1)   
+        fitParams, fitError = curve_fit(CosFunc, bins[:-1]*np.pi / 180, pdf, p0 = [.01, .001, np.pi / 2.0])                
+        m1ofPOdistrControl = M1Component(pdf) #fitParams[1]
+        fitParams, fitError = curve_fit(CosFunc, binsFF[:-1]*np.pi / 180, pdfFF, p0 = [.01, .001, np.pi / 2.0])
+        m1ofPOdistrRandSum = M1Component(pdfFF)#fitParams[1]
+        m1ofRandSum = np.nanmean(PopM1Component(rndInputs)) #(pdf)
+        m1ofControl = np.nanmean(PopM1Component(rndInputsCntrl))  #M1Component(pdfFF)
+	# phase = GetPhase(pdfFF, bins[:-1])
+	# theta = np.linspace(0, 180, 100)
+	# plt.plot(theta, CosFunc(theta, pdfFF.mean(), M1Component(pdfFF), phase))
+    except AttributeError:
+        m1ofRandSum.append(np.nan); m1ofControl.append(np.nan)
+    # ipdb.set_trace()
+    IF_PLOT = False
+    if IF_PLOT:
+        plt.ioff()
+        plt.clf()
+        plt.hist(poCntrl, normed = 1, histtype = 'step', label = 'control')    
+        plt.hist(po, normed = 1, histtype = 'step', label = 'simulation')
+        plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)
+
+        plt.xlabel(r'$\mathrm{PO}$')    
+        plt.ylabel('PDF')
+        filename = 'rndsum_uE_N%s_K%s_tr%s'%(nNeurons, K, filetag)
+        plt.title('realization#%s, K = %s'%(filetag, K))
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.22, .22, .65, .65], titleSize=14, nDecimalsX=0, nDecimalsY=3, figFormat='eps', labelFontsize = 12)
+    return [m1ofControl, m1ofRandSum, m1ofPOdistrControl, m1ofPOdistrRandSum]
+
+def RandomSumvsK(tce, KList = np.arange(500, 5000, 500), filetag = '', IF_COMPUTE = False):
+    nNeurons, nPhis = tce.shape
+    if IF_COMPUTE:
+	m1ofControl = np.zeros((len(KList), )); m1ofControl[:] = np.nan
+	m1ofRandSum = np.zeros((len(KList), )); m1ofRandSum[:] = np.nan
+	m1ofPOdistrRandSum = np.zeros((len(KList), )); m1ofPOdistrRandSum[:] = np.nan
+	m1ofPOdistrControl = np.zeros((len(KList), )); m1ofPOdistrControl[:] = np.nan	
+	pool = Pool(len(KList))
+	func = partial(RandomSum, tce, '', True)
+	out = pool.map(func, KList)
+	pool.close()
+	# ipdb.set_trace()
+	for i, K in enumerate(KList):
+	    m1ofControl[i] = out[i][0]
+	    m1ofRandSum[i] = out[i][1]
+	    m1ofPOdistrControl[i] = out[i][2]
+            m1ofPOdistrRandSum[i] = out[i][3]	    
+	x = 1.0 / np.sqrt(np.array(KList))
+	np.save('./data/twopop/pobias/randomSum_vs_K_N%s_trNo'%(nNeurons) + filetag, [x, m1ofControl, m1ofRandSum, m1ofPOdistrControl, m1ofPOdistrRandSum])
+    else:
+	x, m1ofControl, m1ofRandSum, m1ofPOdistrControl, m1ofPOdistrRandSum = np.load('./data/twopop/pobias/randomSum_vs_K_N%s_trNo%s.npy'%(nNeurons, filetag))
+	xx = np.linspace(1 / np.sqrt(float(KList[-1])), 1 / np.sqrt(float(KList[0])), 10)
+
+	slope0 = 1; intercept0 = 0.1
+	fitFuncLint = lambda x, m, c: m * x  + c    
+	fitParamsControl, fitError = curve_fit(fitFuncLint, x, m1ofControl, p0 = [slope0, intercept0])
+	fitParamsRandSum, fitError = curve_fit(fitFuncLint, x, m1ofRandSum, p0 = [slope0, intercept0])
+
+	
+	plt.plot(KList, m1ofControl, 'k', label = 'control')
+	plt.plot(KList, m1ofRandSum, 'g', label = 'rand sum')
+	plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)        
+        plt.xlabel(r'$K$')                
+        plt.ylabel(r'$\left\langle u_{EE, i}^{(1)} \right\rangle_i$')
+	filename = './figs/twopop/pobias/rndsum_cntrl_K_vs_m1_N%s_tr%s'%(nNeurons, filetag)
+	ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.22, .22, .65, .65], titleSize=14, nDecimalsX=3, nDecimalsY=5, figFormat='eps', labelFontsize = 12)
+
+        
+        plt.figure()
+	plt.plot(KList, m1ofPOdistrControl, 'k', label = 'control')
+	plt.plot(KList, m1ofPOdistrRandSum, 'g', label = 'rand sum')
+        plt.xlabel(r'$K$')
+	plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)
+	plt.title('modulation of PO distr')	        
+	filename = './figs/twopop/pobias/rndsum_cntrl_Kvs_POdistrm1_N%s_tr%s'%(nNeurons, filetag)
+	ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.22, .22, .65, .65], titleSize=14, nDecimalsX=0, nDecimalsY=4, figFormat='eps', labelFontsize = 12)
+        
+        plt.figure()
+        y0 = m1ofPOdistrControl /  np.asarray(KList, dtype = float)
+        y1 = m1ofPOdistrRandSum /  np.asarray(KList, dtype = float)
+	plt.plot(x, y0, 'k', label = 'control')
+	plt.plot(x, y1, 'g', label = 'rand sum')
+	fitParamsControl, fitError = curve_fit(fitFuncLint, x, y0, p0 = [slope0, intercept0])
+	fitParamsRandSum, fitError = curve_fit(fitFuncLint, x, y1, p0 = [slope0, intercept0])  
+	plt.plot(xx, fitFuncLint(xx, *fitParamsControl), 'k--')    
+	plt.plot(xx, fitFuncLint(xx, *fitParamsRandSum), 'g--')
+        plt.xlabel(r'$\frac{1}{\sqrt{K}}$')        
+	plt.title('modulation of PO distr(normalized)')	
+	plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=1, ncol=1)    
+	print ' control:', fitParamsControl
+	print 'rand sum:', fitParamsRandSum
+	filename = './figs/twopop/pobias/rndsum_cntrl_N%s_tr%s'%(nNeurons, filetag)
+	ProcessFigure(plt.gcf(), filename, 1, paperSize = [4, 3], axPosition=[.22, .22, .65, .65], titleSize=14, nDecimalsX=3, nDecimalsY=6, figFormat='eps', labelFontsize = 12)
+    
+def RMSOSI(tce, filetag, K):
+    nNeurons, nPhis = tce.shape
+    osi = OSIOfPop(tce, 0)
+    m0 = tce.mean();
+    m1 = 2.0 * np.nanmean(osi) * m0
+    theta = np.arange(0, np.pi, np.pi / 8.0)
+    tcControl = lambda neuronIdx : m0 + m1 * np.cos(2.0 * (theta - neuronIdx * np.pi / nNeurons))
+    rndInputsCntrl = np.zeros((nNeurons, nPhis))    
+    rndInputs = np.zeros((nNeurons, nPhis))
+    neuronIdx = range(nNeurons)
+    for i in range(nNeurons):
+        rndPreNeurons = np.random.choice(neuronIdx, K, replace = False)
+        rndInputs[i, :] += np.sum(tce[rndPreNeurons, :], 0)
+    po = POofPopulation(rndInputs, IF_IN_RANGE = 1)
+    uEE1 = PopM1Component(rndInputs)
+    rmsUEE1 = np.sqrt(np.mean(uEE1**2)) / np.mean(uEE1)
+    return [uEE1, rmsUEE1, po]
+
+def RMSOSIvsK(tce, filetag, KList, IF_COMPUTE = False):
+    nNeurons, nPhis = tce.shape
+    if IF_COMPUTE:
+        uEE1ofRandSum = np.zeros((len(KList), nNeurons));
+        uEE1ofRandSum[:] = np.nan
+        POuEE1ofRandSum = np.zeros((len(KList), nNeurons));
+        POuEE1ofRandSum[:] = np.nan
+        rmsUEE1ofRandSum = np.zeros((len(KList), ));
+        rmsUEE1ofRandSum[:] = np.nan
+        pool = Pool(len(KList))
+        func = partial(RMSOSI, tce, '')
+        out = pool.map(func, KList)
+        pool.close()
+        for i, K in enumerate(KList):
+            uEE1ofRandSum[i, :] = out[i][0]
+            rmsUEE1ofRandSum[i] = out[i][1]
+            POuEE1ofRandSum[i, :] = out[i][0]            
+        np.savez('./data/twopop/pobias/uEE1_RMS_vs_K_N%s_trNo'%(nNeurons) + filetag, klist = KList, uEE1ofRandSum = uEE1ofRandSum, rmsUEE1ofRandSum = rmsUEE1ofRandSum, POuEE1ofRandSum = POuEE1ofRandSum)
+    else:
+        out = np.load('./data/twopop/pobias/uEE1_RMS_vs_K_N%s_trNo'%(nNeurons) + filetag + '.npz')
+        KList = out['klist']
+        uEE1ofRandSum = out['uEE1ofRandSum']
+        rmsUEE1ofRandSum = out['rmsUEE1ofRandSum']
+        POuEE1ofRandSum = out['POuEE1ofRandSum']
+        plt.plot(KList, rmsUEE1ofRandSum)
+        plt.xlabel('K')
+        plt.ylabel(r'$\mathrm{RMS} (u^{(1)}) / [u^{(1)}]$')
+
+        nBins = 9
+        poBins = np.linspace(0, 180, nBins + 1)
+        binIndex = np.digitize(POuEE1ofRandSum[-1] * 180 / np.pi, poBins)
+        meanOSIinBin = []
+        uEE1ofLast = uEE1ofRandSum[-1]
+
+        for i in range(nBins):
+            meanOSIinBin.append(np.nanmean(uEE1ofLast[binIndex == i]))
+        plt.figure()
+        plt.plot(np.arange(0, 180, 180.0/nBins), meanOSIinBin)
+        plt.xlabel('PO')
+        plt.ylabel('mean OSI')
+        
+def PObiasBootStrapAux(tce, K, nBins, filename, poolIdx):
+    nNeurons, nPhis = tce.shape
+    rndInputs = np.zeros((nNeurons, nPhis))
+    neuronIdx = range(nNeurons)
+    np.random.seed(1234 + 12345 * poolIdx)
+    # plusOrMinus = -1 if np.random.rand() > 0.5 else 1
+    # Kpre = K + plusOrMinus * np.sqrt(K) * np.random.randn()
+    Kpre = K
+    print poolIdx
+    for k in range(nNeurons):
+        tce[k, :] = np.roll(tce[k, :], np.random.randint(0, nPhis))
+    for i in range(nNeurons):
+        rndPreNeurons = np.random.choice(neuronIdx, Kpre, replace = False)
+        rndInputs[i, :] += np.sum(tce[rndPreNeurons, :], 0)
+    poOfUEE = POofPopulation(rndInputs, IF_IN_RANGE = 1)
+    pdfPOofUEE, bins = np.histogram(poOfUEE, nBins, density = True)
+    m1OfPOdistr = M1Component(pdfPOofUEE)
+    fp = open(filename, 'a')
+    np.savetxt(fp, [m1OfPOdistr])
+    fp.close()
+    return m1OfPOdistr
+
+def PObiasBootStrap(tce, ue, filetag, K = 1000, nBins = 10, nIterations = 100, IF_COMPUTE = 0):
+    nNeurons, nPhis = tce.shape
+    filename =  './data/twopop/pobias/bootstrap_pobias_N%s_nIters%s_trNo%s.csv'%(nNeurons, nIterations, filetag)
+    if IF_COMPUTE:
+        pool = Pool(48)
+        func = partial(PObiasBootStrapAux, tce, K, nBins, filename)
+        out = pool.map(func, np.arange(nIterations))
+        pool.close()
+        out = np.asarray(out, dtype = float)
+        np.save('./data/twopop/pobias/bootstrap_pobias_N%s_nIters%s_trNo%s'%(nNeurons, nIterations, filetag), out)
+    else:
+        # out = np.load('./data/twopop/pobias/bootstrap_pobias_N%s_nIters%s_trNo%s.npy'%(nNeurons, nIterations, filetag))
+        fp = open(filename)
+        out = np.loadtxt(fp)
+        fp.close()
+        # ipdb.set_trace()
+        plt.hist(out, 20, normed = 1, histtype = 'step', color = 'k')
+        poOfUEESim = POofPopulation(ue, IF_IN_RANGE = 1)
+        pdfPOofUEESim, bins = np.histogram(poOfUEESim, nBins, density = True)
+        m1OfPOdistrSim = M1Component(pdfPOofUEESim)
+        # plt.vlines(m1OfPOdistrSim, *plt.ylim(), lw = 2, color = 'r')
+        # confidence interval
+        stdErrorSamplingDistr = 2 * np.std(out)
+        print stdErrorSamplingDistr
+        # plt.text(0.006, 200, 'CI = %.6s'%(stdErrorSamplingDistr), fontsize = 16)
+        print 'mean=', np.mean(out)
+        plt.vlines(np.mean(out), *plt.ylim(), lw = 2, color = 'r', label = 'mean')
+	plt.legend(loc =0,  frameon = False, numpoints = 1, prop = {'size': 16}, markerscale=1, ncol=1)
+        plt.xlabel('F1 of PO distr')
+        plt.ylabel('Density')
+        plt.title('F1 sampling distribution')
+        plt.savefig('F1_sampling_distr.png')
+        plt.savefig('F1_sampling_distr.eps')        
+        
+def BootStrapSummary(bootstrapCI, nBins = 20):
+    m1OfPOdistrSim = []
+    for trNo in range(800, 811):
+        ue = GetInputTuningCurves(0, rewireType='cntrl', kappa=0, inputType='EE', N=10000, K=1000, trNo=trNo, nPhis=8)
+        poOfUEESim = POofPopulation(ue, IF_IN_RANGE = 1)
+        pdfPOofUEESim, bins = np.histogram(poOfUEESim, nBins, density = True)
+        m1OfPOdistrSim.append(M1Component(pdfPOofUEESim))
+    plt.plot(np.zeros((len(m1OfPOdistrSim), )), m1OfPOdistrSim, 'o', markersize = 4, color = [0.65, .65, .65], label = 'simulation')
+    (_, caps, _) = plt.errorbar(0, np.nanmean(m1OfPOdistrSim), yerr = bootstrapCI, color = 'k', fmt = 'o', markersize = 4, lw = 1, capsize = 20, elinewidth = 1, label = '   2 SD')
+    for cap in caps:
+        cap.set_markeredgewidth(.95)
+    plt.xlim(-.06, .3)
+    plt.legend(loc = 0,  frameon = False, numpoints = 1, prop = {'size': 10}, markerscale=.75, ncol=1)
+    plt.xlabel('')
+    plt.ylabel('F1 of PO distr')
+    plt.show()
+    plt.gca().set_xticklabels('')    
+    filename = 'bootstrap_summary'
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = [4*.75, .75*3], axPosition=[.3, .22, .65, .65], titleSize=14, nDecimalsX=3, nDecimalsY=4, figFormat='eps', labelFontsize = 10)
