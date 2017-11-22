@@ -26,3 +26,4 @@ vm
 spkTimes
 
 data/*
+*.svg
