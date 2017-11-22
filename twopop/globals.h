@@ -28,11 +28,11 @@
 #define cFF 0.2
 #define SQRT_KFF (sqrt((double)K * cFF))
 
-#define T_STOP 4000
+#define T_STOP 1000
 #define T_TRANSIENT (T_STOP * 0.1)
 #define IF_GEN_MAT_DEFAULT 0
 #define IF_SAVE_SPKS 0
-#define IF_STEP_PHI0 0
+#define IF_STEP_PHI0 1
 #define IF_SAVE_INPUT 1
 
 #define N_SEGMENTS 2
@@ -45,7 +45,7 @@
 //unsigned int IF_REWIRE = IF_REWIRE_DEFAULT
 
 /* unsigned IF_GEN_MAT = 0; */
-unsigned int IF_LOADREWIREDCON = 1;
+unsigned int IF_LOADREWIREDCON = 0;
 double rewiredEEWeight = 1;
 double m0, tStop, ffModulation;
 double kappa;

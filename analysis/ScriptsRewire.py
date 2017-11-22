@@ -594,7 +594,7 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, 
     print "mean OSI, I= ", np.nanmean(osiI)
     return osi, osiI
 
-def CompareMeanOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = '', neuronType = 'E'):
+def CompareMeanOSIHist(pList, gList, nPhis = 8, mExt = 0.075, mExtOneList  = [0.075], trList = [0], rewireType = 'cntrl', N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = '', neuronType = 'E'):
     # colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(trList), endpoint = False)]
     colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(KList), endpoint = False)]
     meanOSI = []
@@ -945,7 +945,7 @@ def LocalPOCorr(kappa=1, p=0, gamma=0, nPhis=8, mExt=0.075, mExtOne=0.075, rewir
     [localCorr.append(LocalPOCorrFunc(poOut, idx, nNeighbours, N)) for idx in xrange(N)]
     return np.asarray(localCorr)
 
-def LoadM1vsT(p = 0, gamma = 0, phi = 0, trNo = 0, mExt = 0.075, mExtOne = 0.075, K = 1000, NE = 10000, T = 1000, nPop = 2, rewireType = 'rand', IF_VERBOSE = True, kappa = 1):
+def LoadM1vsT(p = 0, gamma = 0, phi = 0, trNo = 0, mExt = 0.075, mExtOne = 0.075, K = 1000, NE = 10000, T = 1000, nPop = 2, rewireType = 'rand', IF_VERBOSE = True, kappa = 0):
     N = NE
     baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
     if IF_VERBOSE:
@@ -953,6 +953,20 @@ def LoadM1vsT(p = 0, gamma = 0, phi = 0, trNo = 0, mExt = 0.075, mExtOne = 0.075
     filename = 'MI1_inst_theta%.6f_tr%s.txt'%(phi, trNo)
     return np.loadtxt(baseFldr + filename, delimiter = ';')
 
+def PlotM1vsT(p = 0, gamma = 0, phi = 0, trNo = 0, mExt = 0.075, mExtOne = 0.075, K = 1000, NE = 10000, T = 1000, nPop = 2, rewireType = 'rand', IF_VERBOSE = True, kappa = 0):
+    out = LoadM1vsT(p, gamma, phi, trNo, mExt, mExtOne, K, NE, T, nPop, rewireType, IF_VERBOSE, kappa)
+    ipdb.set_trace()
+    m1 = out[:, 0]
+    m1Phase = out[:, 1]
+    phi_ext = out[:, 2]
+    tAxis = np.arange(0, 1, m1.size)
+    plt.plot(tAxis, m1)
+    plt.xlabel('Time (a.u)')
+    plt.ylabel(r'$m_E^{(1)}$')
+
+    plt.plot(tAxis, m1Phase, alpha = 0.5, label = r'$\angle m_E(\phi)$')
+    
+    
 
 def M1Component(x):
     out = np.nan

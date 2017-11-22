@@ -2,6 +2,10 @@ import numpy as np
 import pylab as plt
 import sys
 from matplotlib.pyplot import cm
+basefolder = "/homecentral/srao/Documents/code/mypybox"
+sys.path.append('/homecentral/srao/Documents/code/mypybox/utils')
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+from Print2Pdf import Print2Pdf
 
 
 def GetFldrName(p, realizIdx, nPop = 1, N = 10000, K = 1000, m_ext = 0.15, gamma = 0, T = 1000):
@@ -44,9 +48,72 @@ def LoadM1File(p, trialNo, realizIdx, nPop = 1, N = 10000, K = 1000, m_ext = 0.1
     # print m1.shap
     return m1
 
-def PltM1OverRealization(p, colors, m0 = 0.15, nTr = 4, nRealizations = 10, T = 1000):
+def PltM1Phase(p, m0 = 0.15, nTr = 4, nRealizations = 1, T = 1000):
     fg0, ax0 = plt.subplots()
     fg1, ax1 = plt.subplots()
+    colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, nTr, endpoint = False)]    
+    for j in range(nRealizations):
+	print 'realiz# = ', j,
+        sys.stdout.flush()	
+	for i in range(nTr):
+	    if i == 0:
+		print ' tr# = ', i,
+	    else:
+		print i,
+            sys.stdout.flush()			
+	    m1 = LoadM1File(p, i, j, m_ext = m0, T = T)
+	    PltM1(m1, ax0, ax1, 'realization#%s'%(j), 10000, colors[i])
+	print ' '
+#        plt.show()
+    fldr = '/homecentral/srao/Documents/code/binary/c/onepop/'	
+    ax0.set_title(r"$m_0=%s,p=%s, %s trials$"%(m0, p, nTr))
+    ax1.set_title(r"$p=%s$"%(p))
+    # ax0.legend(loc = 0, frameon = False); plt.draw()
+    # ax1.legend(loc = 0, frameon = False); plt.draw()	
+    # fg0.savefig(fldr + "figs/mi1_vs_time_p%s_m0%s_rzAll.png"%(int(p*10), int(m0*1e3)))
+    # fg1.savefig(fldr + "figs/mi1_phase_vs_time_p%s_m0%s_rzAll.png"%(int(p*10), int(m0*1e3)))
+    figFolder = './figs/' 
+    paperSize = [2.5, 2.0]
+    figFormat = 'pdf'
+    axPosition = [0.28, 0.23, .65, 0.65]
+    figname = "mi1_phase_vs_time_p%s_m0%s_rzAll"%(int(p*10), int(m0*1e3))
+    print figFolder, figname    
+    ProcessFigure(fg1, figFolder + figname, True, True, figFormat='pdf', paperSize = paperSize, axPosition = axPosition, tickFontsize = 6, labelFontsize = 8, nDecimalsX=0, nDecimalsY=0)
+    figname = "mi1_amp_vs_time_p%s_m0%s_rzAll"%(int(p*10), int(m0*1e3))
+    print figFolder, figname    
+    ProcessFigure(fg0, figFolder + figname, True, True, figFormat='pdf', paperSize = paperSize, axPosition = axPosition, tickFontsize = 6, labelFontsize = 8, nDecimalsX=0, nDecimalsY=0)        
+    
+    plt.show()
+
+def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'pdf', paperSize = [4, 3], titleSize = 10, axPosition = [0.25, 0.25, .65, .65], tickFontsize = 10, labelFontsize = 12, nDecimalsX = 1, nDecimalsY = 1, linewidth = 1):
+    FixAxisLimits(figHdl)
+    FixAxisLimits(plt.gcf(), IF_XTICK_INT, nDecimalsX, nDecimalsY)
+    Print2Pdf(plt.gcf(), filepath, paperSize, figFormat=figFormat, labelFontsize = labelFontsize, tickFontsize=tickFontsize, titleSize = titleSize, IF_ADJUST_POSITION = True, axPosition = axPosition)
+    plt.show()
+
+def FixAxisLimits(fig, IF_XTICK_INT = False, nDecimalsX = 1, nDecimalsY = 1):
+    ax = fig.axes[0]
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%.' + '%s'%(int(nDecimalsX)) + 'f'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.' + '%s'%(int(nDecimalsY)) + 'f'))
+    xmiddle = 0.5 * (xmin + xmax)
+    xticks = [xmin, xmiddle, xmax]
+    if IF_XTICK_INT:
+	if xmiddle != int(xmiddle):
+	    xticks = [xmin, xmax]
+	ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+    ax.set_xticks(xticks)
+    ax.set_yticks([ymin, 0.5 *(ymin + ymax), ymax])
+    plt.draw()
+
+
+
+    
+def PltM1OverRealization(p, m0 = 0.15, nTr = 4, nRealizations = 10, T = 1000):
+    fg0, ax0 = plt.subplots()
+    fg1, ax1 = plt.subplots()
+    colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, nRealizations, endpoint = False)]    
     for j in range(nRealizations):
 	print 'realiz# = ', j,
         sys.stdout.flush()	
@@ -70,7 +137,8 @@ def PltM1OverRealization(p, colors, m0 = 0.15, nTr = 4, nRealizations = 10, T = 
 	# plt.figure(fg0.number); plt.clf()
 	# plt.figure(fg1.number); plt.clf()
 
-    plt.close('all')	
+    plt.show()
+    # plt.close('all')	
 
 
 def PltM1OverTr(p, m0 = 0.15, nTr = 4, nRealizations = 10, T = 1000):

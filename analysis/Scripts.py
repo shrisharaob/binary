@@ -318,7 +318,7 @@ def POofPopulation(tc, theta = np.arange(0.0, 180.0, 22.5), IF_IN_RANGE = False)
     return po 
 
 
-def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k'):
+def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k', IF_PLOT = True):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
@@ -341,22 +341,25 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = 0, N = 10000, K = 1000, nP
 	    print 'file not found!'
     osi = OSIOfPop(tc[:NE, :], phis)
     print "K = ", K, ", osi simulation: ", np.nanmean(osi)
-    # plt.xlabel(r"$\mathrm{OSI} \,\,\,\,  (m_{E, i}^{(1)})$")
-    plt.xlabel('OSI', fontsize = 12)    
-    plt.ylabel('Density', fontsize = 12)
-    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$K=%s$'%(K, ), color = color, lw = 1)    
-    # plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\,\gamma = %s$'%(p, gamma, ), color = color, lw = 1)
-    plt.xlim(0, 1)
-    plt.gca().set_xticks([0, 0.5, 1])
-    _, ymax = plt.ylim()
-    plt.gca().set_yticks([0, np.ceil(ymax)])    
-    # plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
-    plt.title(r'$m_0^{(0)} = %s, \,m_0^{(1)} = %s $'%(mExt, mExtOne))
-    _, ymax = plt.ylim()
-    plt.vlines(np.nanmean(osi), 0, ymax, lw = 1, color = color)
-    print "mean OSI = ", np.nanmean(osi)
-    # print "MEAN OSI = ", np.nanmean(osi)
-    return osi
+    if IF_PLOT:
+        # plt.xlabel(r"$\mathrm{OSI} \,\,\,\,  (m_{E, i}^{(1)})$")
+        plt.xlabel('OSI', fontsize = 12)    
+        plt.ylabel('Density', fontsize = 12)
+        # plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$K=%s$'%(K, ), color = color, lw = 1)
+        plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s. \gamma = %s$'%(p, gamma, ), color = color, lw = 1)    
+        
+        # plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\,\gamma = %s$'%(p, gamma, ), color = color, lw = 1)
+        plt.xlim(0, 1)
+        plt.gca().set_xticks([0, 0.5, 1])
+        _, ymax = plt.ylim()
+        plt.gca().set_yticks([0, np.ceil(ymax)])    
+        # plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
+        plt.title(r'$m_0^{(0)} = %s, \,m_0^{(1)} = %s $'%(mExt, mExtOne))
+        _, ymax = plt.ylim()
+        # plt.vlines(np.nanmean(osi), 0, ymax, lw = 1, color = color)
+        print "mean OSI = ", np.nanmean(osi)
+        # print "MEAN OSI = ", np.nanmean(osi)
+    return osi, OSIOfPop(tc[NE:, :], phis)
 
 # global clrCntr
 # clrCntr = 0
@@ -375,17 +378,84 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, KLis
 			print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
     # plt.gca().legend(bbox_to_anchor = (1.1, 1.5))
     if IF_LEGEND:
-	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
-
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 12})
     plt.gca().set_position([0.15, 0.15, .65, .65])
+    plt.title('E')
     if nPop == 2:
-	# plt.savefig("./figs/twopop/compareOSI_.png")
-	# plt.savefig("./figs/twopop/compareOSI_"+filename + '.png')
-	paperSize = [4, 3]
-	# ipdb.set_trace()
-	filename = filename + "p%sg%s"%(p, gamma)
-        Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])	
-    
+       filename = './figs/twopop/' + 'OSIhist_vs_p_and_gamma_E'
+       paperSize = [2.5, 2]
+       axPosition=[.26, .24, .65, .65]
+       ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
+       ipdb.set_trace()
+
+def CompareMeanOSI(pList, gList, nPhis, mExt, mExtOneList, trNo, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = ''):
+    colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList), endpoint = False)]
+    fig0, ax0 = plt.subplots()
+    fig1, ax1 = plt.subplots()    
+    for mExtOne in mExtOneList:
+	for gamma in gList:
+            meanOSIE = []
+            meanOSII = []
+            validPList = []
+	    for p in pList:
+		for K in KList:
+		    try:
+			tmpOsiE, tmpOsiI = PltOSIHist(p, gamma, nPhis, mExt, mExtOne, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T, K=K, IF_PLOT = False)
+                        meanOSIE.append(np.nanmean(tmpOsiE))
+                        meanOSII.append(np.nanmean(tmpOsiI))
+                        validPList.append(p)
+			clrCntr += 1
+		    except IOError:
+			print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
+            validPIdx = ~np.isnan(np.array(meanOSIE))
+            validPList = np.array(validPList);
+            meanOSIE = np.array(meanOSIE);
+            meanOSII = np.array(meanOSII)
+            ax0.plot(validPList[validPIdx], meanOSIE[validPIdx], 'o-', label = r'$\gamma = %s$'%(gamma))
+            ax1.plot(validPList[validPIdx], meanOSII[validPIdx], 'o-', label = r'$\gamma = %s$'%(gamma))
+    if IF_LEGEND:
+	ax0.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+    # plt.gca().set_position([0.15, 0.15, .65, .65])
+    ax0.set_ylim(0, 1)
+    ax1.set_ylim(0, 1)
+    ax0.set_title('E')
+    ax1.set_title('I')
+    ax0.set_xlabel('p'); ax1.set_xlabel('p')
+    ax0.set_ylabel('OSI');ax1.set_ylabel('OSI')
+    if nPop == 2:
+        filename = './figs/twopop/' + 'meanOSI_vs_p_and_gamma_E'
+	paperSize = [2.5, 2]
+        plt.figure(fig0.number)
+        ProcessFigure(fig0, filename, 1, paperSize = paperSize, axPosition=[.26, .24, .65, .65], titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='pdf', labelFontsize = 8, tickFontsize = 6)
+        filename = './figs/twopop/' + 'meanOSI_vs_p_and_gamma_I'
+        plt.figure(fig1.number)        
+        ProcessFigure(fig1, filename, 1, paperSize = paperSize, axPosition=[.26, .24, .65, .65], titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='pdf', labelFontsize = 8, tickFontsize = 6)    
+        
+        
+        # Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_"+filename,  paperSize, figFormat='png', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])	
+
+def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'eps', paperSize = [4, 3], titleSize = 10, axPosition = [0.25, 0.25, .65, .65], tickFontsize = 10, labelFontsize = 12, nDecimalsX = 1, nDecimalsY = 1):
+    FixAxisLimits2(figHdl, IF_XTICK_INT, nDecimalsX, nDecimalsY)
+    Print2Pdf(figHdl, filepath, paperSize, figFormat=figFormat, labelFontsize = labelFontsize, tickFontsize=tickFontsize, titleSize = titleSize, IF_ADJUST_POSITION = True, axPosition = axPosition)
+    plt.show()
+
+def FixAxisLimits2(fig, IF_XTICK_INT = False, nDecimalsX = 1, nDecimalsY = 1):
+    ax = fig.axes[0]
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%.' + '%s'%(int(nDecimalsX)) + 'f'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.' + '%s'%(int(nDecimalsY)) + 'f'))
+    xmiddle = 0.5 * (xmin + xmax)
+    xticks = [xmin, xmiddle, xmax]
+    if IF_XTICK_INT:
+	if xmiddle != int(xmiddle):
+	    xticks = [xmin, xmax]
+	ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+    ax.set_xticks(xticks)
+    ax.set_yticks([ymin, 0.5 *(ymin + ymax), ymax])
+    plt.draw()
+
+        
 def ComputeTuningForNeuron(p, gamma, nPhis, mExt, mExtOne, neuronIdx, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000):
     NE = N
     NI = N
