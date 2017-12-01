@@ -547,7 +547,7 @@ def TrackPOofPop(trList, p, gamma, mExt, mExtOne, rewireType = 'rand', nPhis = 8
     plt.show()
     return z    
 
-def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k', kappa = 1, legendTxt = ''):
+def PltOSIHist(p, gamma, nPhis=8, mExt=.075, mExtOne=.075, rewireType = 'rand', trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, color = 'k', kappa = 1, legendTxt = ''):
     NE = N
     NI = N
     tc = np.zeros((NE + NI, nPhis))
@@ -555,17 +555,19 @@ def PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = 0, N = 10000, 
     if IF_NEW_FIG:
 	plt.figure()
     for i, iPhi in enumerate(phis):
-	print i, iPhi
+	print i, iPhi,
 	try:
 	    if i == 0:
 		print 'loading from fldr: ',	    
 		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = True, kappa = kappa)
+                # ipdb.set_trace()
 	    else:
 		fr = LoadFr(p, gamma, iPhi, mExt, mExtOne, rewireType, trNo, T, NE, K, nPop, IF_VERBOSE = False, kappa = kappa)
 	    if(len(fr) == 1):
 		if(np.isnan(fr)):
 		    print 'file not found!'
 	    tc[:, i] = fr
+            print ''
 	except IOError:
 	    print 'file not found!'
     osi = OSIOfPop(tc[:NE, :], phis)
@@ -682,7 +684,7 @@ def CompareMeanOSIHist(pList, gList, nPhis = 8, mExt = 0.075, mExtOneList  = [0.
     print meanOSI
 
 
-def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = ''):
+def CompareOSIHist(pList, gList, nPhis = 8, mExt= .075, mExtOneList = [.075], trList= [0], rewireType = 'rand', N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = ''):
     if IF_NEW_FIG:
 	plt.figure()
     if color == '':
@@ -731,7 +733,7 @@ def CompareOSIHist(pList, gList, nPhis, mExt, mExtOneList, trList, rewireType, N
 	filename = filename + "p%sg%sk%s"%(p, gamma, kappa)
         Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_" + rewireType + '_' + filename,  paperSize, figFormat='eps', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])
     plt.figure()
-    plt.plot(trList, meanOSI, 'k*-')
+    # plt.plot(trList, meanOSI, 'k*-')
     plt.xlabel('rewiring step')
     plt.ylabel(r'$\langle OSI \rangle$')
     plt.gca().set_position([0.25, 0.25, .65, .65])
@@ -953,20 +955,42 @@ def LoadM1vsT(p = 0, gamma = 0, phi = 0, trNo = 0, mExt = 0.075, mExtOne = 0.075
     filename = 'MI1_inst_theta%.6f_tr%s.txt'%(phi, trNo)
     return np.loadtxt(baseFldr + filename, delimiter = ';')
 
-def PlotM1vsT(p = 0, gamma = 0, phi = 0, trNo = 0, mExt = 0.075, mExtOne = 0.075, K = 1000, NE = 10000, T = 1000, nPop = 2, rewireType = 'rand', IF_VERBOSE = True, kappa = 0):
+def PlotM1vsT(p = 0, gamma = 0, phi = 0, trNo = 0, mExt = 0.075, mExtOne = 0.075, K = 1000, NE = 10000, T = 1000, nPop = 2, rewireType = 'cntrl', IF_VERBOSE = True, kappa = 0):
     out = LoadM1vsT(p, gamma, phi, trNo, mExt, mExtOne, K, NE, T, nPop, rewireType, IF_VERBOSE, kappa)
-    ipdb.set_trace()
-    m1 = out[:, 0]
-    m1Phase = out[:, 1]
-    phi_ext = out[:, 2]
-    tAxis = np.arange(0, 1, m1.size)
-    plt.plot(tAxis, m1)
-    plt.xlabel('Time (a.u)')
-    plt.ylabel(r'$m_E^{(1)}$')
-
-    plt.plot(tAxis, m1Phase, alpha = 0.5, label = r'$\angle m_E(\phi)$')
-    
-    
+    _, nColumns = out.shape
+    if nColumns == 3:
+        m1 = out[:, 0]
+        m1Phase = out[:, 1]
+        phi_ext = out[:, 2]
+        tAxis = np.linspace(0, 1, m1.size)
+        plt.plot(tAxis, m1)
+        plt.xlabel('Time (a.u)')
+        plt.ylabel(r'$m_E^{(1)}$')
+        plt.ylim(0, .25)
+        plt.vlines(.3, *plt.ylim(), color = 'k')
+        plt.vlines(.7, *plt.ylim(), color = 'k')        
+        filename = './figs/twopop/' + 'stimulus_tracking_m1_p%sgmma%s'%(int(p*10), int(gamma *100))
+	paperSize = [2.5, 2]
+        axPosition = [0.22, 0.2, .7, .7]
+        print 'printing figure'
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition=axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='pdf', labelFontsize = 8, tickFontsize = 6)
+        plt.figure()
+        plt.plot(tAxis, phi_ext*180/np.pi, '--', label = r'stimulus')    
+        plt.plot(tAxis, m1Phase*180/np.pi, alpha = 0.5, label = r'$\angle m_E(\phi)$')
+        plt.ylim(0, 180)
+        plt.xlabel('Time (a.u)')
+        plt.ylabel(r'Phase (deg)')
+        plt.legend(loc = 2, frameon = False, numpoints = 1, ncol = 1, prop = {'size': 8})            
+        filename = './figs/twopop/' + 'stimulus_tracking_phase_p%sgmma%s'%(int(p*10), int(gamma *100))
+	paperSize = [2.5, 2]
+        axPosition = [0.22, 0.2, .7, .7]
+        print 'printing figure'
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition=axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='pdf', labelFontsize = 8, tickFontsize = 6)        
+        ipdb.set_trace()
+    else:
+        print '-' * 25
+        print 'no simulus change'
+        print '-' * 25        
 
 def M1Component(x):
     out = np.nan
@@ -1200,6 +1224,8 @@ def CompareMeanOSI(kappaList, nTrials = 10, mExtOne=0.075, p = 0, gamma = 0, nPh
     osiESEM[:] = np.nan
     osiISEM[:] = np.nan
     trList = range(100, 100 + nTrials)
+    # trList = range(2000, 100 + nTrials)
+    trList = [0]
     trListOld = trList
     for idx, kappa in enumerate(kappaList):
         nValidTrials = 0
@@ -1394,28 +1420,40 @@ def PrintInputTuningBook(a, b, c, d, e, nNeurons, fname, neuronType='E', NE = 10
 		plt.clf()
     doc.generate_pdf(clean_tex=False)
     
-# def PlotMeanTc(tc, nPhis = 8, NE = 10000, labelTxt='', pcolor='k'):
-#     thetas = np.linspace(0, 180, nPhis, endpoint = 1)
-#     prefferedOri = np.argmax(tc, 1)
-#     tcmax = np.max(np.abs(tc), 1)
-#     tcmax.shape = NE, 1
-#     tcmax = np.tile(tcmax, (1, nPhis))
-#     tc = tc / tcmax
-#     cvMat = np.empty((NE, len(thetas)))
-#     for kNeuron in np.arange(NE):
-# 	cvMat[kNeuron, :] = np.roll(tc[kNeuron, :], -1 * prefferedOri[kNeuron])
-#     plt.ion()
-#     # plotId = np.max(tc, 1) > firingRateThresh
-#     # tmpId = np.arange(NE)
-#     # plotId = tmpId[plotId]
-#     # plotId = np.ones((NE, )) < 10
-#     tmpE = cvMat #[plotId[plotId < NE], :]
-#     meanE = np.nanmean(tmpE, 0)
-#     meanE = np.roll(meanE, 4)
-#     thetas = np.arange(-90, 90, 22.5)
-#     plt.plot(thetas, np.concatenate(meanE, 'o-', label=labelTxt, color = pcolor)
-#     # plt.xlabel(r'PO ($\deg$)', fontsize = 20)
-#     # plt.ylabel(r'Mean $$', fontsize = 20)
+def PlotMeanTc(tc, kappa, J, nPhis = 8, NE = 10000, labelTxt='', pcolor='k'):
+    # J is the rewired strenghtened prefactor
+    thetas = np.linspace(0, 180, nPhis, endpoint = 1)
+    prefferedOri = np.argmax(tc, 1)
+    tcmax = np.max(np.abs(tc), 1)
+    tcmax.shape = NE, 1
+    tcmax = np.tile(tcmax, (1, nPhis))
+    tc = tc / tcmax
+    cvMat = np.empty((NE, len(thetas)))
+    for kNeuron in np.arange(NE):
+	cvMat[kNeuron, :] = np.roll(tc[kNeuron, :], -1 * prefferedOri[kNeuron])
+    plt.ion()
+    tmpE = cvMat #[plotId[plotId < NE], :]
+    meanE = np.nanmean(tmpE, 0)
+    meanE = np.roll(meanE, 4)
+    osi = OSI(meanE, np.arange(0, 180, 22.5))
+    print 'osi = ', osi
+    thetas = np.arange(-90, 91, 22.5)
+    plt.plot(thetas, np.concatenate((meanE, [meanE[0]])), 'o-', label=labelTxt + ' osi: %.5s'%(osi), color = pcolor, markersize = 2, markeredgecolor = pcolor)
+    plt.ylim(0.8, 1)
+
+
+def PlotMeanUEUITuning(ue, ui, kappa, J, IF_LEGEND = 0):
+    PlotMeanTc(ue, kappa, J, labelTxt='EE', pcolor='k')
+    PlotMeanTc(ui, kappa, J, labelTxt='EI', pcolor='r')
+    plt.title(r'$\kappa = %s, \, \omega = %s$'%(kappa, J))
+    plt.xlabel('PO (deg)')
+    plt.ylabel('Input')
+    if IF_LEGEND:
+        plt.legend(loc = 8, frameon = False, numpoints = 1, prop = {'size': 6})
+    filename = './figs/twopop/rewire/' + 'mean_rec_input_kappa%s_%sJ'%(kappa, J)
+    paperSize = [2.5, 2]
+    axPosition=[.22, .22, .65, .65]
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='pdf', labelFontsize = 10, tickFontsize = 8)
     
 
 def PlotUePO(idxvec, sparsevec, npost, tc, JEE = 1, JEI = -1.5, JIE = 1, JII = -1, NE = 10000, NI = 10000, nPhis = 8):
@@ -2124,3 +2162,30 @@ def BootStrapSummary(bootstrapCI, nBins = 20):
     plt.gca().set_xticklabels('')    
     filename = 'bootstrap_summary'
     ProcessFigure(plt.gcf(), filename, 1, paperSize = [4*.75, .75*3], axPosition=[.3, .22, .65, .65], titleSize=14, nDecimalsX=3, nDecimalsY=4, figFormat='eps', labelFontsize = 10)
+
+
+
+def WritePOToTr0FolderBeforeRewiring(kappa, p, gamma, mExt, mExtOne, nPhis=8, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, trNo = 0):
+    out = np.nan
+    try:
+	tcOut = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo, N, K, nPop, T, kappa)
+        po = POofPopulation(tcOut, IF_IN_RANGE = 1)
+        requires = ['CONTIGUOUS', 'ALIGNED']
+        po = np.require(po, np.float64, requires) * np.pi / 180.0
+        baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+        # fp = open(baseFldr + 'poOfNeurons.dat', 'wb')
+        # po.tofile(fp)
+        # fp.close()
+        for ii in range(100):
+            theta = np.arange(0, 180, 22.5)
+            plt.plot(theta, tcOut[ii, :])
+            plt.vlines(po[ii] * 180 / np.pi, *plt.ylim())
+            plt.waitforbuttonpress()
+            plt.clf()
+        print po[:11]
+    except IOError:
+        print 'file not found'
+    
+
+    
+        

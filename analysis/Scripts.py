@@ -1160,7 +1160,6 @@ def LocationVsPO(p, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 10
     plt.title(r'$p=%s, \, \gamma = %s$'%(p, gamma))
     plt.xlabel('neuron location (deg)')
     plt.ylabel('PO (deg)')
-
     plt.gca().set_position([0.25, 0.2, .65, .65])
     paperSize = [4, 3]
     figFormat = 'png'
@@ -1268,7 +1267,7 @@ def FixAxisLimits(fig):
     ax.set_yticks([ymin, 0.5 *(ymin + ymax), ymax])
     plt.draw()
 
-def StimulusDecodingVsP(phi_ext, pList, gamma, mExt, mExtOne, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, IF_NEW_FIG = True, IF_LEGEND = False, nLocalNeurons = 51):
+def StimulusDecodingVsP(phi_ext, pList, gamma, mExt = 0.075, mExtOne = 0.075, nPhis = 8, trNo = 0, N = 10000, K = 1000, nPop = 2, T = 1000, IF_IN_RANGE = True, IF_NEW_FIG = True, IF_LEGEND = False, nLocalNeurons = 51):
     # local PO correlation 
     if IF_NEW_FIG:
 	plt.figure()
@@ -1302,7 +1301,7 @@ def StimulusDecodingVsP(phi_ext, pList, gamma, mExt, mExtOne, nPhis = 8, trNo = 
     plt.show()    
 
 
-def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False, phi = 0, smoothFraction = .1, nPhis = 8):
+def PlotM1vsT(p, gamma, mExt=.075, mExtOne=.075, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_STIM_LEGEND = False, phi = 0, smoothFraction = .1, nPhis = 8, IF_LEGEND = False):
     try:
 	print p, gamma,
 	m1 = LoadM1vsT(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
@@ -1314,60 +1313,63 @@ def PlotM1vsT(p, gamma, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, 
 	if nClmns == 3:
 	    stimAngle = m1[:, 2]
 	    stimChange = xax[np.diff(stimAngle) > 0]
-	    plt.plot(xax, stimAngle * 180 / np.pi, 'k', label = 'stimulus', lw = 2, linestyle = '--')
+	    plt.plot(xax, stimAngle * 180 / np.pi, 'k', label = 'stimulus', lw = .25, linestyle = '--')
 	else:
 	    plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')	
 	print m1.shape
 	if p != 0:
-	    plt.plot(xax, mE1Phase * 180.0 / np.pi, label = 'bump phase', alpha = 0.5)
+	    plt.plot(xax, mE1Phase * 180.0 / np.pi, label = 'bump phase', alpha = 0.35, lw = 0.1)
 	mr = LoadFr(p, gamma, phi, mExt, mExtOne, trNo, T, N, K, nPop, IF_VERBOSE = True)
 	popVecPhase = PopVectorPhase(mr[:N], p, gamma, mExt, mExtOne, nPhis, trNo, N, K, nPop, T)
-	# ipdb.set_trace()	
 	print 'pop vec phase = ', popVecPhase
-	plt.hlines(popVecPhase, 0, xmax, label = 'popvec', color = 'g')
-	plt.grid()
-	# cosFunc = lambda m0, m1, theta: m0 + m1 * np.cos(2 * theta)
-	plt.ylim(0, 180)
-	# if  IF_STIM_LEGEND:
-	#     plt.hlines(phi, 0, xmax, label = 'stimulus', lw = 2, linestyle = '--')
-	# else:
-	#     plt.hlines(phi, 0, xmax, lw = 2, linestyle = '--')
-	# plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \, p = %s, \gamma = %s$"%(mExt, mExtOne, p, gamma), fontsize = 18)
+	plt.hlines(popVecPhase, 0, xmax, label = 'popvec', color = 'g', lw = .25)
+	plt.ylim(phi - 45, phi + 45)
+	plt.ylim(0, 180)        
 	plt.title(r"$p = %s, \gamma = %s$"%(p, gamma), fontsize = 18)	
 	plt.xlabel('Time (a.u)', fontsize = 16)
-	# plt.ylabel(r"$\mathrm{arg}\left[ m_E(\phi) \right] \, \mathrm{(deg)}$", fontsize = 16)
-	plt.ylabel(r"Phase (deg)", fontsize = 16)	
-	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
-	plt.gca().set_position([0.25, 0.2, .65, .65])
-        FixAxisLimits(plt.gcf())	
+	plt.ylabel(r"Phase (deg)", fontsize = 16)
+        if IF_LEGEND:
+            plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+	plt.gca().set_position([0.2, 0.2, .75, .75])
+        FixAxisLimits(plt.gcf())
 	print ''
-	if nPop == 2:
-	    # plt.savefig('./figs/twopop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
-	    figname = 'mE1_vs_T_N%s_K%s_m0%s_m0One%s_p%sg%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 100), int(gamma * 100))
-	if nPop == 1:
-	    plt.savefig('./figs/onepop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
-        figFolder = './figs/twopop/'
-        paperSize = [4, 3]
-	figFormat = 'png'
-        Print2Pdf(plt.gcf(),  figFolder + figname,  paperSize, figFormat=figFormat, labelFontsize = 14, tickFontsize=10, titleSize = 10.0)	    
-	ipdb.set_trace()
+	# if nPop == 2:
+	#     figname = 'mE1_vs_T_N%s_K%s_m0%s_m0One%s_p%sg%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 100), int(gamma * 100))
+	# if nPop == 1:
+	#     plt.savefig('./figs/onepop/mE1_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))
+        # figFolder = './figs/twopop/'
+        # paperSize = [4, 3]
+	# figFormat = 'png'
+        # Print2Pdf(plt.gcf(),  figFolder + figname,  paperSize, figFormat=figFormat, labelFontsize = 14, tickFontsize=10, titleSize = 10.0)
+        filename = './figs/twopop/' + 'stimulus_tracking_p%sgmma%s'%(int(p*10), int(gamma *100))
+	paperSize = [2.5, 2]
+        axPosition = [0.22, 0.2, .7, .7]
+        print 'printing figure'
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition=axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='pdf', labelFontsize = 8, tickFontsize = 6)
+        # ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition=axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='png', labelFontsize = 8, tickFontsize = 6)        
+        ipdb.set_trace()                
 
+        # ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition=[.26, .24, .65, .65], titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='eps', labelFontsize = 8, tickFontsize = 6)
+        # ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition=[.26, .24, .65, .65], titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='png', labelFontsize = 8, tickFontsize = 6)
+        
 
-	plt.figure()
-	plt.plot(xax, mE1)
-	lowess = statsmodels.nonparametric.lowess(mE1, xax, frac = smoothFraction)	
-	plt.plot(lowess[:, 0], lowess[:, 1], 'r', lw = 2, label = 'smoothed')
-	_, ymax = plt.ylim()
-	plt.vlines(stimChange[0], 0, ymax, 'k')
-	plt.vlines(stimChange[1], 0, ymax, 'k', label = 'stim change')	
-	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 14})	
-	plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \, p = %s, \gamma = %s$"%(mExt, mExtOne, p, gamma), fontsize = 18)
-	# plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \,$"%(mExt, mExtOne), fontsize = 18)
-	plt.xlabel('Time (a.u)', fontsize = 16)
-	plt.ylabel(r"$m_E^{(1)}$", fontsize = 16)
-	plt.savefig('./figs/twopop/mE1amp_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))	
-	plt.grid()
-	plt.show()
+        if nClmns == 3:
+            plt.figure()
+            ipdb.set_trace()
+            plt.plot(xax, mE1)
+            lowess = statsmodels.nonparametric.lowess(mE1, xax, frac = smoothFraction)	
+            plt.plot(lowess[:, 0], lowess[:, 1], 'r', lw = 2, label = 'smoothed')
+            _, ymax = plt.ylim()
+            plt.vlines(stimChange[0], 0, ymax, 'k')
+            plt.vlines(stimChange[1], 0, ymax, 'k', label = 'stim change')	
+            plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 14})	
+            plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \, p = %s, \gamma = %s$"%(mExt, mExtOne, p, gamma), fontsize = 18)
+            # plt.title(r"$m_0^{(0)} = %s,\, m_0^{(1)} = %s, \,$"%(mExt, mExtOne), fontsize = 18)
+            plt.xlabel('Time (a.u)', fontsize = 16)
+            plt.ylabel(r"$m_E^{(1)}$", fontsize = 16)
+            plt.savefig('./figs/twopop/mE1amp_vs_T_N%s_K%s_m0%s_m0One%s.png'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne)))	
+            plt.grid()
+            plt.show()
     except IOError, e:
 	print ' not found'
     

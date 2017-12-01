@@ -9,6 +9,7 @@ basefolder = "/homecentral/srao/Documents/code/mypybox"
 sys.path.append(basefolder)
 sys.path.append(basefolder + "/utils")
 from Print2Pdf import Print2Pdf
+import ipdb
 
 def alphaE(m0, meanFieldRates):
     return cFF * JE0**2 * m0 + JEE**2 * meanFieldRates[0] + JEI**2 * meanFieldRates[1]
@@ -30,9 +31,14 @@ def CheckBalConditions(JEE, JEI, JIE, JII, JE0, JI0):
     JI = -JII/JIE
     E = JE0
     I = JI0
-    if((JE < JI) or (E/I < JE/JI) or (JE < 1) or (E/I < 1) or (JE/JE < 1)):
+    ipdb.set_trace()    
+    # if((JE < JI) or (E/I < JE/JI) or (JE < 1) or (E/I < 1) or (JE/JE < 1)):
+    #     print "NOT IN BALANCED REGIME!!!!!! "
+    #     raise SystemExit
+    if((JE < JI) or (E/I < JE/JI) or (E/I < 1) or (JE/JE < 1)):
         print "NOT IN BALANCED REGIME!!!!!! "
         raise SystemExit
+        
 
 def HPrime(z):
     return -1.0 * np.exp(-0.50 * z**2) / np.sqrt(2.0 * np.pi)
@@ -364,31 +370,100 @@ def monte_carlo_two(function, a, b, numberOfseconds):
           average = sumOfpoints / Decimal(numberOftrials)
       return average * Decimal(b - a)
 
+
+def IFBalConditionsReturn(JEE, JEI, JIE, JII, JE0, JI0):
+    JE = -JEI/JEE
+    JI = -JII/JIE
+    E = JE0
+    I = JI0
+
+    if((JE < JI) or (E/I < JE/JI) or (JE < 1) or (E/I < 1) or (JE/JE < 1)):
+        return False
+    else:
+        return True
+      
+def BalancedRates(JEE, JEI, JII, JIE, JE0, JI0, m_ext, varyPar = 'JII'):
+    validPar = []
+    ratesE = []
+    ratesI = []    
+    if varyPar == 'JII':
+        JIIList = -1 * np.arange(0.1, 1.5, .001)
+        for JII in JIIList:
+            if IFBalConditionsReturn(JEE, JEI, JIE, JII, JE0, JI0):
+                validPar.append(JII)
+                Jab = np.array([[JEE, JEI],
+                                [JIE, JII]])
+                Ea = np.array([JE0, JI0])
+                meanFieldRates = -1.0 * np.dot(np.linalg.inv(Jab), Ea) * m_ext
+                ratesE.append(meanFieldRates[0]);
+                ratesI.append(meanFieldRates[1]);
+    if varyPar == 'JIE':
+        JIEList = np.arange(0.1, 5, .01)
+        for JIE in JIEList:
+            if IFBalConditionsReturn(JEE, JEI, JIE, JII, JE0, JI0):
+                validPar.append(JIE)
+                Jab = np.array([[JEE, JEI],
+                                [JIE, JII]])
+                Ea = np.array([JE0, JI0])
+                meanFieldRates = -1.0 * np.dot(np.linalg.inv(Jab), Ea) * m_ext
+                ratesE.append(meanFieldRates[0]);
+                ratesI.append(meanFieldRates[1]);
+    if varyPar == 'JEI':
+        JEIList = -1 * np.arange(0.1, 5, .01)
+        for JEI in JEIList:
+            if IFBalConditionsReturn(JEE, JEI, JIE, JII, JE0, JI0):
+                validPar.append(JEI)
+                Jab = np.array([[JEE, JEI],
+                                [JIE, JII]])
+                Ea = np.array([JE0, JI0])
+                meanFieldRates = -1.0 * np.dot(np.linalg.inv(Jab), Ea) * m_ext
+                ratesE.append(meanFieldRates[0]);
+                ratesI.append(meanFieldRates[1]);
+    
+    plt.plot(validPar, ratesE, 'ko-')
+    plt.plot(validPar, ratesI, 'ro-')
+    plt.xlabel(varyPar)
+    plt.grid()
+    plt.show()
+                
 if __name__ == "__main__":
-    JEE = 1.0
-    JIE = 1.0
-    JEI = -1.5 
-    JII = -1.0
+    mIIncreaseFactor = 2.4
+    JEE = 1.0 
+    JIE = 1.0 #0.7 #1.0 
+    JEI = -1.5 / mIIncreaseFactor
+    JII = -1.0 / mIIncreaseFactor
     cFF = 0.2
     JE0 = 2.0 / cFF
     JI0 = 1.0 / cFF
     Jab = np.array([[JEE, JEI],
                     [JIE, JII]])
     Ea = np.array([JE0, JI0])
-
-    CheckBalConditions(JEE, JEI, JIE, JII, JE0, JI0)
+    
     gamma = 0.0
-    m0 = 0.075
+    m0 = 0.01
     p = 1
     K = int(sys.argv[2])
     simTime = int(sys.argv[3])
     solverType = 'fsolve'
+    meanFieldRates = -1.0 * np.dot(np.linalg.inv(Jab), Ea) * m0
+    print "mf rates == ", meanFieldRates
+    
+
+    CheckBalConditions(JEE, JEI, JIE, JII, JE0, JI0)
+    # BalancedRates(JEE, JEI, JII, JIE, JE0, JI0, m0, 'JII')
+
+
+
+    
     if(len(sys.argv) > 3):
         solverTypeStr = sys.argv[4]
         if(solverTypeStr == 'fpi'):
            solverType = 'fixed-point-iter'
     meanFieldRates = -1.0 * np.dot(np.linalg.inv(Jab), Ea) * m0
     print "mf rates == ", meanFieldRates
+
+    # raise SystemExit
+    
     print "alphaE mf == ", JEE**2 * meanFieldRates[0] + JEI**2 * meanFieldRates[1]
     
     aE0 = JEE**2 * meanFieldRates[0]+ JEI**2 * meanFieldRates[1]

@@ -491,7 +491,10 @@ void AddConnections(unsigned int *conVec, double kappa) {
  nPOsRead = fread(poOfNeurons, sizeof(*poOfNeurons), NE, fpPOofNeurons);
  if(nPOsRead != NE) {
    printf("\n Error: All elements not written \n");
- }  
+ }
+
+ // for(int iii = 0; iii < 10; ++iii) { printf("%d ", poOfNeurons[iii]); }
+ 
  fclose(fpPOofNeurons);
  unsigned int *IF_REWIRED_CON = new unsigned int [(unsigned long int)N_NEURONS * N_NEURONS];
  for(i = 0; i < N_NEURONS; ++i) {
