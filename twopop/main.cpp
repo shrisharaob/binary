@@ -605,7 +605,7 @@ void AddConnections(unsigned int *conVec, double kappa) {
  fclose(fpIdxVec);
  if(remove("nPostNeurons.dat") != 0) { perror( "Error deleting sparseconvec.dat" ); }
  else { puts( "File successfully deleted" ); }
-  fpNpostNeurons = fopen("nPostNeurons.dat", "wb");
+ fpNpostNeurons = fopen("nPostNeurons.dat", "wb");
  fwrite(nPostNeurons, sizeof(*nPostNeurons), N_NEURONS, fpNpostNeurons);
  fclose(fpNpostNeurons);
  printf("done\n");

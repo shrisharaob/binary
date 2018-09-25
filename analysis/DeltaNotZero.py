@@ -173,7 +173,8 @@ def TuningCurve():
     for l in range(nNeurons):
         qNoise = GenQuenchedNoiseWithCorr(maxCorrM)        
         for i, iPhi in enumerate(atPhis):
-            miOfPhi[i] = MyErfc((1.0 - u0E - u1E * np.cos(2 * iPhi) - qNoise(iPhi)) / np.sqrt(alphaF(iPhi, 0) - betaAtDeltaZero(iPhi)))
+            miOfPhi[i] = MyErfc((1.0 - u0E - u1E * np.cos(2 * iPhi) - qNoise(i)) / np.sqrt(alphaF(iPhi, 0) - betaAtDeltaZero(iPhi)))
+            # miOfPhi[i] = MyErfc((1.0 - u0E - u1E * np.cos(2 * iPhi) - qNoise(iPhi)) / np.sqrt(alphaF(iPhi, 0) - betaAtDeltaZero(iPhi)))            
             # miOfPhi[i] = MyErfc((1.0 - u0E - u1E * np.cos(2 * iPhi)) / np.sqrt(alphaF(iPhi, 0) - betaAtDeltaZero(iPhi)))
         # print miOfPhi
         plt.plot(atPhis * 180 / np.pi, miOfPhi, 'ko-')

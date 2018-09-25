@@ -4,16 +4,23 @@
 #define NE 10000
 #define NI 10000
 #define NFF 10000
-#define K 1000
+#define K 500
 #define SQRT_K (sqrt((double)K))
 #define THRESHOLD_E 1.0
 #define THRESHOLD_I 1.0
-#define JEE 1.0
-#define JIE 1.0
-#define JEI -1.5
-#define JII -1.0 
-#define JE0 2.0
-#define JI0 1.0
+#define JEE 2.0
+#define JIE 2.0
+
+/* #define JEI -1.5 */
+/* #define JII -1.0 */
+
+#define JI_FACTOR 1
+
+#define JEI (-1.5 / JI_FACTOR)
+#define JII (-1.0 / JI_FACTOR)
+
+#define JE0 4.0
+#define JI0 2.0
 #define TAU_FF 4.0
 #define TAU_E 4.0
 #define TAU_I 2.0

@@ -12,7 +12,7 @@ from Print2Pdf import Print2Pdf
 import ipdb
 
 def alphaE(m0, meanFieldRates):
-    return cFF * JE0**2 * m0 + JEE**2 * meanFieldRates[0] + JEI**2 * meanFieldRates[1]
+    return JEE**2 * meanFieldRates[0] + JEI**2 * meanFieldRates[1] + cFF * JE0**2 * m0 
 
 def MyErfc(z):
     # normal CDF
@@ -31,7 +31,7 @@ def CheckBalConditions(JEE, JEI, JIE, JII, JE0, JI0):
     JI = -JII/JIE
     E = JE0
     I = JI0
-    ipdb.set_trace()    
+    # ipdb.set_trace()    
     # if((JE < JI) or (E/I < JE/JI) or (JE < 1) or (E/I < 1) or (JE/JE < 1)):
     #     print "NOT IN BALANCED REGIME!!!!!! "
     #     raise SystemExit
@@ -427,20 +427,21 @@ def BalancedRates(JEE, JEI, JII, JIE, JE0, JI0, m_ext, varyPar = 'JII'):
     plt.show()
                 
 if __name__ == "__main__":
-    mIIncreaseFactor = 2.4
-    JEE = 1.0 
-    JIE = 1.0 #0.7 #1.0 
+    mIIncreaseFactor = 1.0
+    otherFactor = 1.0
+    JEE = 1.0 * otherFactor
+    JIE = 1.0 * otherFactor #0.7 #1.0 
     JEI = -1.5 / mIIncreaseFactor
     JII = -1.0 / mIIncreaseFactor
     cFF = 0.2
-    JE0 = 2.0 / cFF
-    JI0 = 1.0 / cFF
+    JE0 = 2.0 * otherFactor / cFF
+    JI0 = 1.0 * otherFactor / cFF
     Jab = np.array([[JEE, JEI],
                     [JIE, JII]])
     Ea = np.array([JE0, JI0])
     
     gamma = 0.0
-    m0 = 0.01
+    m0 = 0.075
     p = 1
     K = int(sys.argv[2])
     simTime = int(sys.argv[3])
@@ -463,8 +464,11 @@ if __name__ == "__main__":
     print "mf rates == ", meanFieldRates
 
     # raise SystemExit
+       
+    print "alphaE mf == ", alphaE(m0, meanFieldRates)     #JEE**2 * meanFieldRates[0] + JEI**2 * meanFieldRates[1]
+
+
     
-    print "alphaE mf == ", JEE**2 * meanFieldRates[0] + JEI**2 * meanFieldRates[1]
     
     aE0 = JEE**2 * meanFieldRates[0]+ JEI**2 * meanFieldRates[1]
     aI0 = JIE**2 * meanFieldRates[0]+ JII**2 * meanFieldRates[1]        
@@ -502,6 +506,11 @@ if __name__ == "__main__":
     print 'x'*50
     print "rates at K = ", K, "me0, mi0, me1"
     print mE0, mI0, mE1
+
+
+    print '...', Pcritical(uE0, aE0, JEE), Pcritical(uE0, aE0 - m0**2, JEE)
+    
+    
 
     raise SystemExit
     np.save('./data/pCritical_m0%s_K%s'%(int(m0 * 1e3), K), pCriticalAtK)

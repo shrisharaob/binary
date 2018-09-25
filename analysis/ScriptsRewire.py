@@ -382,8 +382,8 @@ def PlotInOutPOCorrParallel(nRewireSteps, kappa = 1, p = 0, gamma = 0, nPhis = 8
 	ProcessFigure(plt.gcf(), filepath, True)
 
 def ProcessFigure(figHdl, filepath, IF_SAVE, IF_XTICK_INT = False, figFormat = 'eps', paperSize = [4, 3], titleSize = 10, axPosition = [0.25, 0.25, .65, .65], tickFontsize = 10, labelFontsize = 12, nDecimalsX = 1, nDecimalsY = 1):
-    FixAxisLimits(figHdl)
-    FixAxisLimits(plt.gcf(), IF_XTICK_INT, nDecimalsX, nDecimalsY)
+    # FixAxisLimits(figHdl)
+    # FixAxisLimits(plt.gcf(), IF_XTICK_INT, nDecimalsX, nDecimalsY)
     Print2Pdf(plt.gcf(), filepath, paperSize, figFormat=figFormat, labelFontsize = labelFontsize, tickFontsize=tickFontsize, titleSize = titleSize, IF_ADJUST_POSITION = True, axPosition = axPosition)
     plt.show()
 
@@ -553,7 +553,11 @@ def PltOSIHist(p, gamma, nPhis=8, mExt=.075, mExtOne=.075, rewireType = 'rand', 
     tc = np.zeros((NE + NI, nPhis))
     phis = np.linspace(0, 180, nPhis, endpoint = False)
     if IF_NEW_FIG:
-	plt.figure()
+        fg0, ax0 = plt.subplots()
+        fg1, ax1 = plt.subplots()
+    else:
+        fg0 = plt.figure(1)
+        fg1 = plt.figure(2)
     for i, iPhi in enumerate(phis):
 	print i, iPhi,
 	try:
@@ -573,6 +577,7 @@ def PltOSIHist(p, gamma, nPhis=8, mExt=.075, mExtOne=.075, rewireType = 'rand', 
     osi = OSIOfPop(tc[:NE, :], phis)
     osiI = OSIOfPop(tc[NE:, :], phis)
     print "K = ", K, ", osi simulation: ", np.nanmean(osi)
+    plt.figure(fg0.number)
     # plt.xlabel(r"$\mathrm{OSI} \,\,\,\,  (m_{E, i}^{(1)})$")
     plt.xlabel('OSI', fontsize = 12)    
     plt.ylabel('Density', fontsize = 12)
@@ -585,7 +590,7 @@ def PltOSIHist(p, gamma, nPhis=8, mExt=.075, mExtOne=.075, rewireType = 'rand', 
     plt.gca().set_yticks([0, np.ceil(ymax)])    
     # plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
     # plt.title(r'$m_0^{(0)} = %s, \,m_0^{(1)} = %s $'%(mExt, mExtOne))
-    plt.title(r'$p = %s, \, \gamma = %s $'%(p, gamma))
+    plt.title(r'$E, p = %s, \, \gamma = %s $'%(p, gamma))
     _, ymax = plt.ylim()
     IF_PLOT_VLINE = False
     if IF_PLOT_VLINE:
@@ -594,6 +599,21 @@ def PltOSIHist(p, gamma, nPhis=8, mExt=.075, mExtOne=.075, rewireType = 'rand', 
     ann = ax.annotate('', xy=(np.nanmean(osi), 0), xytext=(np.nanmean(osi), 1.5),arrowprops=dict(facecolor='black', arrowstyle = 'simple', color = color))
     print "mean OSI, E = ", np.nanmean(osi)
     print "mean OSI, I= ", np.nanmean(osiI)
+    # plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+    filename = './figs/twopop/' + 'OSIhist_E_vs_kappa_p%s_gamma%s_m0%s'%(p, gamma, int(mExt*1e3))
+    paperSize = [2.5, 2]
+    axPosition=[.26, .24, .65, .65]
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
+    plt.figure(fg1.number)    
+    plt.title(r'$I, p = %s, \, \gamma = %s $'%(p, gamma))
+    plt.hist(osiI[~np.isnan(osiI)], 27, normed = 1, histtype = 'step', label = legendTxt, color = color, lw = 1)
+    ax = plt.gca()
+    ann = ax.annotate('', xy=(np.nanmean(osiI), 0), xytext=(np.nanmean(osiI), 1.5),arrowprops=dict(facecolor='black', arrowstyle = 'simple', color = color))
+    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 6})
+    filename = './figs/twopop/' + 'OSIhist_I_vs_kappa_p%s_gamma%s_m0%s'%(p, gamma, int(mExt*1e3))
+    paperSize = [2.5, 2]
+    axPosition=[.26, .24, .65, .65]
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
     return osi, osiI
 
 def CompareMeanOSIHist(pList, gList, nPhis = 8, mExt = 0.075, mExtOneList  = [0.075], trList = [0], rewireType = 'cntrl', N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = '', neuronType = 'E'):
@@ -1193,6 +1213,7 @@ def CompareMeanOSIvsKappa(kappaList, mExtOne, p = 0, gamma = 0, nPhis = 8, mExt 
     xmax = max(validKappa) + 1
     xmin = min(validKappa) - 1
     plt.xlim(xmin, xmax)
+    plt.xlim(0, 12)    
     plt.ylim(0, 1)
     plt.xlabel(r'$\kappa$')
     plt.ylabel(r'$\langle OSI \rangle$')
@@ -1201,9 +1222,9 @@ def CompareMeanOSIvsKappa(kappaList, mExtOne, p = 0, gamma = 0, nPhis = 8, mExt 
     filepath = "~/binary/figs/rewiring/compareOSI_mean_"+ rewireType + '_' +  filename
     print filepath
     paperSize = [4, 3]
-    plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+    plt.legend(loc = 2, frameon = False, numpoints = 1, prop = {'size': 8})
     print 'saving as: ', filepath
-    ProcessFigure(plt.gcf(), filename, IF_SAVE = 1, IF_XTICK_INT = False, figFormat = 'eps')
+    ProcessFigure(plt.gcf(), filename, IF_SAVE = 1, IF_XTICK_INT = False, figFormat = 'pdf')
     plt.show()
     print meanOSI
 
@@ -1213,7 +1234,7 @@ def CumulativeDistr(x):
     plt.step(np.concatenate([x, x[[-1]]]), np.arange(x.size+1) / float(x.size + 1))
     # plt.plot(x, F2)
 
-def CompareMeanOSI(kappaList, nTrials = 10, mExtOne=0.075, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, rewireType = 'rand', N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', color = '', neuronType = 'E', markerType = 'o-'):
+def CompareMeanOSIvsKappaRewire(kappaList, nTrials = 10, mExtOne=0.075, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, rewireType = 'rand', N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', color = '', neuronType = 'E', markerType = 'o-'):
 
     osiE = np.empty((len(kappaList), nTrials))
     osiI = np.empty((len(kappaList), nTrials))
@@ -1223,10 +1244,14 @@ def CompareMeanOSI(kappaList, nTrials = 10, mExtOne=0.075, p = 0, gamma = 0, nPh
     osiISEM = np.empty((len(kappaList), ))
     osiESEM[:] = np.nan
     osiISEM[:] = np.nan
-    trList = range(100, 100 + nTrials)
-    # trList = range(2000, 100 + nTrials)
-    trList = [0]
+    # trList = range(100, 100 + nTrials)
+    trList = range(3000, 3000 + nTrials)
     trListOld = trList
+    mE = np.empty((len(kappaList), nTrials))
+    mI = np.empty((len(kappaList), nTrials))
+    mESEM = np.empty((len(kappaList), ))
+    mISEM = np.empty((len(kappaList), ))
+    mESEM[:] = np.nan; mISEM[:] = np.nan
     for idx, kappa in enumerate(kappaList):
         nValidTrials = 0
 	# if kappa == 0 and K == 2000:
@@ -1234,15 +1259,18 @@ def CompareMeanOSI(kappaList, nTrials = 10, mExtOne=0.075, p = 0, gamma = 0, nPh
 	if kappa == 8 and K == 2000:
 	    trList = trListOld
         for trIdx, trNo in enumerate(trList):
-
             print 'trIdx', trIdx
-            tc, IF_FILE_LOADED = GetTuningCurves(0, 0, 8, 0.075, 0.075, 'rand', kappa=kappa, trNo = trNo, IF_SUCCESS = True, K=K)
+            # ipdb.set_trace()
+            tc, IF_FILE_LOADED = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, kappa=kappa, trNo = trNo, IF_SUCCESS = True, K=K)
+            mE[idx, trIdx] = np.nanmean(tc[:N]); mI[idx, trIdx] = np.nanmean(tc[N:])
             tmp = OSIOfPop(tc, np.pi)
             osiE[idx, trIdx] = np.nanmean(tmp[:N])
             osiI[idx, trIdx] = np.nanmean(tmp[N:])
             nValidTrials += IF_FILE_LOADED
         osiESEM[idx] = np.nanstd(osiE[idx, :]) / np.sqrt(nValidTrials)
-        osiISEM[idx] = np.nanstd(osiI[idx, :]) / np.sqrt(nValidTrials)    
+        osiISEM[idx] = np.nanstd(osiI[idx, :]) / np.sqrt(nValidTrials)
+        mESEM[idx] = np.nanstd(mE[idx, :]) / np.sqrt(nValidTrials)
+        mISEM[idx] = np.nanstd(mI[idx, :]) / np.sqrt(nValidTrials)        
 
     # plt.plot(osiE.mean(1), 'ko')
     # plt.plot(osiI.mean(1), 'ro')    
@@ -1250,20 +1278,68 @@ def CompareMeanOSI(kappaList, nTrials = 10, mExtOne=0.075, p = 0, gamma = 0, nPh
     # osiESEM = np.nanstd(osiE, 1) / np.sqrt(nValidTrials)
     # osiISEM = np.nanstd(osiI, 1) / np.sqrt(nValidTrials)    
 
-    (_, caps, _) = plt.errorbar(range(len(kappaList)), osiE.mean(1), color = 'k', fmt = markerType, markersize = 4, yerr = osiESEM, lw = 0.8, elinewidth=0.8, label = 'E, ' + legendTxt, markeredgecolor = 'k')
+    plt.figure(0)
+    (_, caps, _) = plt.errorbar(range(len(kappaList)), np.nanmean(osiE, 1), color = 'k', fmt = markerType, markersize = 4, yerr = osiESEM, lw = 0.8, elinewidth=0.8, label = 'E, ' + legendTxt, markeredgecolor = 'k')
     for cap in caps:
         cap.set_markeredgewidth(0.8)
-    (_, caps, _) = plt.errorbar(range(len(kappaList)), osiI.mean(1), color = 'r', fmt = markerType, markersize = 4, yerr = osiISEM, lw = 0.8, elinewidth=0.8, label = 'I, ' + legendTxt, markeredgecolor = 'r')
+    (_, caps, _) = plt.errorbar(range(len(kappaList)), np.nanmean(osiI, 1), color = 'r', fmt = markerType, markersize = 4, yerr = osiISEM, lw = 0.8, elinewidth=0.8, label = 'I, ' + legendTxt, markeredgecolor = 'r')
     for cap in caps:
         cap.set_markeredgewidth(0.8)
  
     plt.xlabel(r'$\kappa$')
     plt.ylabel(r'$\langle OSI \rangle$')
-    plt.legend(loc = 2, frameon = False, numpoints = 1, prop = {'size': 8})
+    plt.legend(loc = 2, frameon = False, numpoints = 1, prop = {'size': 6})
     plt.xlim(-.5, 1.5)
+    plt.ylim(0, .5)
+
+    filename = './figs/twopop/' + 'meanOSI_vs_kappa_rewired_vsK_tr%s'%(trList[0])
+    paperSize = [2.5, 2]
+    axPosition=[.24, .24, .75, .7]
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=2, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
+
     plt.xticks([0, 1])
     plt.gca().set_xticklabels(kappaList)
+    Print2Pdf(plt.gcf(),  filename,  paperSize, figFormat='svg', labelFontsize = 8, tickFontsize=6, titleSize = 10.0)
     plt.show()
+
+
+    plt.figure(1)
+    (_, caps, _) = plt.errorbar(range(len(kappaList)), np.nanmean(mE, 1), color = 'k', fmt = markerType, markersize = 4, yerr = mESEM, lw = 0.8, elinewidth=0.8, label = 'E, ' + legendTxt, markeredgecolor = 'k')
+    for cap in caps:
+        cap.set_markeredgewidth(0.8)
+    (_, caps, _) = plt.errorbar(range(len(kappaList)), np.nanmean(mI, 1), color = 'r', fmt = markerType, markersize = 4, yerr = mISEM, lw = 0.8, elinewidth=0.8, label = 'I, ' + legendTxt, markeredgecolor = 'r')
+    for cap in caps:
+        cap.set_markeredgewidth(0.8)
+    plt.xlabel(r'$\kappa$')
+    plt.ylabel(r'$\langle m_A \rangle$')
+    plt.ylim(0, 1)
+    plt.xlim(-.5, 1.5)
+    plt.legend(loc = 2, frameon = False, numpoints = 1, prop = {'size': 6})        
+    filename = './figs/twopop/' + 'meanRates_vs_kappa_rewired_vsK_trNo%s'%(trList[0])
+    paperSize = [2.5, 2]
+    axPosition=[.24, .24, .75, .7]
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=2, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
+    plt.xticks([0, 1])
+    plt.gca().set_xticklabels(kappaList)
+    Print2Pdf(plt.gcf(),  filename,  paperSize, figFormat='svg', labelFontsize = 8, tickFontsize=6, titleSize = 10.0)
+    plt.show()
+
+
+    print 'K = ', K
+    print 'osi: E', np.nanmean(osiE, 1)
+    print 'ratio: ', np.nanmean(osiE, 1)[1] /  np.nanmean(osiE, 1)[0]
+    print 'osi: I', np.nanmean(osiI, 1)
+    print 'ratio: ', np.nanmean(osiI, 1)[1] /  np.nanmean(osiI, 1)[0]
+
+    print 'm: E', np.nanmean(mE, 1)
+    print 'ratio: ', np.nanmean(mE, 1)[1] /  np.nanmean(mE, 1)[0]
+    print 'm: I', np.nanmean(mI, 1)
+    print 'ratio: ', np.nanmean(mI, 1)[1] /  np.nanmean(mI, 1)[0]    
+    
+    # ipdb.set_trace()    
+    
+    
+    
     
 def ComputeAllCCC(kappa, trNo, p=0, gamma=0, nPhis=8, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, NFF=10000, JE0 = 2.0, JI0 = 1.0, IF_COMPUTE = False):
     out = np.nan
@@ -2173,15 +2249,15 @@ def WritePOToTr0FolderBeforeRewiring(kappa, p, gamma, mExt, mExtOne, nPhis=8, re
         requires = ['CONTIGUOUS', 'ALIGNED']
         po = np.require(po, np.float64, requires) * np.pi / 180.0
         baseFldr = GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
-        # fp = open(baseFldr + 'poOfNeurons.dat', 'wb')
-        # po.tofile(fp)
-        # fp.close()
-        for ii in range(100):
-            theta = np.arange(0, 180, 22.5)
-            plt.plot(theta, tcOut[ii, :])
-            plt.vlines(po[ii] * 180 / np.pi, *plt.ylim())
-            plt.waitforbuttonpress()
-            plt.clf()
+        fp = open(baseFldr + 'poOfNeurons.dat', 'wb')
+        po.tofile(fp)
+        fp.close()
+        # for ii in range(100):
+        #     theta = np.arange(0, 180, 22.5)
+        #     plt.plot(theta, tcOut[ii, :])
+        #     plt.vlines(po[ii] * 180 / np.pi, *plt.ylim())
+        #     plt.waitforbuttonpress()
+        #     plt.clf()
         print po[:11]
     except IOError:
         print 'file not found'
