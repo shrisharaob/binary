@@ -777,7 +777,7 @@ def M1Component(x):
     # print 'm1 out: ', out
     return out
 
-def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 1000, nTr = 1, nPop = 2, T = 1000, neuronType = 'E', IF_M1_SQRD = False, IF_SMOOTHED = False):
+def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 1000, nTr = 1, nPop = 2, T = 1000, neuronType = 'E', IF_M1_SQRD = False, IF_SMOOTHED = False, trialStart = 1000):
     m1 = []
     winSize = int(float(NE) / 10.0)
     N = NE
@@ -791,7 +791,8 @@ def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 10
     sys.stdout.flush()
     # phis = np.arange(0, 180.0, 22.5)
     # ipdb.set_trace()
-    for n in range(nTr):
+    trialEnd = trialStart + nTr
+    for n in range(trialStart, trialEnd):
         print n
         m1OfPhi = []
         print 'PHI_0: ', 
@@ -827,7 +828,7 @@ def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 10
     else:
 	return np.nanmean(m1), np.nanstd(m1), np.nanstd(m1) / np.sqrt(float(nValidTrials[0]))
     
-def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList = [10000], KList =[1000], trNo = 0, nPop = 2, T = 1000, nTrials = 1, IF_NONSMOOTHED = False, IF_NEW_FIG = True):
+def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList = [10000], KList =[1000], nPop = 2, T = 1000, nTrials = 10, IF_NONSMOOTHED = False, IF_NEW_FIG = True, trialStart = 1000):
     m1 = []
     # plt.ion()
     if IF_NEW_FIG:
@@ -844,7 +845,7 @@ def M1vsp_Smoothed(pList, gamma, nPhis, mExt, mExtOne, NList = [10000], KList =[
             semM1Sqrd = []
             for iip, p in enumerate(pList):
 		if( not IF_NONSMOOTHED):
-		    tmpM1, dummy, tmpsem = SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, nNE, nNE, kK, nTr, nPop, T)
+		    tmpM1, dummy, tmpsem = SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, nNE, nNE, kK, nTr, nPop, T, trialStart = trialStart)
 		    # tmpM1Sqrd, dummySqrd, tmpsemSqrd = SmoothedMeanM1(nNE, kK, p, mExt, nTr, T, IF_M1_SQRD = True)
 		else:
 		    tmpM1, dummy, tmpsem = NonSmoothedMeanM1(nNE, kK, p, mExt, nTr, T)
