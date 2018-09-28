@@ -17,9 +17,9 @@
 *.log
 *.tex
 *.el
-
+*.svg
 sed*
 vm
 spkTimes
-
 data/
+
