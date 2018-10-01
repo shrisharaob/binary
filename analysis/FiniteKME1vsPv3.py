@@ -365,6 +365,9 @@ def monte_carlo_two(function, a, b, numberOfseconds):
       return average * Decimal(b - a)
 
 if __name__ == "__main__":
+
+# python FiniteKME1vsPv3.py 1 1000 1000 fsolve 
+    
     JEE = 1.0
     JIE = 1.0
     JEI = -1.5 

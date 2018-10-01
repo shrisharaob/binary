@@ -757,7 +757,7 @@ int main(int argc, char *argv[]) {
   tStop = T_STOP;
 
   cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulation << " m0 = " << m0_ext << " m0_One = " << m1_ext << endl;
-  cout << "gamma = " << recModulation << " KFF = " << cFF * K << " Phi_Ext = " << phi_ext * 180.0 / M_PI << endl;
+  cout << "gamma = " << ffModulation << " KFF = " << cFF * K << " Phi_Ext = " << phi_ext * 180.0 / M_PI << endl;
   cout << "TAU_E = " << TAU_E << " Tau_I = " << TAU_I << endl;
   cout << "Trial# = " << trialNumber << endl;
   //  sprintf(folderName, "N%uK%um0%dpgamma%dT%d", N_NEURONS, (int)(m0 * 1e3), K, recModulation, ffModulation, (int)(tStop * 1e-3));
