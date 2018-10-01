@@ -1,0 +1,57 @@
+;; This buffer is for notes you don't want to save, and for Lisp evaluation.
+;; If you want to create a file, visit that file with C-x C-f,
+;; then enter the text in that file's own buffer.
+
+/homecentral/srao/Documents/code/binary/c/twopop/PRX_data/data/rewire/N10000K1000/m075/
+
+
+def SmoothedMeanM1(p, gamma, phis, mExt, mExtOne, NE = 10000, NI = 10000, K = 1000, nTr = 1, nPop = 2, T = 1000, neuronType = 'E', IF_M1_SQRD = False, IF_SMOOTHED = False, trialStart = 1000):
+    m1 = []
+    winSize = int(float(NE) / 10.0)
+    N = NE
+    if neuronType == 'I':
+        winSize = int(float(NI) / 10.0)
+        N = NI
+    nValidTrials = np.zeros((len(phis), ))
+    print "--" * 25
+    print "N = %s, K = %s, p = %s, m0 = %s, m0One = %s" %(N, K, p, mExt, mExtOne)
+    print "trial#: ", 
+    sys.stdout.flush()
+    # phis = np.arange(0, 180.0, 22.5)
+    # ipdb.set_trace()
+    trialEnd = trialStart + nTr
+    for n in range(trialStart, trialEnd):
+        print n
+        m1OfPhi = []
+        print 'PHI_0: ', 
+        for phiIdx, atPhi in enumerate(phis):
+            try:
+                # print "LoadFr() ", p, gamma, atPhi, mExt, mExtOne, n, T, NE, K, nPop
+                # print '#populations:', nPop
+                # raise SystemExit
+                m = LoadFr(p, gamma, atPhi, mExt, mExtOne, n, T, NE, K, nPop)
+                # ipdb.set_trace()
+                # print m
+                if(neuronType == 'E'):
+                    m = m[:N]
+                else:
+                    m = m[N:]
+                if IF_SMOOTHED:
+                    smoothedM = CirConvolve(m, winSize)
+                    m1OfPhi.append(M1Component(smoothedM))
+                else:
+                    m1OfPhi.append(M1Component(m))                    
+                # print m1OfPhi
+                nValidTrials[phiIdx] += 1
+                print atPhi, 
+            except IOError:
+                print 'x', #file not found'
+            sys.stdout.flush()
+        m1.append(np.nanmean(m1OfPhi))
+    print "\n" + "--" * 25
+    print 'mean m1 = ', np.mean(m1), 'SEM = ', np.nanstd(m1) / np.sqrt(float(nValidTrials[0]))
+    if IF_M1_SQRD:
+	print "sqrd"
+	return np.nanmean(np.array(m1)**2), np.std(np.array(m1)**2), np.std(np.array(m1)**2) / np.sqrt(float(nValidTrials[0]))
+    else:
+	return np.nanmean(m1), np.nanstd(m1), np.nanstd(m1) / np.sqrt(float(nValidTrials[0]))

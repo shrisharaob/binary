@@ -1310,6 +1310,13 @@ int main(int argc, char *argv[]) {
   if(argc > 7) {
     kappa = atof(argv[7]);
   }
+
+
+  if((int)m1_ext == 0){
+    recModulationEE = kappa;
+  }
+    
+  
   // if(argc > 8) {
   //   rewiredEEWeight = atof(argv[7]);
   // }
@@ -1326,7 +1333,7 @@ int main(int argc, char *argv[]) {
   cout << "gamma = " << ffModulation << " KFF = " << cFF * K << " Phi_Ext = " << phi_ext * 180.0 / M_PI << endl;
   cout << "TAU_E = " << TAU_E << " Tau_I = " << TAU_I << endl;
   cout << "Trial# = " << trialNumber << endl;
-  cout << "kappa = " << kappa << endl;
+  cout << "when mext_1 =0, p = kappa" << "kappa = " << kappa << endl;
   //  sprintf(folderName, "N%uK%um0%dpgamma%dT%d", N_NEURONS, (int)(m0 * 1e3), K, recModulation, ffModulation, (int)(tStop * 1e-3));
   // folderName = "./data/N" + std::to_string(N_NEURONS) + "K" + std::to_string(K) + "m0" + std::to_string((int)(m0 * 1e3)) + "p" + std::to_string((unsigned int)(10 * recModulation)) + "gamma" + std::to_string((unsigned int)(ffModulation)) + std::to_string((int)(tStop * 1e-3));
 
