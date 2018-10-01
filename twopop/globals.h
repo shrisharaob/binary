@@ -28,7 +28,7 @@
 #define cFF 0.2
 #define SQRT_KFF (sqrt((double)K * cFF))
 
-#define T_STOP 1000
+#define T_STOP 2000
 #define T_TRANSIENT (T_STOP * 0.1)
 #define IF_GEN_MAT_DEFAULT 0
 #define IF_SAVE_SPKS 0

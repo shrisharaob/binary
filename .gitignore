@@ -19,6 +19,7 @@
 *.tex
 *.el
 *.odp
+*.svg
 
 
 sed*
