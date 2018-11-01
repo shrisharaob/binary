@@ -4,12 +4,12 @@
 #define NE 10000
 #define NI 10000
 #define NFF 10000
-#define K 500
+#define K 1000
 #define SQRT_K (sqrt((double)K))
 #define THRESHOLD_E 1.0
 #define THRESHOLD_I 1.0
-#define JEE 2.0
-#define JIE 2.0
+#define JEE 1.0
+#define JIE 1.0
 
 /* #define JEI -1.5 */
 /* #define JII -1.0 */
@@ -19,8 +19,8 @@
 #define JEI (-1.5 / JI_FACTOR)
 #define JII (-1.0 / JI_FACTOR)
 
-#define JE0 4.0
-#define JI0 2.0
+#define JE0 2.0 //4
+#define JI0 1.0 //2
 #define TAU_FF 4.0
 #define TAU_E 4.0
 #define TAU_I 2.0
@@ -32,7 +32,7 @@
 #define JII_K (JII / sqrt((double)K))
 #define N_NEURONS (NE + NI)
 
-#define cFF 0.2
+#define cFF 1.0
 #define SQRT_KFF (sqrt((double)K * cFF))
 
 #define T_STOP 1000
@@ -44,7 +44,7 @@
 
 #define N_SEGMENTS 2
 
-#define IF_REWIRE 1
+#define IF_REWIRE 0
 #define IF_FIXED_FF_K 0
 
 //unsigned int IF_REWIRE = IF_REWIRE_DEFAULT

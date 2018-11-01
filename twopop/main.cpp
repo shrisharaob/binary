@@ -763,7 +763,7 @@ void GenConMat(int EE_CON_TYPE) {
       if(i < NE && j < NE) { //E-to-E
 	double conProbEE = ConProb(i * M_PI / (double)NE, j * M_PI / (double)NE, NE, recModulationEE);
         if(not EE_CON_TYPE) {
-	  conProbEE = (double)K * (1 + kappa * cos(2.0 * (poOfNeurons[i] - poOfNeurons[j])) / sqrt((double)K) ) / (double)NE;
+	  conProbEE = (double)K * (1 + 2.0 * kappa * cos(2.0 * (poOfNeurons[i] - poOfNeurons[j])) / sqrt((double)K) ) / (double)NE;
 	}
 	if(UniformRand(gen) <= conProbEE) {
 	  conMat[i + N_NEURONS * j] = 1;
@@ -1485,7 +1485,7 @@ int main(int argc, char *argv[]) {
     phi_ext = M_PI * atof(argv[5]) / 180.0; // parameter external orientation
   }
   if(argc > 6) {
-    trialNumber = atof(argv[6]); // parameter gamma
+    trialNumber = atof(argv[6]);
   }
   if(argc > 7) {
     kappa = atof(argv[7]);
@@ -1496,6 +1496,7 @@ int main(int argc, char *argv[]) {
     }
     else {
       rewiredEEWeight = 1;
+      recModulationEE = kappa;
     }
   }
   if(argc > 9) {
@@ -1504,7 +1505,7 @@ int main(int argc, char *argv[]) {
   
   tStop = T_STOP;
 
-  cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulationEE << " m0 = " << m0_ext << " m0_One = " << m1_ext << endl;
+  cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << atof(argv[3]) << " m0 = " << m0_ext << " m0_One = " << m1_ext << endl;
   cout << "gamma = " << ffModulation << " KFF = " << cFF * K << " Phi_Ext = " << phi_ext * 180.0 / M_PI << endl;
   cout << "TAU_E = " << TAU_E << " Tau_I = " << TAU_I << endl;
   cout << "Trial# = " << trialNumber << endl;
@@ -1533,6 +1534,7 @@ int main(int argc, char *argv[]) {
 	GenFFConMat();
       }
       GenConMat(1); // the argument was used for testing kappa, setting it to 1 will generate a matrix with recMod = p
+      delete [] conMat;
       clock_t timeStopCM = clock();
       double elapsedTimeCM = (double)(timeStopCM - timeStartCM) / CLOCKS_PER_SEC;  
       cout << "\n connection gen, elapsed time= " << elapsedTimeCM << "s, or " << elapsedTimeCM / 60.0 << "min" << endl;
