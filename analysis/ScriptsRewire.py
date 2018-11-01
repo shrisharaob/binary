@@ -75,6 +75,7 @@ def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 1
     if rewireType == 'cntrl':
         baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
         baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    print baseFldr
     return baseFldr
 
 def LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 0):
@@ -582,7 +583,11 @@ def PltOSIHist(p, gamma, nPhis=8, mExt=.075, mExtOne=.075, rewireType = 'rand', 
     plt.xlabel('OSI', fontsize = 12)    
     plt.ylabel('Density', fontsize = 12)
     # plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$STP: %s$'%(trNo, ) + legendTxt, color = color, lw = 1)
-    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = legendTxt, color = color, lw = 1)        
+    plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = legendTxt, color = color, lw = 1)
+
+    # plt.hist(osiI[~np.isnan(osiI)], 27, normed = 1, histtype = 'step', label = legendTxt, color = 'r', lw = 1)
+
+    
     # plt.hist(osi[~np.isnan(osi)], 27, normed = 1, histtype = 'step', label = r'$p = %s,\,\gamma = %s$'%(p, gamma, ), color = color, lw = 1)
     plt.xlim(0, 1)
     plt.gca().set_xticks([0, 0.5, 1])
@@ -590,13 +595,13 @@ def PltOSIHist(p, gamma, nPhis=8, mExt=.075, mExtOne=.075, rewireType = 'rand', 
     plt.gca().set_yticks([0, np.ceil(ymax)])    
     # plt.title(r'$N = %s,\, K = %s,\, m_0^{(0)} = %s,\, m_0^{(1)} = %s$'%(NE, K, mExt, mExtOne))
     # plt.title(r'$m_0^{(0)} = %s, \,m_0^{(1)} = %s $'%(mExt, mExtOne))
-    plt.title(r'$E, p = %s, \, \gamma = %s $'%(p, gamma))
+    # plt.title(r'$E, p = %s, \, \gamma = %s $'%(p, gamma))
     _, ymax = plt.ylim()
     IF_PLOT_VLINE = False
     if IF_PLOT_VLINE:
 	plt.vlines(np.nanmean(osi), 0, ymax, lw = 1, color = color)
     ax = plt.gca()
-    ann = ax.annotate('', xy=(np.nanmean(osi), 0), xytext=(np.nanmean(osi), 1.5),arrowprops=dict(facecolor='black', arrowstyle = 'simple', color = color))
+    # ann = ax.annotate('', xy=(np.nanmean(osi), 0), xytext=(np.nanmean(osi), 1.5),arrowprops=dict(facecolor='black', arrowstyle = 'simple', color = color))
     print "mean OSI, E = ", np.nanmean(osi)
     print "mean OSI, I= ", np.nanmean(osiI)
     # plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
@@ -605,14 +610,20 @@ def PltOSIHist(p, gamma, nPhis=8, mExt=.075, mExtOne=.075, rewireType = 'rand', 
     axPosition=[.26, .24, .65, .65]
     ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
     plt.figure(fg1.number)    
-    plt.title(r'$I, p = %s, \, \gamma = %s $'%(p, gamma))
+    # plt.title(r'$I, p = %s, \, \gamma = %s $'%(p, gamma))
     plt.hist(osiI[~np.isnan(osiI)], 27, normed = 1, histtype = 'step', label = legendTxt, color = color, lw = 1)
     ax = plt.gca()
-    ann = ax.annotate('', xy=(np.nanmean(osiI), 0), xytext=(np.nanmean(osiI), 1.5),arrowprops=dict(facecolor='black', arrowstyle = 'simple', color = color))
+    # ann = ax.annotate('', xy=(np.nanmean(osiI), 0), xytext=(np.nanmean(osiI), 1.5),arrowprops=dict(facecolor='black', arrowstyle = 'simple', color = color))
+    plt.xlabel('OSI', fontsize = 12)    
+    plt.ylabel('Density', fontsize = 12)
     plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 6})
     filename = './figs/twopop/' + 'OSIhist_I_vs_kappa_p%s_gamma%s_m0%s'%(p, gamma, int(mExt*1e3))
     paperSize = [2.5, 2]
     axPosition=[.26, .24, .65, .65]
+    plt.xlim(0, 1)
+    plt.gca().set_xticks([0, 0.5, 1])
+    _, ymax = plt.ylim()
+    plt.gca().set_yticks([0, np.ceil(ymax)])    
     ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
     return osi, osiI
 
@@ -1417,6 +1428,98 @@ def ComputeAllCCC(kappa, trNo, p=0, gamma=0, nPhis=8, mExt=0.075, mExtOne=0.075,
 	plt.gca().set_xticklabels([0, 8])
 	plt.show()
 
+def PlotTuningCurves(tc, filetag):
+    _, nThetas = tc.shape
+    thetas = np.arange(-90, 91, 180./8)
+
+    neuronsIdx = [1798, 7753, 3233, 6218]
+    print neuronsIdx
+    ###### EXCITATORY 
+    for idx in neuronsIdx:
+        tmp = tc[idx, :]
+        # tmp = tmp / np.max(tmp)
+        tmp = np.roll(tmp, -1 * np.argmax(tmp))
+        tmp = np.roll(tmp, 4)        
+        plt.plot(thetas, np.concatenate((tmp, [tmp[0]])), 'o-k', lw = .5, markersize = 0.95)
+        filename = './PUB_FIGS/tuning_curves_%s_idx_%s'%(filetag, idx)
+        paperSize = [2.5/2, 2/2.0]
+        axPosition=[.25, .25, .65, .65]
+        FixAxisLimits(plt.gcf())
+        plt.gca().set_xticks([-90, 0, 90])
+        plt.draw()
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 6, tickFontsize = 6)
+        plt.clf()
+    ##### INHIBITORY
+    NE = 10000
+    neuronsIdx = np.random.choice(10000, 20) + NE
+    neuronsIdx = [13023, 14079, 18808, 18853]
+    print neuronsIdx
+    for idx in neuronsIdx:
+        tmp = tc[idx, :]
+        # tmp = tmp / np.max(tmp)
+        tmp = np.roll(tmp, -1 * np.argmax(tmp))
+        tmp = np.roll(tmp, 4)        
+        plt.plot(thetas, np.concatenate((tmp, [tmp[0]])), 'o-r', lw = .5, markersize = 0.95)
+        filename = './PUB_FIGS/tuning_curves_%s_I_idx_%s'%(filetag, idx)
+        paperSize = [2.5/2, 2/2.0]
+        axPosition=[.25, .25, .65, .65]
+        FixAxisLimits(plt.gcf())
+        plt.gca().set_xticks([-90, 0, 90])
+        plt.draw()
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 6, tickFontsize = 6)
+        plt.clf()
+    
+
+def PlotTuningCurvesKappaNonZero(tcList, kappaList, filetag):
+    _, nThetas = tcList[0].shape
+    thetas = np.arange(-90, 91, 180./8)
+    neuronsIdx = [1798, 7753, 3233, 6218]
+    neuronsIdx = np.random.choice(10000, 20) + 10000
+    print neuronsIdx
+    ###### EXCITATORY
+    colors = ['k', 'g', 'r']
+    for idx in neuronsIdx:    
+        for kappaIdx, kappa in enumerate(kappaList):
+            tc = tcList[kappaIdx]
+            tmp = tc[idx, :]
+            tmp = np.roll(tmp, -1 * np.argmax(tmp))
+            tmp = np.roll(tmp, 4)        
+            plt.plot(thetas, np.concatenate((tmp, [tmp[0]])), 'o-', color = colors[kappaIdx], lw = .5, markersize = 0.95, markerfacecolor = colors[kappaIdx], markeredgecolor=colors[kappaIdx])
+        filename = './PUB_FIGS/tuning_curves_%s_idx_%s'%(filetag, idx)
+        paperSize = [2.5/2, 2/2.0]
+        axPosition=[.25, .25, .65, .65]
+        FixAxisLimits(plt.gcf())
+        plt.gca().set_xticks([-90, 0, 90])
+        plt.draw()
+        ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 6, tickFontsize = 6)
+        plt.clf()
+
+
+def PlotAvgOSI(kappaList, NE = 10000):
+    
+    tckappa = []
+    osiEList = []
+    osiIList = []
+    validIdx = []
+    
+    for kappaIdx, kappa in enumerate(kappaList):
+        try:
+            if kappa == 0:
+                tckappa = GetTuningCurves(0, 0, 8, 0.075, 0.075, 'rand', kappa=0)
+            else:
+                tckappa = GetTuningCurves(0, 0, 8, 0.075, 0.075, 'rand', kappa=kappa, trNo=2)
+            osiEList.append(np.nanmean(OSIOfPop(tckappa[:NE], 0)))
+            osiIList.append(np.nanmean(OSIOfPop(tckappa[NE:], 0)))
+            validIdx.append(kappaIdx)
+        except IOError:
+            pass
+    print kappaList[validIdx]
+    plt.plot(kappaList[validIdx], osiEList)
+    plt.plot(kappaList[validIdx], osiIList)    
+    
+                          
+    
+
 def PrintTuningBook(tcCntr, tcNew, nNeurons, fname, neuronType='E', NE = 10000, NI = 10000, nPhis = 8, color = 'k', kappaNew = 8):
     doc = Document(fname)
     doc.packages.append(Package('geometry', options=['left=2cm', 'right=2cm']))
@@ -1498,9 +1601,11 @@ def PrintInputTuningBook(a, b, c, d, e, nNeurons, fname, neuronType='E', NE = 10
     
 def PlotMeanTc(tc, kappa, J, nPhis = 8, NE = 10000, labelTxt='', pcolor='k'):
     # J is the rewired strenghtened prefactor
-    thetas = np.linspace(0, 180, nPhis, endpoint = 1)
+    # thetas = np.linspace(0, 180, nPhis, endpoint = 1)
+    thetas = np.arange(-90, 90, 180.0/8)
     prefferedOri = np.argmax(tc, 1)
     tcmax = np.max(np.abs(tc), 1)
+    # ipdb.set_trace()
     tcmax.shape = NE, 1
     tcmax = np.tile(tcmax, (1, nPhis))
     tc = tc / tcmax
@@ -1515,7 +1620,17 @@ def PlotMeanTc(tc, kappa, J, nPhis = 8, NE = 10000, labelTxt='', pcolor='k'):
     print 'osi = ', osi
     thetas = np.arange(-90, 91, 22.5)
     plt.plot(thetas, np.concatenate((meanE, [meanE[0]])), 'o-', label=labelTxt + ' osi: %.5s'%(osi), color = pcolor, markersize = 2, markeredgecolor = pcolor)
-    plt.ylim(0.8, 1)
+    # plt.ylim(0.8, 1)
+    plt.gca().set_xticks([-90, 0, 90])
+
+    filename = './figs/twopop/rewire/' + 'pop_mean_tuning_kappa%s'%(kappa)
+    paperSize = [2.5, 2]
+    axPosition=[.22, .22, .65, .65]
+    plt.ylim([0, 1])
+    plt.gca().set_yticks([0, 0.5, 1])
+    ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 10, tickFontsize = 8)
+    
+    
 
 
 def PlotMeanUEUITuning(ue, ui, kappa, J, IF_LEGEND = 0):

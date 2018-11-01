@@ -31,15 +31,10 @@ def CheckBalConditions(JEE, JEI, JIE, JII, JE0, JI0):
     JI = -JII/JIE
     E = JE0
     I = JI0
-    # ipdb.set_trace()    
-    # if((JE < JI) or (E/I < JE/JI) or (JE < 1) or (E/I < 1) or (JE/JE < 1)):
-    #     print "NOT IN BALANCED REGIME!!!!!! "
-    #     raise SystemExit
     if((JE < JI) or (E/I < JE/JI) or (E/I < 1) or (JE/JE < 1)):
         print "NOT IN BALANCED REGIME!!!!!! "
         raise SystemExit
         
-
 def HPrime(z):
     return -1.0 * np.exp(-0.50 * z**2) / np.sqrt(2.0 * np.pi)
 
@@ -151,19 +146,11 @@ def QFuncInv(z):
     
 def PcriticalFiniteK(uE0, alphaE0, JEE, JEI, hPrime, K, A):
     b = (1 - uE0) / np.sqrt(alphaE0)
-    # C0 = np.exp(-b**2 / 2.0) / np.sqrt(2.0 * np.pi)
     num = -1.0 * np.sqrt(alphaE0)
     denomMatlab = hPrime * (JEE + JEE**2 / (2.0 * alphaE0 * np.sqrt(float(K))))
     denom = hPrime * (JEE + JEE**2 * A / (2.0  * np.sqrt(float(K) * alphaE0)))
     print "New corrected p_c = ", num / denom
     print 'denom matlab = ' , denomMatlab
-
-    # alphaKInf = JEE**2 * meanFieldRates[0] + JEI**2 * meanFieldRates[1]
-    # num2 = -1.0 * np.sqrt(alphaKInf)
-    # hPrimeKInf = HPrime(QFuncInv(meanFieldRates[0]))
-    # denom2 = hPrimeKInf * (JEE + JEE**2 * QFuncInv(meanFieldRates[0]) / (2.0  * np.sqrt(float(K) * alphaKInf)))
-    # print "p_cKinf = ", num2/denom2
-    # raise SystemExit
     return num / denom
 
 def UE0GivenUE1(u0Guess, *args):
@@ -204,7 +191,6 @@ def EqFiniteK(u0Guess, *args):
     # print uE0, uI0, AEofPhi(0)
     a = mE0 - quad(funcME0, 0, np.pi, limit = 200, epsabs = 1e-10)[0]
     b = mI0 - np.abs(quad(funcMI0, 0, np.pi, limit = 200, epsabs = 1e-10)[0])
-    # b = mI0 - (1.0 / np.pi) * MyErfc((1.0 - uI0) / np.sqrt(aI0))
     c = mE1 - np.abs(quad(funcME1, 0, np.pi, limit = 200, epsabs = 1e-10)[0])
     # print mE0, mE1, mI0
     return (a, b, c)
@@ -329,9 +315,6 @@ def SolveForPCritical(m0List):
     print "--" * 24    
     np.save('./data/PRX/p_vs_mI1_m0%s'%(int(lM0 * 1e3)), [pList, mE1List, np.ones((len(pList), )) * meanFieldRates[0], np.ones((len(pList), )) * meanFieldRates[1]])            
 
-# def CirConvolve(signal, windowSize):
-#     ker = np.concatenate((np.ones((windowSize, )), np.zeros((signal.size - windowSize, ))))
-#     return np.real(np.fft.ifft( np.fft.fft(signal)*np.fft.fft(ker))) * (1.0 / float(windowSize))
 def CirConvolve(x, winSize):
     print x.shape, winSize
     window = np.ones((winSize, ))
@@ -345,7 +328,6 @@ def PolyFit(pVal, me1, pCAnalytic):
 def integrand(x):
     uE0, uI0, mE1 = u0Guess
     K, p, m_ext = args
-
     uE0 = x[0]
     uI0 = x[1]
     mE1 = x[2]
@@ -433,7 +415,7 @@ if __name__ == "__main__":
     JIE = 1.0 * otherFactor #0.7 #1.0 
     JEI = -1.5 / mIIncreaseFactor
     JII = -1.0 / mIIncreaseFactor
-    cFF = 0.2
+    cFF = 1.0
     JE0 = 2.0 * otherFactor / cFF
     JI0 = 1.0 * otherFactor / cFF
     Jab = np.array([[JEE, JEI],
@@ -443,43 +425,31 @@ if __name__ == "__main__":
     gamma = 0.0
     m0 = 0.075
     p = 1
+    p = float(sys.argv[1])    
     K = int(sys.argv[2])
     simTime = int(sys.argv[3])
     solverType = 'fsolve'
     meanFieldRates = -1.0 * np.dot(np.linalg.inv(Jab), Ea) * m0
     print "mf rates == ", meanFieldRates
-    
-
     CheckBalConditions(JEE, JEI, JIE, JII, JE0, JI0)
+    ipdb.set_trace()
     # BalancedRates(JEE, JEI, JII, JIE, JE0, JI0, m0, 'JII')
-
-
-
-    
     if(len(sys.argv) > 3):
         solverTypeStr = sys.argv[4]
         if(solverTypeStr == 'fpi'):
            solverType = 'fixed-point-iter'
     meanFieldRates = -1.0 * np.dot(np.linalg.inv(Jab), Ea) * m0
     print "mf rates == ", meanFieldRates
-
     # raise SystemExit
-       
-    print "alphaE mf == ", alphaE(m0, meanFieldRates)     #JEE**2 * meanFieldRates[0] + JEI**2 * meanFieldRates[1]
-
-
-    
-    
+    print "alphaE mf == ", alphaE(m0, meanFieldRates) 
     aE0 = JEE**2 * meanFieldRates[0]+ JEI**2 * meanFieldRates[1]
     aI0 = JIE**2 * meanFieldRates[0]+ JII**2 * meanFieldRates[1]        
     sqrtK = np.sqrt(K)
     uE0Sol = fsolve(Eq0, [1e-2], args = (JEE, aE0, meanFieldRates[0]), full_output = True, xtol = 1e-6)
     uI0Sol = fsolve(Eq0, [1e-2], args = (JII, aI0, meanFieldRates[1]), full_output = True, xtol = 1e-6)
     u0Guess = [uE0Sol[0][0], uI0Sol[0][0], 0.2613249636852059 ]
-
-    # u0Guess = [uE0Sol[0][0], uI0Sol[0][0], 1e-6]    
+#    u0Guess = [uE0Sol[0][0], uI0Sol[0][0], 1e-6]    
     print "initial guess = ", u0Guess
-
     uE0Sol = fsolve(EqFiniteK, u0Guess, args = (K, 1, m0), full_output = True, xtol = 1e-12, epsfcn = 1e-12)
     PrintError(uE0Sol, 'u_E(0),  u_I(0), m_E(1)]')
     # print "iterating...  "
@@ -501,29 +471,17 @@ if __name__ == "__main__":
     print "m0 = ", m0
     print 'alphaE0 = ', aE0, 'hprime = ', hPrimeIn
     # raise SystemExit
-    p = float(sys.argv[1])
-
     print 'x'*50
     print "rates at K = ", K, "me0, mi0, me1"
     print mE0, mI0, mE1
-
-
     print '...', Pcritical(uE0, aE0, JEE), Pcritical(uE0, aE0 - m0**2, JEE)
-    
-    
-
 #    raise SystemExit
     np.save('./data/PRX/pCritical_m0%s_K%s'%(int(m0 * 1e3), K), pCriticalAtK)
-
-    
     pListSim = np.array([0, .5, 1, 2, 2.5, 2.6, 2.7, 2.8]) #, 2.9, 3.0])
     pListSim = np.arange(0, 4.5, 0.1)
-    pStart = pCriticalAtK + 2
+    pStart = pCriticalAtK + 4
     pList = np.linspace(pStart, pCriticalAtK - 1, 5000)
-    # pList = np.linspace(pStart, pCriticalAtK - 1, 10000)    
-    # pList = np.linspace(10, 4, 8000)    
-    # pList = np.linspace(7, 3, 40000)        
-    # pList = np.logspace(np.log10(pCritticalatK - 0.2), np.log10(pCritticalatK + 2), 5000)
+    ipdb.set_trace()
     nPoints = len(pList)
     print 'nPoints = ', nPoints
     mE1SolList = []

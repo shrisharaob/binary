@@ -14,7 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.special import chdtrc as GammaQ
 from scipy.signal import argrelextrema
 import matplotlib.animation as animation
-import statsmodels.api as statsmodels
+#import statsmodels.api as statsmodels
 from matplotlib.ticker import FormatStrFormatter
 
 def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False):
@@ -35,7 +35,7 @@ def LoadFr(p, gamma, phi, mExt, mExtOne, trNo = 0, T = 1000, N = 10000, K = 1000
     # if nPop == 2:
     # 	baseFldr = baseFldr + 'twopop/data/old/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     # if IF_VERBOSE:
-    # 	print baseFldr
+    print baseFldr
 	
     filename = 'meanrates_theta%.6f_tr%s.txt'%(phi, trNo)
     print filename

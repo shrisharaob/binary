@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 
-def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, kappa = 1):
+def GetBaseFolder_OLD(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, kappa = 1):
     # ipdb.set_trace()
     tag = ''
     if kappa == -1:
@@ -32,6 +32,40 @@ def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 1
         baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
         baseFldr = baseFldr + 'twopop/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
     return baseFldr
+
+
+def GetBaseFolder(p, gamma, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, kappa = 1):
+    # ipdb.set_trace()
+    tag = ''
+    if kappa == -1:
+	baseFldr = GetBaseFolderOld(p, gamma, mExt, mExtOne, rewireType, trNo, T, N, K, nPop, kappa)
+    else:
+	if rewireType == 'rand':
+	    tag = ''
+	if rewireType == 'exp':
+	    tag = '1'
+	if rewireType == 'decay':
+	    tag = '2'
+	if rewireType == 'twosteps':
+	    tag = '3'	    
+	rootFolder = ''
+	baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
+	if nPop == 1:
+	    baseFldr = baseFldr + 'onepop/data/rewire%s/N%sK%s/m0%s/mExtOne%s/kappa%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(kappa * 10), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+	# ipdb.set_trace()	
+	if nPop == 2:
+	    if T < 1000:
+		baseFldr = baseFldr + 'twopop/PRX_data/data/rewire%s/N%sK%s/m0%s/mExtOne%s/kappa%s/p%sgamma%s/T/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(kappa * 10), int(p * 10), int(gamma * 10), trNo)
+	    else:
+		if gamma >= .1 or gamma == 0:
+		    baseFldr = baseFldr + 'twopop/PRX_data/data/rewire%s/N%sK%s/m0%s/mExtOne%s/kappa%s/p%sgamma%s/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(kappa * 10), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+		else:
+		    baseFldr = baseFldr + 'twopop/PRX_data/data/rewire%s/N%sK%s/m0%s/mExtOne%s/kappa%s/p%sgamma/T%s/tr%s/'%(tag, N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(kappa * 10), int(p * 10), int(T*1e-3), trNo)
+    if rewireType == 'cntrl':
+        baseFldr = rootFolder + '/homecentral/srao/Documents/code/binary/c/'
+        baseFldr = baseFldr + 'twopop/PRX_data/data/N%sK%s/m0%s/mExtOne%s/p%sgamma%s/T%s/tr%s/'%(N, K, int(1e3 * mExt), int(1e3 * mExtOne), int(p * 10), int(gamma * 10), int(T*1e-3), trNo)
+    return baseFldr
+    
 
 def LoadFr(p, gamma, phi, mExt, mExtOne, rewireType, trNo = 0, T = 1000, N = 10000, K = 1000, nPop = 2, IF_VERBOSE = False, kappa = 0):
     #ipdb.set_trace()
@@ -113,7 +147,8 @@ if __name__ == "__main__":
     mExtOne = float(sys.argv[3])
     trNo = int(sys.argv[4])
     K=int(sys.argv[5])
-    WritePOToTr0FolderBeforeRewiring(kappa, mExt, mExtOne, trNo, K=K)
+    T=int(sys.argv[6])
+    WritePOToTr0FolderBeforeRewiring(kappa, mExt, mExtOne, trNo, K=K, T=T)
     
     
     
