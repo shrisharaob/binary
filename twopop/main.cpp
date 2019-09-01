@@ -139,8 +139,32 @@ double ConProbFF(double phiI, double phiJ, unsigned int N) {
   return out;
 }
 
+
+void GenFFPOs() {
+  std::default_random_engine genFFDet(1234U);
+  std::uniform_real_distribution<double> UniformRand_det(0.0, 1.0);
+  double poFFi = M_PI * UniformRand_det(genFFDet);
+  for(uint i = 0; i < NFF; i++) {
+    poFF[i] = poFFi;
+  }
+  FILE *fpPOff;
+  fpPOff = fopen("poFF.dat", "wb");
+  unsigned int nElementsWritten;
+  nElementsWritten = fwrite(poFF, sizeof(double), NFF, fpPOff);
+  if (nElementsWritten != NFF) {
+      printf("NFF neq nElements\n");
+    }
+  fclose(fpPOff);
+}
+  
 double FFTuningCurve(unsigned int i, double phiOft) {
-  double out = m0_ext + m1_ext * cos(2 * (phiOft - (double)i * M_PI / (double)NFF));
+  // std::default_random_engine gen(1234U);
+  // std::uniform_real_distribution<double> UniformRand(0.0, 1.0);
+  // poFFi = M_PI * UniformRand();
+  //  printf('%f \n', poFFi);
+  // for(int i = 0; i < 10; i++) {
+  double out = m0_ext + m1_ext * cos(2 * (phiOft - poFF[i]));
+  // double out = m0_ext + m1_ext * cos(2 * (phiOft - (double)i * M_PI / (double)NFF));
   if((out < 0) | (out > 1)) {
     cout << "external rate [0, 1]!" << endl;
     exit(1);
@@ -1041,6 +1065,10 @@ void LoadFFSparseConMat() {
 }
 
 void RunSim() {
+
+
+
+  
   double dt, probUpdateFF, probUpdateE, probUpdateI, uNet, spinOld = 0, spinOldFF = 0;
   // uExternalE, uExternalI;
   unsigned long int nSteps, i, nLastSteps, nInitialSteps, intervalLen = (NE + NI) / 100;
@@ -1083,6 +1111,11 @@ void RunSim() {
     // used for computing m_E^1(t)
     intervalLen = (unsigned long)floor((nSteps - nInitialSteps) / 80.0);
   }
+
+
+  
+    
+  
   printf("dt = %f, #steps = %lu, T_STOP = %d\n", dt, nSteps, T_STOP);
   printf("prob updateFF = %f, prob update E = %f, prob update I = %f\n", probUpdateFF, probUpdateE, probUpdateI);
   nLastSteps = nSteps - (unsigned long int )((float)T_TRANSIENT / dt);
@@ -1465,6 +1498,7 @@ void RunSim() {
 }
   
 int main(int argc, char *argv[]) {
+  
   printf("#args = %d\n", argc);
   if(argc > 1) {
     m0_ext = atof(argv[1]);
@@ -1502,6 +1536,16 @@ int main(int argc, char *argv[]) {
   if(argc > 9) {
     IF_GEN_MAT = atoi(argv[9]);
   }
+
+
+  // std::default_random_engine genFFDet(1234U);
+  // std::uniform_real_distribution<double> UniformRand_det(0.0, 1.0);
+  // for(int i = 0; i < 10; i++) {
+  //   double poFFi = M_PI * UniformRand_det(genFFDet);
+  //   printf("gen po = %f \n", poFFi);
+  // }
+  // exit(1);
+
   
   tStop = T_STOP;
 
@@ -1517,6 +1561,9 @@ int main(int argc, char *argv[]) {
 
   // string mkdirp = "mkdir -p " ;
   // Create_Dir(folderName);
+
+  poFF = new double[NFF];
+  GenFFPOs();
   
   nPostNeurons = new unsigned int[N_NEURONS];
   idxVec = new unsigned int[N_NEURONS];

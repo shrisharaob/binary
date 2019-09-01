@@ -715,6 +715,93 @@ def CompareMeanOSIHist(pList, gList, nPhis = 8, mExt = 0.075, mExtOneList  = [0.
     print meanOSI
 
 
+def CompareOSIHistFig_sup1(pList, gList, nPhis = 8, mExt= .075, mExtOneList = [.075], trList= [0], rewireType = 'rand', N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = ''):
+    if IF_NEW_FIG:
+	plt.figure()
+    if color == '':
+	colors = [plt.cm.Dark2(i) for i in np.linspace(0, 1, 1 + clrCntr + len(pList) * len(gList) * len(mExtOneList) * len(trList), endpoint = False)]
+    else:
+	pcolor = color
+    meanOSI = []
+    meanOSI_I = []
+
+
+    K=1000
+    kappa = 0
+    trNo = 100
+    
+    tmposi, tmposiI = PltOSIHist(p=0, gamma=0, nPhis=8, mExt=0.075, mExtOne=0.075, rewireType='rand', trNo = trNo, IF_NEW_FIG = False, color = 'k', T=T, K=K, kappa = kappa, legendTxt = legendTxt, N=N)
+
+    kappa = 8
+    trNo = 2000
+    tmposi, tmposiI = PltOSIHist(p=0, gamma=0, nPhis=8, mExt=0.075, mExtOne=0.075, rewireType='rand', trNo = trNo, IF_NEW_FIG = False, color = 'g', T=T, K=K, kappa = kappa, legendTxt = legendTxt, N=N)
+    
+
+    ipdb.set_trace()
+
+
+
+    
+    # for mExtOne in mExtOneList:
+    #     for trNo in trList:
+    #         for p in pList:
+    #     	for gamma in gList:
+    #     	    for K in KList:
+    #     		try:
+    #     		    print trNo
+    #     		    if color == '':
+    #     			tmposi, tmposiI = PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = trNo, IF_NEW_FIG = False, color = colors[clrCntr], T=T, K=K, kappa = kappa, legendTxt = legendTxt, N=N)
+    #     		    else:
+    #     			tmposi, tmposiI = PltOSIHist(p, gamma, nPhis, mExt, mExtOne, rewireType, trNo = trNo, IF_NEW_FIG = False, color = pcolor, T=T, K=K, kappa = kappa, legendTxt = legendTxt, N=N)
+    #     		    meanOSI.append(np.nanmean(tmposi))
+    #     		    meanOSI_I.append(np.nanmean(tmposiI))
+    #     		    clrCntr += 1
+    #     		except IOError:
+    #     		    print "p = ", p, " gamma = ", gamma, " trial# ", trNo, " file not found"
+    # plt.gca().legend(bbox_to_anchor = (1.1, 1.5))
+    if IF_LEGEND:
+	plt.legend(loc = 0, frameon = False, numpoints = 1, prop = {'size': 8})
+    # print '--'*26
+    # osiLast = meanOSI[-1]
+    # osilastCnt = -1
+    # osiLastI = meanOSI[-1]
+    # while np.isnan(osiLast):
+    #     osilastCnt -= 1
+    #     print osilastCnt
+    #     osiLast = meanOSI[osilastCnt]	
+    #     osiLastI = meanOSI_I[osilastCnt]
+    # print 'pc change in mean OSI = ', 100 * (osiLast - meanOSI[0]) / meanOSI[0]
+    # # print 'pc change in mean OSI, I = ', 100 * (osiLastI - meanOSI_I[0]) / meanOSI_I[0]
+    # print '--'*26
+    plt.gca().set_position([0.15, 0.15, .65, .65])
+    if nPop == 2:
+	# plt.savefig("./figs/twopop/compareOSI_.png")
+	# plt.savefig("./figs/twopop/compareOSI_"+filename + '.png')
+	paperSize = [4, 3]
+	# ipdb.set_trace()
+        p=0
+        gamma=0
+	filename = filename + "p%sg%sk%s"%(p, gamma, kappa)
+        plt.figure(1)
+        plt.gca().set_xticklabels(['0', '0.5', '1'])
+        plt.draw()        
+        Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_" + rewireType + '_' + filename,  paperSize, figFormat='svg', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])
+    # plt.figure()
+    # plt.plot(trList, meanOSI, 'k*-')
+    plt.xlabel('rewiring step')
+    plt.ylabel(r'$\langle OSI \rangle$')
+    plt.gca().set_position([0.25, 0.25, .65, .65])
+    # plt.xlim([0, ])
+    filename = filename + "p%sg%s"%(p, gamma)
+    plt.figure(2)
+    plt.gca().set_xticklabels(['0', '0.5', '1'])
+    plt.draw()
+    Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_mean_"+ rewireType + '_' + filename,  paperSize, figFormat='svg', labelFontsize = 10, tickFontsize=8, titleSize = 10.0)
+    plt.show()
+    print meanOSI
+
+    
+
 def CompareOSIHist(pList, gList, nPhis = 8, mExt= .075, mExtOneList = [.075], trList= [0], rewireType = 'rand', N = 10000, KList = [1000], nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', kappa = 1, color = ''):
     if IF_NEW_FIG:
 	plt.figure()
@@ -763,7 +850,7 @@ def CompareOSIHist(pList, gList, nPhis = 8, mExt= .075, mExtOneList = [.075], tr
 	# ipdb.set_trace()
 	filename = filename + "p%sg%sk%s"%(p, gamma, kappa)
         Print2Pdf(plt.gcf(),  "./figs/twopop/compareOSI_" + rewireType + '_' + filename,  paperSize, figFormat='eps', labelFontsize = 10, tickFontsize=8, titleSize = 10.0, IF_ADJUST_POSITION = True, axPosition = [0.14, 0.14, .7, .7])
-    plt.figure()
+    # plt.figure()
     # plt.plot(trList, meanOSI, 'k*-')
     plt.xlabel('rewiring step')
     plt.ylabel(r'$\langle OSI \rangle$')
@@ -1105,7 +1192,7 @@ def KappaVsM1AtTr(kappaList, p=0, gamma=0, nPhis = 8, mExt=0.075, mExtOne=0.075,
 	vldKappa[i, :], m1E[i, :], m0E[i, :] = KappaVsM1AtPhi(kappaList, p, gamma, phi, mExt, mExtOne, rewireType, N, K, nPop, T, trNo, IF_PO_SORTED = IF_PO_SORTED, sortedIdx = sortedIdx, minRate = minRate)
     return np.nanmean(m1E, 0), np.nanmean(m0E, 0) #, vldKappa
 
-def KappaVsM1(kappaList, nTrials = 10, p=0, gamma=0, nPhis = 8, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, IF_PO_SORTED = False, sortedIdx = []):
+def KappaVsM1(kappaList, nTrials = 10, p=0, gamma=0, nPhis = 8, mExt=0.075, mExtOne=0.075, rewireType='rand', N=10000, K=1000, nPop=2, T=1000, IF_PO_SORTED = False, sortedIdx = [], minRate=0):
     m1E = np.zeros((nTrials + 2, len(kappaList)))
     m1E[0, :] = np.nan
     m0E = np.zeros((nTrials + 2, len(kappaList)))
@@ -1159,6 +1246,9 @@ def KappaVsM1overM0(kappaList, nTrials = 10, p=0, gamma=0, nPhis = 8, mExt=0.075
     plt.xlabel(r'$\kappa$', fontsize = 20)
     plt.ylabel(r'$\frac{m_E^{(1)}}{m_E^{(0)}}$', fontsize = 20)
     plt.show()
+    ipdb.set_trace()
+
+    
     # return m1EvsKappa, m1EvsKappaSEM
 
         
@@ -1255,9 +1345,11 @@ def CompareMeanOSIvsKappaRewire(kappaList, nTrials = 10, mExtOne=0.075, p = 0, g
     osiISEM = np.empty((len(kappaList), ))
     osiESEM[:] = np.nan
     osiISEM[:] = np.nan
-    # trList = range(100, 100 + nTrials)
-    trList = range(3000, 3000 + nTrials)
+
+    # trList = range(3000, 3000 + nTrials)
+    trList = range(2000, 2000 + nTrials)    
     trListOld = trList
+    trList = range(100, 100 + nTrials)    
     mE = np.empty((len(kappaList), nTrials))
     mI = np.empty((len(kappaList), nTrials))
     mESEM = np.empty((len(kappaList), ))
@@ -1267,7 +1359,7 @@ def CompareMeanOSIvsKappaRewire(kappaList, nTrials = 10, mExtOne=0.075, p = 0, g
         nValidTrials = 0
 	# if kappa == 0 and K == 2000:
 	#     trList = [0]
-	if kappa == 8 and K == 2000:
+	if kappa == 8 and K == 1000:
 	    trList = trListOld
         for trIdx, trNo in enumerate(trList):
             print 'trIdx', trIdx
@@ -1303,7 +1395,7 @@ def CompareMeanOSIvsKappaRewire(kappaList, nTrials = 10, mExtOne=0.075, p = 0, g
     plt.xlim(-.5, 1.5)
     plt.ylim(0, .5)
 
-    filename = './figs/twopop/' + 'meanOSI_vs_kappa_rewired_vsK_tr%s'%(trList[0])
+    filename = './figs/PNAS/twopop/' + 'meanOSI_vs_kappa_rewired_vsK_tr%s'%(trList[0])
     paperSize = [2.5, 2]
     axPosition=[.24, .24, .75, .7]
     ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=2, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
@@ -1326,7 +1418,7 @@ def CompareMeanOSIvsKappaRewire(kappaList, nTrials = 10, mExtOne=0.075, p = 0, g
     plt.ylim(0, 1)
     plt.xlim(-.5, 1.5)
     plt.legend(loc = 2, frameon = False, numpoints = 1, prop = {'size': 6})        
-    filename = './figs/twopop/' + 'meanRates_vs_kappa_rewired_vsK_trNo%s'%(trList[0])
+    filename = './figs/PNAS/twopop/' + 'meanRates_vs_kappa_rewired_vsK_trNo%s'%(trList[0])
     paperSize = [2.5, 2]
     axPosition=[.24, .24, .75, .7]
     ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=2, figFormat='svg', labelFontsize = 8, tickFontsize = 6)
@@ -1441,11 +1533,17 @@ def PlotTuningCurves(tc, filetag):
         tmp = np.roll(tmp, -1 * np.argmax(tmp))
         tmp = np.roll(tmp, 4)        
         plt.plot(thetas, np.concatenate((tmp, [tmp[0]])), 'o-k', lw = .5, markersize = 0.95)
-        filename = './PUB_FIGS/tuning_curves_%s_idx_%s'%(filetag, idx)
+        filename = './figs/PNAS/tc/tuning_curves_%s_idx_%s'%(filetag, idx)
         paperSize = [2.5/2, 2/2.0]
         axPosition=[.25, .25, .65, .65]
         FixAxisLimits(plt.gcf())
         plt.gca().set_xticks([-90, 0, 90])
+        ymin, ymax = plt.ylim()
+        plt.ylim(0, ymax)
+        plt.gca().set_yticks([0, ymax * 0.5, ymax])
+        plt.gca().set_yticklabels(['0', '%.4s'%(ymax * 0.5), '%.4s'%(ymax)])
+        plt.gca().set_xticks([0, 90, 180])
+        plt.gca().set_xticklabels(['0', '90', '180'])        
         plt.draw()
         ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 6, tickFontsize = 6)
         plt.clf()
@@ -1470,26 +1568,65 @@ def PlotTuningCurves(tc, filetag):
         plt.clf()
     
 
-def PlotTuningCurvesKappaNonZero(tcList, kappaList, filetag):
+def ComapreTuningCurves(kappaList, nTrials = 1, mExtOne=0.075, p = 0, gamma = 0, nPhis = 8, mExt = 0.075, rewireType = 'rand', N = 10000, K = 1000, nPop = 2, T = 1000, IF_NEW_FIG = True, clrCntr = 0, filename = '', IF_LEGEND = True, legendTxt = '', color = '', neuronType = 'E', markerType = 'o-'):
+    tclist = []
+
+    trListOld = range(2000, 2000 + nTrials)
+    # trList = range(100, 100 + nTrials)
+
+
+    
+    trList = range(100, 100 + nTrials)
+    
+    for idx, kappa in enumerate(kappaList):
+        nValidTrials = 0
+	# if kappa == 0 and K == 2000:
+	#     trList = [0]
+	if kappa == 8 and K == 1000:
+	    trList = trListOld
+        for trIdx, trNo in enumerate(trList):
+            print 'trIdx', trIdx
+            # ipdb.set_trace()
+            tc, IF_FILE_LOADED = GetTuningCurves(p, gamma, nPhis, mExt, mExtOne, rewireType, kappa=kappa, trNo = trNo, IF_SUCCESS = True, K=K)
+        if IF_FILE_LOADED:
+            tclist.append(tc)
+    assert len(tclist) == len(kappaList)
+    PlotTuningCurvesKappaNonZero(tclist, kappaList, neuronType = neuronType)
+
+        
+def PlotTuningCurvesKappaNonZero(tcList, kappaList, filetag='', neuronType='E', roll=False):
     _, nThetas = tcList[0].shape
-    thetas = np.arange(-90, 91, 180./8)
+    # thetas = np.arange(-90, 91, 180./8)
+    thetas = np.arange(0., 181., 180./8)    
     neuronsIdx = [1798, 7753, 3233, 6218]
-    neuronsIdx = np.random.choice(10000, 20) + 10000
+    if neuronType == 'E':
+        neuronsIdx = np.random.choice(10000, 100)
+    else:
+        neuronsIdx = np.random.choice(10000, 100) + 10000
+
     print neuronsIdx
+    filetag = neuronType
     ###### EXCITATORY
     colors = ['k', 'g', 'r']
     for idx in neuronsIdx:    
         for kappaIdx, kappa in enumerate(kappaList):
             tc = tcList[kappaIdx]
             tmp = tc[idx, :]
-            tmp = np.roll(tmp, -1 * np.argmax(tmp))
-            tmp = np.roll(tmp, 4)        
+            if roll:
+                tmp = np.roll(tmp, -1 * np.argmax(tmp))
+                tmp = np.roll(tmp, 4)        
             plt.plot(thetas, np.concatenate((tmp, [tmp[0]])), 'o-', color = colors[kappaIdx], lw = .5, markersize = 0.95, markerfacecolor = colors[kappaIdx], markeredgecolor=colors[kappaIdx])
-        filename = './PUB_FIGS/tuning_curves_%s_idx_%s'%(filetag, idx)
+        filename = './figs/PNAS/tc/tuning_curves_%s_idx_%s'%(filetag, idx)
         paperSize = [2.5/2, 2/2.0]
         axPosition=[.25, .25, .65, .65]
         FixAxisLimits(plt.gcf())
-        plt.gca().set_xticks([-90, 0, 90])
+
+        ymin, ymax = plt.ylim()
+        plt.ylim(0, ymax)
+        plt.gca().set_yticks([0, ymax * 0.5, ymax])
+        plt.gca().set_yticklabels(['0', '%.4s'%(ymax * 0.5), '%.4s'%(ymax)])
+        plt.gca().set_xticks([0, 90, 180])
+        plt.gca().set_xticklabels(['0', '90', '180'])        
         plt.draw()
         ProcessFigure(plt.gcf(), filename, 1, paperSize = paperSize, axPosition = axPosition, titleSize=10, nDecimalsX=1, nDecimalsY=1, figFormat='svg', labelFontsize = 6, tickFontsize = 6)
         plt.clf()

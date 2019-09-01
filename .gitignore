@@ -19,11 +19,14 @@
 *.tex
 *.el
 *.odp
+*.txt
 
 
 sed*
 vm
 spkTimes
 
-data/*
+./*/data/*
+./*/figs/*
+./*/PRX_data/*
 *.svg

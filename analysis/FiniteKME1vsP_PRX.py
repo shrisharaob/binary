@@ -195,6 +195,37 @@ def EqFiniteK(u0Guess, *args):
     # print mE0, mE1, mI0
     return (a, b, c)
 
+
+def GetRatesEqFiniteK(u0Guess, K, p, m_ext):
+    # solve for u_E(0), u_I(0), u_E(0) at p
+    uE0, uI0, mE1 = u0Guess
+
+    detJab = np.linalg.det(Jab)
+    sqrtK = np.sqrt(K)
+    uTildeE0 = uE0 / sqrtK - JE0 * m_ext * cFF
+    uTildeI0 = uI0 / sqrtK - JI0 * m_ext * cFF
+    mE0 = ( JII * uTildeE0 - JEI * uTildeI0) / detJab
+    mI0 = (-JIE * uTildeE0 + JEE * uTildeI0) / detJab
+    uE1 = p * JEE * mE1    
+    aE0 = cFF * JE0**2 * m_ext + JEE**2 * mE0 + JEI**2 * mI0
+    aI0 = cFF * JI0**2 * m_ext + JIE**2 * mE0 + JII**2 * mI0
+    aE1 = p * JEE**2 * mE1 / sqrtK
+    aI1 = p * JEI**2 * mE1 / sqrtK    
+    if(aE1 > aE0):
+        aE1 = aE0 * 0.1
+    AEofPhi = lambda phi: aE0 + aE1 * np.cos(2.0 * phi)
+    AIofPhi = lambda phi: aI0 + aI1 * np.cos(2.0 * phi)    
+    funcME0 = lambda phi: (1.0 / np.pi) * MyErfc((1.0 - uE0 - uE1 * np.cos(2.0 * phi)) / np.sqrt(AEofPhi(phi)))
+    funcMI0 = lambda phi: (1.0 / np.pi) * MyErfc((1.0 - uI0) / np.sqrt(AIofPhi(phi)))
+    funcME1 = lambda phi: (2.0 * np.cos(2.0 * phi) / np.pi) * MyErfc((1.0 - uE0 - uE1 * np.cos(2.0 * phi)) / np.sqrt(AEofPhi(phi)))
+    # print uE0, uI0, AEofPhi(0)
+    a = mE0 - quad(funcME0, 0, np.pi, limit = 200, epsabs = 1e-10)[0]
+    b = mI0 - np.abs(quad(funcMI0, 0, np.pi, limit = 200, epsabs = 1e-10)[0])
+    c = mE1 - np.abs(quad(funcME1, 0, np.pi, limit = 200, epsabs = 1e-10)[0])
+    # print mE0, mE1, mI0
+    return mE0, mI0, mE1
+    
+
 def EqFiniteKFunc(u0Guess, args, Jab, JE0, JI0):
     # solve for u_E(0), u_I(0), u_E(0) at p
     uE0, uI0, mE1 = u0Guess
@@ -424,7 +455,6 @@ if __name__ == "__main__":
     
     gamma = 0.0
     m0 = 0.075
-    p = 1
     p = float(sys.argv[1])    
     K = int(sys.argv[2])
     simTime = int(sys.argv[3])
@@ -481,7 +511,7 @@ if __name__ == "__main__":
     pListSim = np.arange(0, 4.5, 0.1)
     pStart = pCriticalAtK + 4
     pList = np.linspace(pStart, pCriticalAtK - 1, 5000)
-    ipdb.set_trace()
+    #1ipdb.set_trace()
     nPoints = len(pList)
     print 'nPoints = ', nPoints
     mE1SolList = []
@@ -495,8 +525,21 @@ if __name__ == "__main__":
     # uE0Sol = fsolve(EqFiniteK, [.943, .5, 0.8 / pStart], args = (K, pStart, m0), full_output = True, xtol = 1e-12, epsfcn = 1e-12)
     uE0Sol = fsolve(EqFiniteK, u0Guess, args = (K, pStart, m0), full_output = True, xtol = 1e-12, epsfcn = 1e-12)    
     PrintError(uE0Sol, 'u_E(0),  u_I(0), m_E(1)] at p = %s'%(pStart))
-    # u0Guess = [uE0Sol[0][0], uI0Sol[0][0], 0.1606553588900383]    
-    print "numerics ..."    
+    # u0Guess = [uE0Sol[0][0], uI0Sol[0][0], 0.1606553588900383]
+
+    ipdb.set_trace()
+
+    uE0Soltmp = fsolve(EqFiniteK, u0Guess, args = (K, p, m0), full_output = True, xtol = 1e-12, epsfcn = 1e-12)    
+    
+
+    print GetRatesEqFiniteK(uE0Soltmp[0], K, p, m0)
+    
+                      
+    ipdb.set_trace()
+
+    
+    print "numerics ..."
+    
     for ip, p in enumerate(pList):
         if ip == 0:
 
@@ -537,8 +580,14 @@ if __name__ == "__main__":
             mE1SolList.append(mE1)            
             pValidList.append(p) 
     print "done"   
-    plt.plot(pValidList, np.array(mE1SolList, dtype = 'float'), 'c.', label = 'corrected', lw = 1.5)
-    np.save('./data/PRX/mE1_m0%s_K%s'%(int(m0 * 1e3), K), [pValidList, np.array(mE1SolList, dtype = 'float')])
+
+    
+    np.save('./data/PRX/mE1_m0%s_K%s'%(int(m0 * 1e3), K), [pValidList, np.array(mE1SolList, dtype = 'float'), np.array(mE0SolList, dtype = 'float')])
+
+
+    raise SystemExit
+    
+    plt.plot(pValidList, np.array(mE1SolList, dtype = 'float'), 'c.', label = 'corrected', lw = 1.5)    
 
 #    np.save('./data/PRX/analysisData/p_vs_mE1_m0%s'%(int(m0*1e3)), [pValidList, np.array(mE1SolList, dtype = 'float'), np.ones((len(pValidList, )) * , np.ones((len(pofME), )) * )    
     #np.save('./data/PRX/analysisData/mE1_m0%s_K%s'%(int(m0 * 1e3), K), [pValidList, np.array(mE1SolList, dtype = 'float')])    
