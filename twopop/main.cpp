@@ -125,14 +125,58 @@ double ConProbFF(double phiI, double phiJ, unsigned int N) {
   return out;
 }
 
+
+void GenFFPOs() {
+  //  std::random_device rd;
+  std::default_random_engine genFFDet(4375);
+  std::uniform_real_distribution<double> UniformRand_det(0.0, 1.0);
+
+  // srand((unsigned)time(NULL)); 
+  // double r = M_PI * ((double)rand()/(RAND_MAX));
+
+  
+  double poFFi;
+  for(uint i = 0; i < NFF; i++) {
+    poFFi = UniformRand_det(genFFDet);    
+    poFF[i] = poFFi;
+    // printf("%f\n", poFF[i]);
+  }
+  FILE *fpPOff;
+  fpPOff = fopen("poFF.dat", "w");
+  for(int k = 0; k < NFF; k++) {
+    fprintf(fpPOff, "%f\n", poFF[k]);
+  }
+  
+  // unsigned int nElementsWritten;
+  // nElementsWritten = fwrite(poFF, sizeof(double), NFF, fpPOff);
+  // if (nElementsWritten != NFF) {
+  //     printf("NFF neq nElements\n");
+  //   }
+  fclose(fpPOff);
+}
+
+
 double FFTuningCurve(unsigned int i, double phiOft) {
-  double out = m0_ext + m1_ext * cos(2 * (phiOft - (double)i * M_PI / (double)NFF));
+   // double out = m0_ext + m1_ext * cos(2 * (phiOft - (double)i * M_PI / (double)NFF));
+   double out = m0_ext + m1_ext * cos(2 * (phiOft - (double)i * M_PI / (double)NFF));
+  
+   //  double out = m0_ext + m1_ext * cos(2 * (phiOft - poFF[i]));
+   
   if((out < 0) | (out > 1)) {
     cout << "external rate [0, 1]!" << endl;
     exit(1);
   }
   //  out = m0_ext;
   return out;
+}
+
+void testfftuning() {
+  FILE *fpPOff;
+  fpPOff = fopen("tuning_ff.txt", "w");
+  for(int k = 0; k < NFF; k++) {
+    fprintf(fpPOff, "%f\n", FFTuningCurve(k, 0));
+  }
+  fclose(fpPOff);
 }
 
 void GenSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, unsigned int* sparseVec, unsigned int* idxVec, unsigned int* nPostNeurons ) {
@@ -193,7 +237,7 @@ void GenSparseMat(unsigned int *conVec,  unsigned int rows, unsigned int clms, u
 void GenFFConMat() {
   std::random_device rd;
   std::default_random_engine gen(rd());
-  std::uniform_real_distribution<double> UniformRand(0.0, 1.0);
+  std::uniform_real_distribution<double> UniformRandFF(0.0, 1.0);
   unsigned long long int nConnections = 0;
   cout << "generating FF conmat" << endl;
   unsigned int *conMatFF = new unsigned int [(unsigned long int)NFF * N_NEURONS];
@@ -201,14 +245,14 @@ void GenFFConMat() {
     for (unsigned long int j = 0; j < N_NEURONS; j++)  {
       // i --> j
       if(j < NE) { //E-to-E
-	if(UniformRand(gen) <= ConProbFF(i * M_PI / (double)NFF, j * M_PI / (double)NE, NFF)) {
+	if(UniformRandFF(gen) <= ConProbFF(i * M_PI / (double)NFF, j * M_PI / (double)NE, NFF)) {
 	  conMatFF[i + NFF * j] = 1;
   	  // conMatFF[i + NFF * j] = 1;
 	  nConnections += 1;
 	}
       }
       else {
-	if(UniformRand(gen) <= (double)K * cFF / (double)NFF) {
+	if(UniformRandFF(gen) <= (double)K * cFF / (double)NFF) {
 	  conMatFF[i + NFF * j] = 1;
 	  nConnections += 1;
 	}
@@ -473,6 +517,9 @@ void RunSim() {
   vector<double> firingRatesChkTMP(N_NEURONS);
   vector<double> firingRatesAtT(N_NEURONS);  
   vector<double> ratesAtInterval(N_NEURONS);
+
+  vector<double> FFInput(N_NEURONS);  
+  
   double popME1, popME1Phase;  // popMI1, popMI1Phase, 
 
   std::string m1FileName;     
@@ -528,6 +575,7 @@ void RunSim() {
 
     if(updatePop == 0) {
       updateNeuronIdx = RandFFNeuron();
+
       spinOldFF = spinsFF[updateNeuronIdx];
       spinsFF[updateNeuronIdx] = 0;
       if(UniformRand() <= FFTuningCurve(updateNeuronIdx, phi_ext)) {
@@ -718,15 +766,49 @@ void RunSim() {
       fclose(fpSpks);
   }
 
-  spins.clear();
-  spkTimes.clear();
-  spkNeuronIdx.clear();
-  firingRates.clear();
-  netInputVec.clear();
-  firingRatesChk.clear();
 
-  firingRatesAtT.clear();  
-  ratesAtInterval.clear();
+  // compute FF INPUT
+  for(unsigned int lll = 0; lll < N_NEURONS; lll++) {
+    // inputVecE[lll] = 0;
+    // inputVecI[lll] = 0;
+    if(lll < NFF) { FFInput[lll] = 0; }
+  }  
+  unsigned int tmpIdx1, cntr1, iidxx;
+  for(iidxx = 0; iidxx < NFF; iidxx++) {
+    tmpIdx1 = idxVecFF[iidxx];
+    cntr1 = 0;      
+    while(cntr1 < nPostNeuronsFF[iidxx]) {
+      unsigned int kk = sparseConVecFF[tmpIdx1 + cntr1];
+      cntr1 += 1;
+      if(kk < NE) {
+	FFInput[kk] += JE0_K * firingRatesFF[iidxx];
+      }
+      else {
+	FFInput[kk] += JI0_K * firingRatesFF[iidxx];
+      }
+    }
+  }
+    // save FF input
+    txtFileName = "meanFFinput_theta" + std::to_string(phi_ext * 180 / M_PI) + "_tr" + std::to_string(trialNumber) + "_last.txt";  
+    FILE *fpFFInputs = fopen(txtFileName.c_str(), "w");
+    for(unsigned int ii = 0; ii < NE+NI; ii++) {
+      // fprintf(fpFFInputs, "%f\n", firingRatesFF[ii]);
+      fprintf(fpFFInputs, "%f\n", FFInput[ii]);      
+    }
+    fclose(fpFFInputs);
+
+  
+  
+
+  // spins.clear();
+  // spkTimes.clear();
+  // spkNeuronIdx.clear();
+  // firingRates.clear();
+  // netInputVec.clear();
+  // firingRatesChk.clear();
+
+  // firingRatesAtT.clear();  
+  // ratesAtInterval.clear();
   
   printf("\nsee you later, alligator\n");
 }
@@ -755,6 +837,8 @@ int main(int argc, char *argv[]) {
   }
 
   tStop = T_STOP;
+
+
 
   cout << "NE = " << NE << " NI = " << NI << " NFF = " << NFF << " K = " << K << " p = " << recModulation << " m0 = " << m0_ext << " m0_One = " << m1_ext << endl;
   cout << "gamma = " << ffModulation << " KFF = " << cFF * K << " Phi_Ext = " << phi_ext * 180.0 / M_PI << endl;
@@ -791,6 +875,14 @@ int main(int argc, char *argv[]) {
     LoadSparseConMat();
   }
 
+  // fix random ff pos
+  // poFF = new double[NFF];
+  // GenFFPOs();
+
+
+  //  testfftuning();
+  //  exit(1);
+  
   
   clock_t timeStart = clock(); 
   RunSim();
